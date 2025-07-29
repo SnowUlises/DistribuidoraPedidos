@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Detalle del producto - Distribuidora Funaz </title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background:#4a90e2;
+      color:#fff;
+      padding:1em 2em;
+      display:flex;
+      align-items:center;
+      gap:1em;
+      position: relative;
+    }
+    header img {
+      height:40px; width:40px; border-radius:50%;
+    }
+    header h1 {
+      margin:0; font-size:1.8em;
+    }
+    header button {
+      margin-left:auto;
+      padding:8px 12px;
+      border:none;
+      border-radius:6px;
+      background:#fff;
+      color:#4a90e2;
+      font-weight:bold;
+      cursor:pointer;
+      position: relative;
+      z-index: 10;
+    }
+    header button:hover {
+      background:#dceeff;
+    }
+    #btnCarritoHeader {
+      margin-left: 10px;
+      background:#FFFFFF;
+      color: #4a90e2;;
+    }
+    #btnCarritoHeader:hover {
+      background:#388E3C;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2em;
+    }
+    .producto {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      width: 100%;
+      display: flex;
+      padding: 1.5em;
+      gap: 1.5em;
+      align-items: center;
+    }
+    .imagen-container {
+      flex: 0 0 200px;
+      height: 200px;
+    }
+    .imagen-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 12px;
+      background: #eee;
+    }
+    .detalle {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 200px;
+    }
+    .nombre {
+      font-size: 1.6em;
+      font-weight: bold;
+      margin-bottom: 0.5em;
+    }
+    .precio {
+      font-size: 1.3em;
+      color: #4a90e2;
+      margin-bottom: 0.5em;
+    }
+    .stock {
+      font-weight: bold;
+      margin-bottom: 1em;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    .checkmark {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #28a745;
+      border-radius: 4px;
+      position: relative;
+      background: white;
+      display: inline-block;
+    }
+    .checkmark.checked::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 1px;
+      width: 6px;
+      height: 12px;
+      border: solid #28a745;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    .acciones {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+    }
+    .acciones input[type=number] {
+      width: 70px;
+      padding: 8px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    button.agregar {
+      padding: 10px 16px;
+      background: #4CAF50;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button.agregar:hover:not(:disabled) {
+      background: #388E3C;
+    }
+    button.agregar:disabled {
+      background: #a0c1a7;
+      cursor: not-allowed;
+    }
+
+    /* Carrito desplegable */
+    #carritoDesplegable {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      width: 320px;
+      max-height: 400px;
+      background: white;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      border-radius: 8px;
+      overflow-y: auto;
+      padding: 1em;
+      display: none;
+      z-index: 100;
+    }
+    #carritoDesplegable h3 {
+      margin-top: 0;
+      margin-bottom: 1em;
+      font-weight: bold;
+      text-align: center;
+    }
+    .item-carrito {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8em;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 0.5em;
+    }
+    .item-carrito span {
+      flex: 1;
+    }
+    .item-carrito .cantidad {
+      margin-left: 1em;
+      font-weight: bold;
+    }
+    .item-carrito button {
+      background: #d9534f;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-weight: bold;
+      margin-left: 1em;
+      transition: background 0.3s;
+    }
+    .item-carrito button:hover {
+      background: #b52b27;
+    }
+
+    /* Mensaje no invasivo */
+    #mensajeAgregado {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      padding: 12px 16px;
+      font-weight: bold;
+      color: black;
+      display: none;
+      z-index: 200;
+      min-width: 250px;
+    }
+    #mensajeAgregado span.producto-nombre {
+      display: block;
+      margin-top: 4px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://via.placeholder.com/40" alt="Logo" />
+    <h1>Distribuidora Funaz</h1>
+    <button onclick="location.href='admin.html'">Mi cuenta</button>
+    <button id="btnCarritoHeader" onclick="toggleCarrito()">Carrito</button>
+  </header>
+
+  <main>
+    <div class="producto" id="detalle"></div>
+  </main>
+
+  <div id="carritoDesplegable">
+    <h3>Carrito</h3>
+    <div id="listaCarrito"></div>
+  </div>
+
+  <div id="mensajeAgregado"></div>
+
+
+
+
+
+  
+  <script>
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    let producto = null;
+
+    async function cargarProducto() {
+      const id = new URLSearchParams(location.search).get('id');
+      if (!id) {
+        mostrarError('Producto no encontrado.');
+        return;
+      }
+      try {
+        const res = await fetch(`http://localhost:3000/api/productos/${id}`);
+        if (!res.ok) throw new Error('Producto no encontrado');
+        producto = await res.json();
+
+        const stockCheck = producto.stock
+          ? '<span class="checkmark checked"></span>'
+          : '<span class="checkmark"></span>';
+
+        document.getElementById('detalle').innerHTML = `
+          <div class="imagen-container">
+            <img src="imagenes/${producto.id}.png" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" alt="Producto" />
+          </div>
+          <div class="detalle">
+            <div>
+              <div class="nombre">${producto.nombre}</div>
+              <div class="precio">$${producto.precio.toFixed(2)}</div>
+              <div class="stock">Stock: ${stockCheck}</div>
+            </div>
+            <div class="acciones">
+              <input type="number" id="cantidad" value="1" min="1" ${producto.stock ? '' : 'disabled'} />
+              <button class="agregar" onclick="agregarAlCarrito()" ${producto.stock ? '' : 'disabled'}>Agregar al carrito</button>
+            </div>
+          </div>
+        `;
+      } catch {
+        mostrarError('Error cargando producto.');
+      }
+    }
+
+    function mostrarError(msg) {
+      document.getElementById('detalle').innerHTML = `<p style="color: red; font-weight: bold;">${msg}</p>`;
+    }
+
+    function agregarAlCarrito() {
+      const cantidadInput = document.getElementById('cantidad');
+      if (!cantidadInput) return;
+      const cantidad = parseInt(cantidadInput.value);
+      if (isNaN(cantidad) || cantidad < 1) return;
+
+      const existente = carrito.find(p => p.id === producto.id);
+      if (existente) {
+        existente.cantidad += cantidad;
+      } else {
+        carrito.push({ ...producto, cantidad });
+      }
+      localStorage.setItem('carrito', JSON.stringify(carrito));
+      actualizarCarrito();
+      mostrarMensaje(`${producto.nombre}`, cantidad);
+    }
+
+    function mostrarMensaje(nombreProducto, cantidad) {
+      const msg = document.getElementById('mensajeAgregado');
+      msg.innerHTML = `Se agregó:<br><span class="producto-nombre">${nombreProducto} x${cantidad}</span>`;
+      msg.style.display = 'block';
+      clearTimeout(msg.timeoutId);
+      msg.timeoutId = setTimeout(() => {
+        msg.style.display = 'none';
+      }, 2000);
+    }
+
+    function toggleCarrito() {
+      const carritoEl = document.getElementById('carritoDesplegable');
+      if (carritoEl.style.display === 'block') {
+        carritoEl.style.display = 'none';
+      } else {
+        carritoEl.style.display = 'block';
+        actualizarCarrito();
+      }
+    }
+
+    function actualizarCarrito() {
+      const lista = document.getElementById('listaCarrito');
+      lista.innerHTML = '';
+      if (carrito.length === 0) {
+        lista.innerHTML = '<p>Carrito vacío.</p>';
+        return;
+      }
+      carrito.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'item-carrito';
+        div.innerHTML = `
+          <span>${item.nombre}</span>
+          <span class="cantidad">x${item.cantidad}</span>
+          <button onclick="removerDelCarrito(${idx})">X</button>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    function removerDelCarrito(index) {
+      carrito.splice(index, 1);
+      localStorage.setItem('carrito', JSON.stringify(carrito));
+      actualizarCarrito();
+    }
+
+    cargarProducto();
+  </script>
+</body>
+</html>

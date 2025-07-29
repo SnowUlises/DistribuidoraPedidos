@@ -1,0 +1,149 @@
+<!-- micuenta.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mi cuenta - Distribuidora Funaz</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin:0; background:#f2f2f2; color:#333; padding:2em; }
+    header {
+      background:#4a90e2; color:#fff; padding:1em 2em; display:flex; align-items:center; gap:1em; justify-content:flex-start;
+    }
+    header img { height:40px; width:40px; border-radius:50%; }
+    header h1 { margin:0; font-size:1.8em; flex-grow:1; }
+    main {
+      max-width: 400px; background:#fff; padding:2em; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1);
+      margin: 2em auto;
+    }
+    h2 { color:#4a90e2; margin-bottom: 1em; }
+    label {
+      display:block; margin-bottom: 0.7em; font-weight: bold; color:#555;
+    }
+    input {
+      width: 100%; padding: 8px; font-size: 1em; border-radius: 6px; border:1px solid #ccc; box-sizing: border-box;
+      margin-top: 0.3em;
+    }
+    button {
+      background:#4a90e2; color:#fff; border:none; border-radius:6px; padding:10px; font-weight:bold; cursor:pointer;
+      margin-top:1em; width: 100%;
+      transition: background 0.2s;
+    }
+    button:hover { background:#357ABD; }
+    #btnCerrar {
+      background:#d9534f; margin-top: 0.5em;
+    }
+    #btnCerrar:hover {
+      background:#c9302c;
+    }
+    #btnVolver {
+      background:#6c757d; margin-top: 0.5em;
+    }
+    #btnVolver:hover {
+      background:#5a6268;
+    }
+    #btnAdmin {
+      background:#28a745; margin-top: 0.5em;
+    }
+    #btnAdmin:hover {
+      background:#218838;
+    }
+    #mensaje {
+      color: green; margin-top: 1em; font-weight: bold; text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="imagenes/logo.png" alt="Logo" />
+    <h1>Distribuidora Funaz</h1>
+  </header>
+
+  <main>
+    <h2>Mi cuenta</h2>
+    <div><strong>Usuario:</strong> <span id="usuario"></span></div>
+
+    <form id="formDatos">
+      <label for="nombre">Nombre</label>
+      <input type="text" id="nombre" autocomplete="given-name" />
+
+      <label for="apellido">Apellido</label>
+      <input type="text" id="apellido" autocomplete="family-name" />
+
+      <label for="email">Correo electrónico</label>
+      <input type="email" id="email" autocomplete="email" />
+
+      <label for="telefono">Teléfono</label>
+      <input type="tel" id="telefono" autocomplete="tel" />
+
+      <button type="submit">Guardar cambios</button>
+    </form>
+
+    <button id="btnCerrar">Cerrar sesión</button>
+    <button id="btnVolver">Volver a la tienda</button>
+    <button id="btnAdmin" style="display:none;">Panel de Admin</button>
+
+    <div id="mensaje">Datos guardados con éxito.</div>
+  </main>
+
+  <script>
+    const user = localStorage.getItem('loggedUser');
+    if (!user) {
+      location.href = 'login.html';
+    }
+
+    document.getElementById('usuario').textContent = user;
+
+    // Mostrar botón admin solo si usuario es admin
+    if(user === 'admin') {
+      const btnAdmin = document.getElementById('btnAdmin');
+      btnAdmin.style.display = 'block';
+      btnAdmin.addEventListener('click', () => {
+        location.href = 'admin.html';
+      });
+    }
+
+    // Cargar datos guardados
+    function cargarDatos() {
+      const datos = JSON.parse(localStorage.getItem('userData') || '{}');
+      if (datos[user]) {
+        const d = datos[user];
+        document.getElementById('nombre').value = d.nombre || '';
+        document.getElementById('apellido').value = d.apellido || '';
+        document.getElementById('email').value = d.email || '';
+        document.getElementById('telefono').value = d.telefono || '';
+      }
+    }
+
+    cargarDatos();
+
+    // Guardar datos
+    document.getElementById('formDatos').addEventListener('submit', e => {
+      e.preventDefault();
+      const nombre = document.getElementById('nombre').value.trim();
+      const apellido = document.getElementById('apellido').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const telefono = document.getElementById('telefono').value.trim();
+
+      const datos = JSON.parse(localStorage.getItem('userData') || '{}');
+      datos[user] = { nombre, apellido, email, telefono };
+      localStorage.setItem('userData', JSON.stringify(datos));
+
+      const msg = document.getElementById('mensaje');
+      msg.style.display = 'block';
+      setTimeout(() => msg.style.display = 'none', 2500);
+    });
+
+    // Cerrar sesión
+    document.getElementById('btnCerrar').addEventListener('click', () => {
+      localStorage.removeItem('loggedUser');
+      location.href = 'login.html';
+    });
+
+    // Volver a tienda
+    document.getElementById('btnVolver').addEventListener('click', () => {
+      location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

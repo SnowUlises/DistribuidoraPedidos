@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel de Administración - Distribuidora Funaz</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0; 
+      background: #f4f6f8; 
+      color: #333; 
+      padding: 2em;
+    }
+    header {
+      background: #4a90e2;
+      color: white;
+      text-align: center;
+      padding: 1.5em 0;
+      font-size: 2em;
+      font-weight: bold;
+      user-select: none;
+      margin-bottom: 2em;
+      border-radius: 8px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    button.btn-volver {
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 1.5em;
+      display: inline-block;
+    }
+    button.btn-volver:hover {
+      background: #357ABD;
+    }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    details {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 1.5em;
+      padding: 1.5em;
+      cursor: pointer;
+      transition: box-shadow 0.3s;
+    }
+    details[open] {
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    summary {
+      font-size: 1.4em;
+      font-weight: 600;
+      outline: none;
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 1em;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    summary::-webkit-details-marker {
+      display: none;
+    }
+    summary::before {
+      content: "▶";
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+    form {
+      max-width: 400px;
+    }
+    form input, form select, form button, form label {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+      box-sizing: border-box;
+      display: block;
+    }
+    form label {
+      font-weight: bold;
+      color: #555;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      width: auto;
+    }
+    form input[type=checkbox] {
+      width: auto;
+      margin-bottom: 0;
+    }
+    form button {
+      background: #4a90e2;
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      padding: 12px;
+    }
+    form button:hover {
+      background: #357ABD;
+    }
+    #listaAdmin {
+      max-width: 100%;
+    }
+    .producto-admin {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1em;
+      margin-bottom: 1em;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .producto-info {
+      flex: 1 1 320px;
+      min-width: 280px;
+    }
+    .producto-info input, .producto-info select {
+      width: 100%;
+      margin-top: 4px;
+      padding: 6px 8px;
+      font-size: 1em;
+    }
+    .producto-info label {
+      font-weight: normal;
+      margin-top: 0.4em;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    .btn-eliminar {
+      background: #d9534f;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      height: 38px;
+      align-self: start;
+      margin-top: 1em;
+    }
+    .btn-eliminar:hover {
+      background: #c9302c;
+    }
+    #mensajeError {
+      margin-bottom: 1em;
+      color: red;
+      font-weight: bold;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    /* Usuarios */
+    .usuario-item {
+      background: #eef3f7;
+      border-radius: 8px;
+      margin-bottom: 1em;
+      padding: 1em;
+      box-shadow: inset 0 0 5px #bbb;
+    }
+    .usuario-info {
+      margin-bottom: 0.8em;
+      font-size: 0.95em;
+    }
+    details.user-details summary {
+      font-size: 1.2em;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 0.5em;
+      color: #3a3a3a;
+    }
+    details.user-details {
+      margin-bottom: 1em;
+      background: #fff;
+      padding: 1em;
+      border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+    }
+    /* Status styles */
+    .status-container {
+      display: flex;
+      gap: 1em;
+      align-items: center;
+      margin-top: 0.5em;
+    }
+    .status-container label {
+      font-size: 0.9em;
+      cursor: pointer;
+      user-select: none;
+    }
+    .status-container input[type="checkbox"] {
+      margin-right: 4px;
+    }
+    /* NUEVO: estilos para sección Excel */
+    #excel-section {
+      max-width: 400px;
+      margin-top: 1em;
+      background: #fff;
+      border-radius: 8px;
+      padding: 1em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    #excel-section input[type="file"] {
+      width: auto;
+      margin-bottom: 0.5em;
+    }
+    #excel-section button {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    #excel-section button:hover {
+      background: #357ABD;
+    }
+  </style>
+  <!-- SheetJS for Excel processing -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header>Panel de administración</header>
+  <main>
+    <button class="btn-volver" onclick="location.href='index.html'">← Volver a tienda</button>
+    <div id="mensajeError"></div>
+
+    <details>
+      <summary>Añadir producto</summary>
+      <form id="formAgregar" enctype="multipart/form-data">
+        <input type="text" id="nombre" placeholder="Nombre" required />
+        <input type="number" id="precio" placeholder="Precio" min="0" step="0.01" required />
+        <select id="categoria">
+          <option>Remedios</option>
+          <option>Cosméticos</option>
+          <option>Higiene</option>
+          <option>Otros</option>
+        </select>
+        <label><input type="checkbox" id="stock" checked /> En stock</label>
+        <input type="file" id="imagen-nuevo" name="imagen" accept=".png,.jpg,.jpeg" />
+        <button type="submit">Agregar producto</button>
+      </form>
+    </details>
+
+    <details>
+      <summary>Administrar productos</summary>
+      <div id="listaAdmin"></div>
+    </details>
+
+    <details>
+      <summary>Actualizar precios (Próximamente)</summary>
+      <div>
+    <label for="inputJson">Seleccionar productos.json:</label>
+    <input type="file" id="inputJson" accept=".json">
+  </div>
+  <div>
+    <label for="inputExcel">Seleccionar precios.xlsx:</label>
+    <input type="file" id="inputExcel" accept=".xlsx,.xls">
+  </div>
+  <button id="btnCargarExcel">Actualizar y Descargar productos.json</button>
+    </details>
+
+    <details>
+      <summary>Usuarios y pedidos</summary>
+      <div id="listaUsuarios"></div>
+    </details>
+  </main>
+
+  <script>
+    let productos = [];
+    const user = localStorage.getItem('loggedUser');
+    if (user !== 'admin') window.location.href = 'index.html';
+
+    // Estados de guardado/recibido
+    let estadosPedidos = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
+    function guardarEstados() {
+      localStorage.setItem('estadosPedidos', JSON.stringify(estadosPedidos));
+    }
+
+    function toggleGuardado(usuario, idx) {
+      const key = `${usuario}-${idx}`;
+      const checkbox = event.target;
+      const nuevo = checkbox.checked;
+      const confirmado = confirm(nuevo
+        ? '¿Marcar pedido como guardado?'
+        : '¿Desmarcar pedido guardado?');
+      if (!confirmado) { checkbox.checked = !nuevo; return; }
+      estadosPedidos[key] = { ...estadosPedidos[key], guardado: nuevo };
+      guardarEstados();
+    }
+
+    function toggleRecibido(usuario, idx) {
+      const key = `${usuario}-${idx}`;
+      const checkbox = event.target;
+      const nuevo = checkbox.checked;
+      const confirmado = confirm(nuevo
+        ? '¿Marcar pedido como recibido?'
+        : '¿Desmarcar pedido recibido?');
+      if (!confirmado) { checkbox.checked = !nuevo; return; }
+      estadosPedidos[key] = { ...estadosPedidos[key], recibido: nuevo };
+      guardarEstados();
+    }
+
+    async function cargarProductos() {
+      try {
+        const res = await fetch('http://localhost:3000/api/productos');
+        productos = await res.json();
+        mostrarProductos();
+      } catch (error) { mostrarError('Error al cargar productos: ' + error.message); }
+    }
+
+    function mostrarProductos() {
+      const lista = document.getElementById('listaAdmin'); lista.innerHTML = '';
+      productos.forEach((p, i) => {
+        const detalle = document.createElement('details'); detalle.className = 'producto-admin';
+        detalle.innerHTML =`
+          <summary>${p.nombre}</summary>
+          <div class="producto-info" style="margin-top: 10px;"><b>ID:</b> ${p.id} <br>
+            <label>Nombre:<input type="text" value="${p.nombre}" id="nombre-${i}" /></label>
+            <label>Precio:<input type="number" value="${p.precio}" id="precio-${i}" min="0" step="0.01" /></label>
+            <label>Categoría:
+              <select id="categoria-${i}">
+                <option ${p.categoria==='Remedios'?'selected':''}>Remedios</option>
+                <option ${p.categoria==='Cosméticos'?'selected':''}>Cosméticos</option>
+                <option ${p.categoria==='Higiene'?'selected':''}>Higiene</option>
+                <option ${p.categoria==='Otros'?'selected':''}>Otros</option>
+              </select>
+            </label>
+            <label><input type="checkbox" id="stock-${i}" ${p.stock?'checked':''}/>En stock</label>
+            <p style="font-size:0.9em;color:#555">Imagen:<code>imagenes/${p.id}.jpg</code></p>
+            <button onclick="actualizarProducto(${p.id},${i})">Guardar cambios</button>
+            <button onclick="borrarImagen(${p.id})" style="margin-left:8px;background:#d9534f;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">Borrar imagen</button>
+            <button class="btn-eliminar" onclick="eliminarProducto(${p.id})">Eliminar</button>
+          </div>`;
+        lista.appendChild(detalle);
+      });
+    }
+
+    function mostrarError(msg) { document.getElementById('mensajeError').textContent = msg; }
+
+    async function agregarProducto(e) { e.preventDefault(); mostrarError('');
+      try {
+        const nombre = document.getElementById('nombre').value.trim();
+        const precio = parseFloat(document.getElementById('precio').value);
+        const categoria = document.getElementById('categoria').value;
+        const stock = document.getElementById('stock').checked;
+        const archivoImagen = document.getElementById('imagen-nuevo').files[0];
+        if (!nombre||isNaN(precio)||precio<0) { mostrarError('Completa correctamente el nombre y el precio.'); return; }
+        const res = await fetch('http://localhost:3000/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
+        if(!res.ok){const err=await res.json(); mostrarError('Error al agregar producto: '+(err.error||res.statusText));return;}
+        const nuevo=await res.json();
+        if(archivoImagen){const formData=new FormData();formData.append('imagen',archivoImagen);
+          const resImg=await fetch(`http://localhost:3000/api/upload/${nuevo.id}`,{method:'POST',body:formData});if(!resImg.ok) alert('Error al subir la imagen');}
+        document.getElementById('formAgregar').reset(); await cargarProductos();
+      } catch(err){ console.error(err); mostrarError('Error inesperado al agregar producto'); }
+    }
+
+    async function actualizarProducto(id,i){
+      try{
+        const nombre=document.getElementById(`nombre-${i}`).value.trim();
+        const precio=parseFloat(document.getElementById(`precio-${i}`).value);
+        const categoria=document.getElementById(`categoria-${i}`).value;
+        const stock=document.getElementById(`stock-${i}`).checked;
+        if(!nombre||isNaN(precio)||precio<0){alert('Completa correctamente el nombre y el precio para actualizar.');return;}
+        await fetch(`http://localhost:3000/api/productos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
+        await cargarProductos();
+      }catch(err){console.error(err);alert('Error inesperado al actualizar producto');}
+    }
+
+    async function eliminarProducto(id){ if(!confirm('¿Eliminar este producto?'))return;
+      try{ await fetch(`http://localhost:3000/api/productos/${id}`,{method:'DELETE'}); await cargarProductos(); }catch(err){console.error(err);alert('Error inesperado al eliminar producto');}
+    }
+
+    async function borrarImagen(id){ if(!confirm('¿Borrar imagen de este producto?'))return;
+      try{ await fetch(`http://localhost:3000/api/upload/${id}`,{method:'DELETE'}); await cargarProductos(); }catch(err){console.error(err);alert('Error inesperado al borrar imagen');}
+    }
+
+    function cargarUsuarios(){
+      const usuarios=JSON.parse(localStorage.getItem('users')||'[]');
+      const datosUsuarios=JSON.parse(localStorage.getItem('userData')||'{}');
+      const pedidos=JSON.parse(localStorage.getItem('pedidos')||'{}');
+      const listaUsuarios=document.getElementById('listaUsuarios'); listaUsuarios.innerHTML='';
+      usuarios.forEach(userObj=>{
+        const userName=userObj.user;
+        const info=datosUsuarios[userName]||{};
+        const userPedidos=pedidos[userName]||[];
+        const userDiv=document.createElement('details'); userDiv.className='user-details';
+        let pedidosHTML='';
+        if(userPedidos.length===0){pedidosHTML='<p style="color:#777;font-style:italic;">No tiene pedidos.</p>';} else {
+          pedidosHTML='<ul style="padding-left:20px;">';
+          userPedidos.forEach((pedido,index)=>{
+            const key=`${userName}-${index}`;
+            const estado=estadosPedidos[key]||{};
+            pedidosHTML+=`<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${p.precio.toFixed(2)}</li>`).join('')}</ul><button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button><button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button><div class='status-container'><label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index})">Guardado</label><label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index})">Recibido</label></div></li>`;
+          }); pedidosHTML+='</ul>';
+        }
+        userDiv.innerHTML=`<summary>${userName}</summary><div class='usuario-item'><div class='usuario-info'><b>Contraseña:</b> ${userObj.pass}</div><div class='usuario-info'><b>Nombre:</b> ${info.nombre||'No definido'}</div><div class='usuario-info'><b>Apellido:</b> ${info.apellido||'No definido'}</div><div class='usuario-info'><b>Email:</b> ${info.email||'No definido'}</div><div class='usuario-info'><b>Teléfono:</b> ${info.telefono||'No definido'}</div><details><summary>Pedidos</summary>${pedidosHTML}</details></div>`;
+        listaUsuarios.appendChild(userDiv);
+      });
+    }
+
+    async function descargarPedido(usuario,index){
+      const pedidos=JSON.parse(localStorage.getItem('pedidos')||'{}');
+      const datosUsuarios=JSON.parse(localStorage.getItem('userData')||'{}');
+      const pedido=pedidos[usuario]?.[index];
+      const info=datosUsuarios[usuario]||{};
+      if(!pedido) return alert('No se encontró el pedido');
+      const res=await fetch('/api/guardar-pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,index,pedido,info})});
+      const msg=await res.text(); alert(msg);
+    }
+
+async function cargarExcel() {
+  console.log('Carga de archivos iniciada');
+
+  // Obtener ambos archivos
+  const inputJson = document.getElementById('inputJson');
+  const inputExcel = document.getElementById('inputExcel');
+  const jsonFile = inputJson.files[0];
+  const excelFile = inputExcel.files[0];
+
+  if (!jsonFile || !excelFile) {
+    mostrarError('Por favor, selecciona ambos archivos: productos.json y el archivo Excel.');
+    console.log('Faltan archivos:', { json: !!jsonFile, excel: !!excelFile });
+    return;
+  }
+
+  try {
+    // Leer productos.json
+    const jsonText = await jsonFile.text();
+    let productos = [];
+    try {
+      productos = JSON.parse(jsonText);
+      if (!Array.isArray(productos)) {
+        throw new Error('El archivo productos.json no contiene un array válido.');
+      }
+    } catch (error) {
+      mostrarError('Error al leer productos.json: ' + error.message);
+      console.error('Error en JSON:', error);
+      return;
+    }
+    console.log('Productos cargados desde JSON:', productos);
+
+    // Calcular el máximo ID
+    const maxId = productos.length > 0 ? Math.max(...productos.map(p => p.id)) : 0;
+    console.log('Máximo ID encontrado:', maxId);
+
+    // Leer archivo Excel
+    const excelData = await excelFile.arrayBuffer();
+    const wb = XLSX.read(excelData, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    console.log('Hojas en el archivo Excel:', wb.SheetNames);
+
+    // Log datos crudos para debugging
+    const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    console.log('Datos crudos del Excel:', rawData);
+
+    // Ignorar las 2 primeras filas
+    const rows = XLSX.utils.sheet_to_json(ws, { range: 2, defval: '' });
+    console.log('Filas leídas del Excel (con nombres de columnas):', rows);
+
+    if (rows.length === 0) {
+      mostrarError('El archivo Excel está vacío o no contiene datos válidos después de omitir las 2 primeras filas.');
+      return;
+    }
+
+    // Mapa para actualizar productos existentes
+    const updatedProductos = [...productos]; // Copia de productos existentes
+    const newProductos = [];
+    let currentId = maxId + 1;
+
+    for (const [index, r] of rows.entries()) {
+      console.log(`Procesando fila ${index + 3}:`, r);
+
+      // Obtener nombre y precio
+      let nombre = r['Producto'] || r['producto'] || '';
+      let precioStr = r['Nuevo precio'] || r['nuevo precio'] || '';
+
+      // Fallback: Acceder por índice si las columnas no se encuentran
+      if (!nombre && !precioStr && rawData[index + 2]) {
+        const rawRow = rawData[index + 2];
+        console.log(`Usando datos crudos para fila ${index + 3}:`, rawRow);
+        nombre = rawRow[0] || '';
+        precioStr = rawRow[1] || '';
+      }
+
+      if (!nombre || !precioStr) {
+        console.log(`Fila ${index + 3} ignorada: Nombre=${nombre}, Precio=${precioStr}`);
+        continue;
+      }
+
+      // Limpiar y parsear precio
+      precioStr = precioStr.toString().trim();
+      precioStr = precioStr.replace(/\$/g, '').replace(/\s/g, '');
+      precioStr = precioStr.replace(/,/g, '.');
+      precioStr = precioStr.replace(/\.(?=\d{3})/g, '');
+      const precio = parseFloat(precioStr);
+
+      if (isNaN(precio) || precio < 0) {
+        console.log(`Fila ${index + 3} ignorada: Precio inválido=${precioStr}`);
+        continue;
+      }
+
+      console.log(`Fila ${index + 3} procesada: Nombre=${nombre}, Precio=${precio}`);
+
+      // Buscar producto existente (insensible a mayúsculas)
+      const existingProductIndex = updatedProductos.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+
+      if (existingProductIndex !== -1) {
+        // Actualizar precio del producto existente
+        updatedProductos[existingProductIndex].precio = precio;
+        console.log(`Producto actualizado: ${nombre}, Nuevo precio: ${precio}`);
+      } else {
+        // Agregar nuevo producto
+        const newProduct = {
+          id: currentId,
+          nombre,
+          precio,
+          categoria: null, // Categoría null por defecto
+          stock: true,
+          imagen: `/imagenes/${currentId}.jpg`
+        };
+        newProductos.push(newProduct);
+        console.log(`Producto nuevo añadido: ${nombre}, ID: ${currentId}`);
+        currentId++;
+      }
+    }
+
+    // Combinar productos existentes y nuevos
+    const finalProductos = [...updatedProductos, ...newProductos];
+
+    if (finalProductos.length === productos.length && newProductos.length === 0 && rows.length > 0) {
+      mostrarError('No se actualizaron ni añadieron productos. Verifica que los nombres en el Excel coincidan con los de productos.json.');
+      console.log('No se generaron cambios en los productos');
+      return;
+    }
+
+    // Crear archivo JSON para descargar
+    const jsonString = JSON.stringify(finalProductos, null, 2);
+    console.log('JSON generado:', jsonString);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `productos_${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log(`Archivo JSON generado y descargado con ${finalProductos.length} productos (${newProductos.length} nuevos, ${updatedProductos.length - productos.length + newProductos.length} actualizados)`);
+    alert(`Archivo productos.json creado y descargado correctamente con ${finalProductos.length} productos (${newProductos.length} nuevos)`);
+  } catch (error) {
+    console.error('Error al procesar archivos:', error);
+    mostrarError('Error al procesar los archivos: ' + error.message);
+  }
+}
+
+document.getElementById('btnCargarExcel').addEventListener('click', cargarExcel);
+    document.getElementById('formAgregar').addEventListener('submit', agregarProducto);
+    window.onload = () => { cargarProductos(); cargarUsuarios(); };
+  </script>
+</body>
+</html>
