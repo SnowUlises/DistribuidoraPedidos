@@ -373,12 +373,18 @@ function verCarrito() {
 // Cargar productos desde el servidor
 async function cargarProductos() {
   try {
-    const res = await fetch('/api/productos');
-    if (!res.ok) throw new Error('No se pudieron cargar los productos');
+    // Cargamos productos desde el archivo productos.json que está en la raíz del repo
+    // (index.html está dentro de /public, por eso usamos la ruta absoluta /productos.json)
+    const res = await fetch('/productos.json');
+    if (!res.ok) throw new Error(`No se pudieron cargar los productos (status: ${res.status})`);
     productos = await res.json();
     paginaActual = 1;
     cambiarCantidadPagina();
   } catch (err) {
+    console.error('Error cargando productos:', err);
+    alert('Error cargando productos desde el servidor. Asegurate de que /productos.json exista en la raíz del servidor.');
+  }
+} catch (err) {
     console.error(err);
     alert('Error cargando productos desde el servidor.');
   }
