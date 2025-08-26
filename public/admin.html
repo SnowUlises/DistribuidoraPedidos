@@ -361,7 +361,7 @@
    async function cargarProductos() {
   try {
     // preferimos la API del backend (archivo productos en raíz, fuera de public)
-    const candidate = ['/api/productos', '../api/productos', 'http://localhost:3000/api/productos'];
+    const candidate = ['/api/productos'];
     let res = null;
     for (const url of candidate) {
       try {
@@ -953,4 +953,5 @@ async function eliminarPedido(usuario, index) {
   </script>
 </body>
 </html>
+
 
