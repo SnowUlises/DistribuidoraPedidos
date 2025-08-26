@@ -1,239 +1,583 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
   <title>Distribuidora Funaz</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --green-apple: #7ED957;
-      --bg: #f7fbf7;
-      --card: #ffffff;
-      --muted: #6b6b6b;
-      --radius: 12px;
+    body { font-family: 'Segoe UI', sans-serif; margin:0; background:#f2f2f2; color:#333; }
+    header { 
+      background:#4a90e2; color:#fff; padding:1em 2em; 
+      display:flex; align-items:center; gap:1em; 
+      justify-content: flex-start;
+      position: relative; 
     }
-    *{box-sizing:border-box}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:linear-gradient(180deg,var(--bg),#eef7ee);color:#0b2a12}
-
-    header{
-      display:flex;align-items:center;justify-content:center;padding:30px 0;background:linear-gradient(90deg,rgba(255,255,255,0.6),transparent);backdrop-filter: blur(4px);
+    footer {
+      background: #f8f8f8;
+      padding: 1.5em 2em;
+      font-family: 'Segoe UI', sans-serif;
+      color: #555;
+      font-size: 0.9em;
+      text-align: center;
+      border-top: 1px solid #ddd;
+      margin-top: 2em;
     }
-    .brand{display:flex;align-items:center;gap:18px}
-    .logo{width:100%;max-width:520px;height:auto;border-radius:0;overflow:hidden;flex-shrink:0;background:none;box-shadow:none}
-    .logo img{width:100%;height:auto;object-fit:contain;display:block}
+    footer .contacto {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 0.5em;
+      text-transform: uppercase;
+      font-size: 1em;
+    }
+    footer .derechos {
+      color: #999;
+      font-size: 0.8em;
+      margin-top: 0.3em;
+    }
+    header img { height:40px; width:40px; border-radius:50%; }
+    header h1 { margin:0; font-size:1.8em; flex-grow: 1; }
+    header button, #btnCarrito {
+      margin-left: 0.5em;
+      padding:8px 12px; border:none; border-radius:6px; background:#fff; color:#4a90e2;
+      font-weight:bold; cursor:pointer; white-space: nowrap;
+    }
+    header button:hover, #btnCarrito:hover { background:#dceeff; }
+    .container { display:flex; }
+    aside { width:200px; background:#fff; padding:1em; border-right:1px solid #ddd; min-height:100vh; }
+    aside h2 { font-size:1.2em; margin-bottom:1em; }
+    aside ul { list-style:none; padding:0; }
+    aside li { margin:0.5em 0; cursor:pointer; padding:0.5em; border-radius:6px; transition:background 0.2s; }
+    aside li:hover, aside li.active { background:#e6f0ff; font-weight:bold; }
+    main { flex:1; padding:2em; }
+    .ordenar, .paginacion, .cantidad-por-pagina { margin-bottom:1em; display:flex; align-items:center; justify-content:flex-end; gap:0.7em; }
+    select { padding:0.5em; border-radius:6px; border:1px solid #ccc; font-size:1em; transition:border 0.2s; }
+    select:focus { outline:none; border-color:#4a90e2; }
+    .productos {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(var(--cols, 3), 1fr);
+    }
+    .producto {
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.05);
+      padding:1em;
+      transition:transform 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .producto:hover { transform:scale(1.02); }
+    .producto h3 { margin-top:0.5em; text-align:center; }
+    .producto img {
+      width: 100px; height: 100px;
+      border-radius: 10px;
+      object-fit: cover;
+      margin-bottom: 0.5em;
+      pointer-events:none;
+    }
+    .stock { font-weight:bold; margin-top:0.5em; }
+    .con-stock { color:#28a745; }
+    .sin-stock { color:#d9534f; }
+    .paginacion button {
+      background:#4a90e2; border:none; color:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;
+      transition:background 0.2s;
+    }
+    .paginacion button:disabled {
+      background:#a0c1f7; cursor:default;
+    }
+    .btn-carrito {
+      margin-top:8px;
+      background:#4CAF50;
+      color:#fff;
+      padding:8px 12px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      font-weight:bold;
+      width: 100%;
+    }
+    .btn-carrito:hover {
+      background:#388E3C;
+    }
+    #carritoContainer {
+      position: fixed;
+      top: 65px;
+      right: 20px;
+      width: 320px;
+      max-height: 400px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      overflow-y: auto;
+      display: none;
+      z-index: 1000;
+      padding: 10px;
+    }
+    #carritoContainer h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+      text-align: center;
+    }
+    .item-carrito {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 0.95em;
+    }
+    .item-carrito button {
+      background: #d9534f;
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9em;
+      transition: background 0.2s;
+    }
+    .item-carrito button:hover {
+      background: #c9302c;
+    }
+    #mensajeCarrito {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      color: black;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-weight: bold;
+      z-index: 1100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      min-width: 220px;
+      max-width: 320px;
+    }
+    #mensajeCarrito.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
-    .wrap{max-width:1200px;margin:28px auto;padding:0 20px}
-    .topbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}
-    .search{display:flex;gap:10px;align-items:center;flex:1;min-width:220px}
-    .search input{padding:12px 14px;border-radius:10px;border:1px solid #dfeede;background:transparent;min-width:220px}
+    /* Modal Mi Cuenta */
+    #modalCuenta {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1500;
+    }
+    #modalCuenta .modal-content {
+      background: #fff;
+      padding: 2em;
+      border-radius: 12px;
+      max-width: 320px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+    }
+    #modalCuenta .modal-content button.close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 1.5em;
+      cursor: pointer;
+    }
+    #modalCuenta .modal-content button.action-btn {
+      margin: 1em 0;
+      padding: 10px 20px;
+      width: 100%;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 6px;
+      border: none;
+      background: #4a90e2;
+      color: white;
+      transition: background 0.2s;
+    }
+    #modalCuenta .modal-content button.action-btn:hover {
+      background: #357ABD;
+    }
 
-    /* categories */
-    .categories{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .cat-btn{background:transparent;border:1px solid transparent;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600}
-    .cat-btn:hover{transform:translateY(-2px)}
-    .cat-btn.active{background:var(--green-apple);color:#05310b;border-color:rgba(0,0,0,0.04)}
-    .cat-wrapper{display:flex;align-items:center;gap:12px}
-
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-    @media (max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
-    @media (max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:420px){.grid{grid-template-columns:1fr}}
-
-    .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 8px 22px rgba(18,64,22,0.06);display:flex;flex-direction:column;gap:10px;min-height:240px}
-    .thumb{height:150px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,rgba(126,217,87,0.12),rgba(126,217,87,0.04));display:flex;align-items:center;justify-content:center}
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .name{font-weight:700;color:#08330f;margin:0;font-size:16px}
-    .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .price{font-weight:800;color:#063b11;font-size:18px}
-    .muted{color:var(--muted);font-size:13px}
-
-    footer{margin:36px 0 80px;text-align:center;color:var(--muted)}
-    .empty{padding:40px;border-radius:12px;background:#fff;text-align:center;color:var(--muted);box-shadow:0 6px 18px rgba(18,64,22,0.04)}
+    /* Dropdown usuario */
+    #usuarioMenu {
+      position: relative;
+    }
+    #usuarioMenu button {
+      background: #fff;
+      color: #4a90e2;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #usuarioMenu button:hover {
+      background: #dceeff;
+    }
+    #usuarioDropdown {
+      display: none;
+      position: absolute;
+      top: 38px;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      width: 140px;
+      z-index: 2000;
+    }
+    #usuarioDropdown button {
+      width: 100%;
+      border: none;
+      background: none;
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+      font-weight: normal;
+      color: #333;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+    #usuarioDropdown button:hover {
+      background: #f0f8ff;
+    }
+    #usuarioDropdown button:last-child {
+      border-bottom: none;
+      color: #d9534f;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <header>
-    <div class="brand" style="justify-content:center;width:100%">
-      <div class="logo logo-wide">
-        <img src="imagenes/logo.png" alt="Logo" onerror="this.src='imagenes/placeholder.png'">
-      </div>
+    <img src="imagenes/logo.png" alt="Logo" />
+    <h1>Distribuidora Funaz</h1>
+    <div style="margin-left:auto; display:flex; gap:0.5em; align-items:center;">
+      <div id="usuarioMenu"></div>
+      <button id="btnCarrito">Carrito (0)</button>
     </div>
   </header>
 
-  <main class="wrap">
-    <div class="topbar">
-      <div class="search">
-        <input id="search" placeholder="Buscar producto..." />
-      </div>
-
-      <div class="cat-wrapper">
-        <div class="categories" id="categories"></div>
-      </div>
+  <div id="carritoContainer" style="display:none;">
+    <h3>Carrito de compras</h3>
+    <div id="itemsCarrito"></div>
+    <div style="margin-top:10px; text-align:center;">
+      <button onclick="vaciarCarrito()" style="background:#d9534f; padding:6px 12px; border:none; color:#fff; border-radius:6px; cursor:pointer;">Vaciar carrito</button>
     </div>
+    <div style="margin-top:10px; text-align:center;">
+      <button onclick="verCarrito()" style="background:#4a90e2; padding:8px 14px; border:none; color:#fff; border-radius:6px; cursor:pointer; font-weight:bold;">
+        Ver carrito
+      </button>
+    </div>
+  </div>
 
-    <section id="productsArea">
-      <div id="grid" class="grid"></div>
-      <div id="empty" class="empty" style="display:none;margin-top:18px">No se encontraron productos.</div>
-    </section>
+  <div class="container">
+    <aside>
+      <h2>Categorías</h2>
+      <ul id="listaCategorias">
+        <li class="active" onclick="filtrarCategoria('Todos', this)">Todos</li>
+        <li onclick="filtrarCategoria('Remedios', this)">Remedios</li>
+        <li onclick="filtrarCategoria('Cosméticos', this)">Cosméticos</li>
+        <li onclick="filtrarCategoria('Higiene', this)">Higiene</li>
+        <li onclick="filtrarCategoria('Otros', this)">Otros</li>
+      </ul>
+    </aside>
 
-    <footer>
-      © Distribuidora Funaz — Pedidos: 2645583761 · Consultas: 2645583761
-    </footer>
-  </main>
+    <main>
+      <div class="ordenar">
+        Ordenar por:
+        <select id="orden" onchange="renderProductos()">
+          <option value="nombre">Nombre</option>
+          <option value="precioAsc">Precio ↑</option>
+          <option value="precioDesc">Precio ↓</option>
+        </select>
+      </div>
 
-  <script>
-    // categorías fijas (las que solicitaste). Cualquier producto con otra categoria irá a "Otros".
-    const FIXED_CATEGORIES = ['Todas','Limpieza','Alimentos','Accesorios','Higiene y Perfumería','Otros'];
+      <div class="cantidad-por-pagina">
+        Mostrar productos por página:
+        <select id="cantidadPagina" onchange="cambiarCantidadPagina()">
+          <option value="4">2x2 (4)</option>
+          <option value="9" selected>3x3 (9)</option>
+          <option value="16">4x4 (16)</option>
+          <option value="25">5x5 (25)</option>
+        </select>
+      </div>
 
-    const sampleData = [
-      { "id": 8, "nombre": "BICARBONATO AROMA X10 U", "precio": 1436.97, "categoria": null, "stock": true, "imagen": "imagenes/8.jpg" },
-      { "id": 9, "nombre": "CHIMICHURRI X 1KG", "precio": 8168.05, "categoria": null, "stock": true, "imagen": "imagenes/9.jpg" }
-    ];
+      <div class="productos"></div>
 
-    const grid = document.getElementById('grid');
-    const empty = document.getElementById('empty');
-    const search = document.getElementById('search');
-    const categoriesEl = document.getElementById('categories');
+      <div class="paginacion" style="margin-top:1em;">
+        <button onclick="paginaAnterior()" id="btnPrev">Anterior</button>
+        <span id="infoPagina" style="align-self:center;"></span>
+        <button onclick="paginaSiguiente()" id="btnNext">Siguiente</button>
+      </div>
+    </main>
+  </div>
 
-    let PRODUCTS = [];
-    let currentCategory = 'Todas';
+  <div id="mensajeCarrito"></div>
 
-    function formatMoney(n){
-      try{ return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
-      catch(e){ return '$' + Number(n).toFixed(2); }
-    }
+  <!-- Modal Mi Cuenta -->
+  <div id="modalCuenta">
+    <div class="modal-content">
+      <button class="close-btn" onclick="cerrarModalCuenta()">×</button>
+      <h2>Mi cuenta</h2>
+      <button class="action-btn" onclick="location.href='login.html'">Iniciar sesión</button>
+      <button class="action-btn" onclick="location.href='register.html'">Registrarse</button>
+    </div>
+  </div>
 
-    function normalizeCategory(c){
-      if(!c) return 'Otros';
-      c = String(c).trim();
-      // Si querés mapear categorías específicas, hacelo acá. Por defecto devolvemos la que venga.
-      return c;
-    }
+  <footer>
+    <div class="contacto">Información de contacto</div>
+    <div class="derechos">Distribuidora Funaz, © 2025. Todos los derechos reservados.</div>
+  </footer>
 
-    function createCard(p){
-      const card = document.createElement('article');
-      card.className = 'card';
+<script>
+let productos = [];
+let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+let categoriaSeleccionada = 'Todos';
+let paginaActual = 1;
+let cantidadPorPagina = 9;
 
-      const thumb = document.createElement('div');
-      thumb.className = 'thumb';
-      const img = document.createElement('img');
-      let src = (p.imagen || 'imagenes/placeholder.png');
-      if(src.startsWith('/')) src = src.slice(1);
-      img.src = src;
-      img.alt = p.nombre || 'Producto';
-      img.onerror = function(){ this.onerror = null; this.src = 'imagenes/placeholder.png'; }
-      thumb.appendChild(img);
+function toggleCarrito() {
+  const c = document.getElementById('carritoContainer');
+  c.style.display = c.style.display === 'block' ? 'none' : 'block';
+  renderCarrito();
+}
 
-      const name = document.createElement('h3');
-      name.className = 'name';
-      name.textContent = p.nombre || 'Sin nombre';
+function verCarrito() {
+  if (carrito.length === 0) {
+    alert('El carrito está vacío. Agrega productos antes de ver el carrito.');
+  } else {
+    location.href = 'carrito.html';
+  }
+}
 
-      const meta = document.createElement('div');
-      meta.className = 'meta';
+document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
-      const precioCalculado = Number(p.precio || 0) * 1.10;
-      const priceEl = document.createElement('div');
-      priceEl.className = 'price';
-      priceEl.textContent = formatMoney(precioCalculado);
+async function cargarProductos() {
+  const res = await fetch('/api/productos');
+  productos = await res.json();
+  paginaActual = 1;
+  cambiarCantidadPagina();
+}
 
-      const catEl = document.createElement('div');
-      catEl.className = 'muted';
-      catEl.textContent = p.categoria || '';
+function filtrarCategoria(categoria, elemento) {
+  categoriaSeleccionada = categoria;
+  document.querySelectorAll('#listaCategorias li').forEach(li => li.classList.remove('active'));
+  elemento.classList.add('active');
+  paginaActual = 1;
+  renderProductos();
+}
 
-      meta.appendChild(priceEl);
-      meta.appendChild(catEl);
+function cambiarCantidadPagina() {
+  const sel = document.getElementById('cantidadPagina');
+  cantidadPorPagina = parseInt(sel.value);
+  paginaActual = 1;
+  const cols = Math.sqrt(cantidadPorPagina);
+  document.querySelector('.productos').style.setProperty('--cols', cols);
+  renderProductos();
+}
 
-      card.appendChild(thumb);
-      card.appendChild(name);
-      card.appendChild(meta);
+function renderProductos() {
+  const cont = document.querySelector('.productos');
+  cont.innerHTML = '';
 
-      return card;
-    }
+  let filtrados = productos;
+  if (categoriaSeleccionada !== 'Todos') {
+    filtrados = productos.filter(p => p.categoria === categoriaSeleccionada);
+  }
 
-    function renderProducts(list){
-      grid.innerHTML = '';
-      if(!list || !list.length){ empty.style.display='block'; return; }
-      empty.style.display='none';
-      list.forEach(p => grid.appendChild(createCard(p)));
-    }
+  const orden = document.getElementById('orden').value;
+  if (orden === 'nombre') {
+    filtrados.sort((a,b) => a.nombre.localeCompare(b.nombre));
+  } else if (orden === 'precioAsc') {
+    filtrados.sort((a,b) => a.precio - b.precio);
+  } else if (orden === 'precioDesc') {
+    filtrados.sort((a,b) => b.precio - a.precio);
+  }
 
-    function buildCategoryButtons(){
-      categoriesEl.innerHTML = '';
-      FIXED_CATEGORIES.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = 'cat-btn' + (cat === currentCategory ? ' active' : '');
-        btn.textContent = cat;
-        btn.addEventListener('click', ()=>{
-          currentCategory = cat;
-          document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
-          btn.classList.add('active');
-          applyFilters();
-        });
-        categoriesEl.appendChild(btn);
-      });
-    }
+  const totalPaginas = Math.ceil(filtrados.length / cantidadPorPagina);
+  if(paginaActual > totalPaginas) paginaActual = totalPaginas || 1;
 
-    function applyFilters(){
-      const q = search.value.trim().toLowerCase();
-      let list = PRODUCTS.slice();
-      // category filter
-      if(currentCategory && currentCategory !== 'Todas'){
-        list = list.filter(p => {
-          const cat = normalizeCategory(p.categoria);
-          return cat.toLowerCase() === currentCategory.toLowerCase();
-        });
+  const inicio = (paginaActual -1) * cantidadPorPagina;
+  const fin = inicio + cantidadPorPagina;
+  const productosPagina = filtrados.slice(inicio, fin);
+
+  productosPagina.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'producto';
+    div.innerHTML = `
+      <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
+      <h3>${p.nombre}</h3>
+      <div>$${(p.precio * 1.17).toFixed(2)}</div>
+      <div class="stock ${p.stock ? 'con-stock' : 'sin-stock'}"> ${p.stock ? `En stock: ${p.stock}` : 'Sin stock'} </div>
+      <button class="btn-carrito" ${!p.stock ? 'disabled' : ''} onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
+    `;
+    div.style.cursor = 'pointer'; // opcional para indicar que es clickeable
+    div.onclick = () => {
+  window.location.href = `producto.html?id=${p.id}`;
+};
+    
+div.querySelector('button.btn-carrito').onclick = (event) => {
+  event.stopPropagation();
+  agregarAlCarrito(p.id);
+};
+    cont.appendChild(div);
+  });
+
+  document.getElementById('infoPagina').textContent = `Página ${paginaActual} de ${totalPaginas || 1}`;
+  document.getElementById('btnPrev').disabled = paginaActual === 1;
+  document.getElementById('btnNext').disabled = paginaActual === totalPaginas || totalPaginas === 0;
+}
+
+
+
+function paginaAnterior() {
+  if (paginaActual > 1) {
+    paginaActual--;
+    renderProductos();
+  }
+}
+function paginaSiguiente() {
+  const totalPaginas = Math.ceil((categoriaSeleccionada === 'Todos' ? productos.length : productos.filter(p => p.categoria === categoriaSeleccionada).length) / cantidadPorPagina);
+  if (paginaActual < totalPaginas) {
+    paginaActual++;
+    renderProductos();
+  }
+}
+
+function agregarAlCarrito(id) {
+  if (!localStorage.getItem('loggedUser')) {
+    abrirModalCuenta();
+    return;
+  }
+  const producto = productos.find(p => p.id === id);
+  if (!producto || !producto.stock) return;
+
+  const item = carrito.find(i => i.id === id);
+  if (item) item.cantidad++;
+  else carrito.push({ id, cantidad: 1 });
+
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+  actualizarContadorCarrito();
+  mostrarMensaje('Producto agregado al carrito');
+  renderCarrito();
+}
+
+function actualizarContadorCarrito() {
+  const total = carrito.reduce((acc, i) => acc + i.cantidad, 0);
+  document.getElementById('btnCarrito').textContent = `Carrito (${total})`;
+}
+
+function renderCarrito() {
+  const cont = document.getElementById('itemsCarrito');
+  cont.innerHTML = '';
+  if(carrito.length === 0){
+    cont.innerHTML = '<p>El carrito está vacío.</p>';
+    return;
+  }
+  carrito.forEach(item => {
+    const prod = productos.find(p => p.id === item.id);
+    if (!prod) return;
+    const div = document.createElement('div');
+    div.className = 'item-carrito';
+    div.innerHTML = `
+      <span>${prod.nombre} x${item.cantidad}</span>
+      <button onclick="eliminarDelCarrito(${item.id})">X</button>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+function eliminarDelCarrito(id) {
+  carrito = carrito.filter(i => i.id !== id);
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+  actualizarContadorCarrito();
+  renderCarrito();
+}
+
+function vaciarCarrito() {
+  if(confirm('¿Vaciar todo el carrito?')){
+    carrito = [];
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarContadorCarrito();
+    renderCarrito();
+  }
+}
+
+function mostrarMensaje(texto) {
+  const m = document.getElementById('mensajeCarrito');
+  m.textContent = texto;
+  m.classList.add('visible');
+  setTimeout(() => m.classList.remove('visible'), 2500);
+}
+
+// --- SISTEMA DE LOGIN ---
+
+const usuarioMenuDiv = document.getElementById('usuarioMenu');
+
+function renderUsuarioMenu() {
+  const user = localStorage.getItem('loggedUser');
+  if (!user) {
+    usuarioMenuDiv.innerHTML = `<button id="btnMiCuenta">Mi cuenta</button>`;
+    document.getElementById('btnMiCuenta').onclick = abrirModalCuenta;
+  } else {
+    usuarioMenuDiv.innerHTML = `
+      <div id="usuarioMenuWrapper" style="position:relative;">
+        <button id="btnUsuario">${user} ▼</button>
+        <div id="usuarioDropdown">
+          <button onclick="irAMiCuenta()">Mi cuenta</button>
+          <button onclick="cerrarSesion()" style="color:#d9534f;">Cerrar sesión</button>
+        </div>
+      </div>
+    `;
+    const btnUsuario = document.getElementById('btnUsuario');
+    const dropdown = document.getElementById('usuarioDropdown');
+    btnUsuario.onclick = () => {
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    };
+    document.body.onclick = (e) => {
+      if (!document.getElementById('usuarioMenuWrapper').contains(e.target)) {
+        dropdown.style.display = 'none';
       }
-      // search filter
-      if(q){
-        list = list.filter(p => (p.nombre || '').toLowerCase().includes(q));
-      }
-      renderProducts(list);
-    }
+    };
+  }
+}
 
-    // intenta parsear JSON de forma tolerante
-    function tryParseFlexible(text){
-      let t = text.trim();
-      try{ return JSON.parse(t); }catch(e){}
-      t = t.replace(/^[,\\s]+/, '');
-      if(!t.startsWith('[')) t = '[' + t;
-      if(!t.endsWith(']')) t = t + ']';
-      t = t.replace(/,\\s*\\]$/, ']');
-      t = t.replace(/,\\s*,/g, ',');
-      try{ return JSON.parse(t); }catch(e){
-        const objs = Array.from(t.matchAll(/{[^}]*}/g)).map(m => m[0]);
-        if(objs.length){
-          return objs.map(j => JSON.parse(j));
-        }
-        throw new Error('No se pudo parsear JSON');
-      }
-    }
+function abrirModalCuenta() {
+  document.getElementById('modalCuenta').style.display = 'flex';
+}
+function cerrarModalCuenta() {
+  document.getElementById('modalCuenta').style.display = 'none';
+}
 
-    async function load(){
-      try{
-        const r = await fetch('/api/productos.json', {cache: 'no-store'});
-        if(!r.ok) throw new Error('No existe productos.json (HTTP ' + r.status + ')');
-        const txt = await r.text();
-        const data = tryParseFlexible(txt);
-        if(!Array.isArray(data)) throw new Error('Formato inválido después del parseo');
-        // normalizar categorías
-        PRODUCTS = data.map(p => ({...p, categoria: normalizeCategory(p.categoria)}));
-        buildCategoryButtons();
-        applyFilters();
-      }catch(e){
-        console.warn('No se pudo cargar productos.json — usando datos de ejemplo:', e.message);
-        PRODUCTS = sampleData.map(p=> ({...p, categoria: normalizeCategory(p.categoria)}));
-        buildCategoryButtons();
-        applyFilters();
-      }
-    }
+function cerrarSesion() {
+  localStorage.removeItem('loggedUser');
+  location.reload();
+}
 
-    search.addEventListener('input', ()=>{
-      applyFilters();
-    });
+function irAMiCuenta() {
+  location.href = 'micuenta.html';
+}
 
-    // iniciar
-    load();
-  </script>
+renderUsuarioMenu();
+actualizarContadorCarrito();
+cargarProductos();
+</script>
 </body>
 </html>
