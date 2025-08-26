@@ -75,14 +75,14 @@ const postActions = document.getElementById('postActions');
 const sinStockAviso = document.getElementById('sinStockAviso');
 
 let apiMode = false; // detectado
-let apiBase = '/api'; // puedes cambiar si tu API usa prefijo distinto
+let apiBase = 'https://distribuidora-funaz.vercel.app.com/api';
 
 // Detecta si existe endpoint API /api/productos (tiempo límite 2s)
 async function detectApi() {
   try {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch(apiBase + '/productos', { method: 'GET', signal: controller.signal });
+    const r = await fetch(apiBase + '/productos', { cache: 'no-store' });
     clearTimeout(id);
     if (!res.ok) throw new Error('no api');
     const data = await res.json();
@@ -374,6 +374,7 @@ function formatMoney(n) {
 </script>
 </body>
 </html>
+
 
 
 
