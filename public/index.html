@@ -348,13 +348,10 @@
 
 <script>
 let productos = [];
-let carrito = []; // ahora viene del servidor
+let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 let categoriaSeleccionada = 'Todos';
 let paginaActual = 1;
 let cantidadPorPagina = 9;
-let loggedUser = null;
-
-document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 function toggleCarrito() {
   const c = document.getElementById('carritoContainer');
@@ -370,50 +367,13 @@ function verCarrito() {
   }
 }
 
-// Cargar productos desde el servidor
+document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
+
 async function cargarProductos() {
-  try {
-    // Cargamos productos desde el archivo productos.json que está en la raíz del repo
-    // (index.html está dentro de /public, por eso usamos la ruta absoluta /productos.json)
-    const res = await fetch('/productos.json');
-    if (!res.ok) throw new Error(`No se pudieron cargar los productos (status: ${res.status})`);
-    productos = await res.json();
-    paginaActual = 1;
-    cambiarCantidadPagina();
-  } catch (err) {
-    console.error('Error cargando productos:', err);
-    alert('Error cargando productos desde el servidor. Asegurate de que /productos.json exista en la raíz del servidor.');
-  }
-} catch (err) {
-    console.error(err);
-    alert('Error cargando productos desde el servidor.');
-  }
-}
-
-// Cargar carrito y sesión desde el servidor
-async function cargarCarritoYSesion() {
-  try {
-    const [resCarrito, resSesion] = await Promise.all([
-      fetch('/api/carrito'),
-      fetch('/api/sesion')
-    ]);
-
-    if (resCarrito.ok) carrito = await resCarrito.json(); else carrito = [];
-    if (resSesion.ok) {
-      const s = await resSesion.json();
-      loggedUser = s.user || null;
-    } else loggedUser = null;
-
-    actualizarContadorCarrito();
-    renderUsuarioMenu();
-    renderCarrito();
-  } catch (err) {
-    console.error('Error al cargar carrito o sesión', err);
-    carrito = [];
-    loggedUser = null;
-    renderUsuarioMenu();
-    actualizarContadorCarrito();
-  }
+  const res = await fetch('/api/productos');
+  productos = await res.json();
+  paginaActual = 1;
+  cambiarCantidadPagina();
 }
 
 function filtrarCategoria(categoria, elemento) {
@@ -466,19 +426,17 @@ function renderProductos() {
       <h3>${p.nombre}</h3>
       <div>$${(p.precio * 1.17).toFixed(2)}</div>
       <div class="stock ${p.stock ? 'con-stock' : 'sin-stock'}"> ${p.stock ? `En stock: ${p.stock}` : 'Sin stock'} </div>
-      <button class="btn-carrito" ${!p.stock ? 'disabled' : ''}>Agregar al carrito</button>
+      <button class="btn-carrito" ${!p.stock ? 'disabled' : ''} onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
     `;
-    div.style.cursor = 'pointer';
+    div.style.cursor = 'pointer'; // opcional para indicar que es clickeable
     div.onclick = () => {
-      window.location.href = `producto.html?id=${p.id}`;
-    };
-
-    const btn = div.querySelector('button.btn-carrito');
-    btn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      agregarAlCarrito(p.id, btn);
-    });
-
+  window.location.href = `producto.html?id=${p.id}`;
+};
+    
+div.querySelector('button.btn-carrito').onclick = (event) => {
+  event.stopPropagation();
+  agregarAlCarrito(p.id);
+};
     cont.appendChild(div);
   });
 
@@ -486,6 +444,8 @@ function renderProductos() {
   document.getElementById('btnPrev').disabled = paginaActual === 1;
   document.getElementById('btnNext').disabled = paginaActual === totalPaginas || totalPaginas === 0;
 }
+
+
 
 function paginaAnterior() {
   if (paginaActual > 1) {
@@ -501,52 +461,62 @@ function paginaSiguiente() {
   }
 }
 
-// --- OPERACIONES CON EL CARRITO (AHORA EN EL SERVIDOR) ---
-
-async function agregarAlCarrito(id, btnEl = null) {
-  if (!loggedUser) {
+function agregarAlCarrito(id) {
+  if (!localStorage.getItem('loggedUser')) {
     abrirModalCuenta();
     return;
   }
-  // optimista: desactivar botón mientras se hace la petición
-  if (btnEl) btnEl.disabled = true;
-  try {
-    const res = await fetch('/api/carrito', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, cantidad: 1 })
-    });
-    if (!res.ok) throw new Error('Error agregando al carrito');
-    await cargarCarritoYSesion();
-    mostrarMensaje('Producto agregado al carrito');
-  } catch (err) {
-    console.error(err);
-    alert('No se pudo agregar el producto al carrito.');
-  } finally {
-    if (btnEl) btnEl.disabled = false;
-  }
+  const producto = productos.find(p => p.id === id);
+  if (!producto || !producto.stock) return;
+
+  const item = carrito.find(i => i.id === id);
+  if (item) item.cantidad++;
+  else carrito.push({ id, cantidad: 1 });
+
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+  actualizarContadorCarrito();
+  mostrarMensaje('Producto agregado al carrito');
+  renderCarrito();
 }
 
-async function eliminarDelCarrito(id) {
-  try {
-    const res = await fetch(`/api/carrito/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Error eliminando item');
-    await cargarCarritoYSesion();
-  } catch (err) {
-    console.error(err);
-    alert('No se pudo eliminar el producto del carrito.');
-  }
+function actualizarContadorCarrito() {
+  const total = carrito.reduce((acc, i) => acc + i.cantidad, 0);
+  document.getElementById('btnCarrito').textContent = `Carrito (${total})`;
 }
 
-async function vaciarCarrito() {
-  if (!confirm('¿Vaciar todo el carrito?')) return;
-  try {
-    const res = await fetch('/api/carrito', { method: 'DELETE' });
-    if (!res.ok) throw new Error('Error vaciando carrito');
-    await cargarCarritoYSesion();
-  } catch (err) {
-    console.error(err);
-    alert('No se pudo vaciar el carrito.');
+function renderCarrito() {
+  const cont = document.getElementById('itemsCarrito');
+  cont.innerHTML = '';
+  if(carrito.length === 0){
+    cont.innerHTML = '<p>El carrito está vacío.</p>';
+    return;
+  }
+  carrito.forEach(item => {
+    const prod = productos.find(p => p.id === item.id);
+    if (!prod) return;
+    const div = document.createElement('div');
+    div.className = 'item-carrito';
+    div.innerHTML = `
+      <span>${prod.nombre} x${item.cantidad}</span>
+      <button onclick="eliminarDelCarrito(${item.id})">X</button>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+function eliminarDelCarrito(id) {
+  carrito = carrito.filter(i => i.id !== id);
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+  actualizarContadorCarrito();
+  renderCarrito();
+}
+
+function vaciarCarrito() {
+  if(confirm('¿Vaciar todo el carrito?')){
+    carrito = [];
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarContadorCarrito();
+    renderCarrito();
   }
 }
 
@@ -557,45 +527,19 @@ function mostrarMensaje(texto) {
   setTimeout(() => m.classList.remove('visible'), 2500);
 }
 
-// Render del carrito en sidebar: convierte items del servidor en detalles con productos
-function renderCarrito() {
-  const cont = document.getElementById('itemsCarrito');
-  cont.innerHTML = '';
-  if (!carrito || carrito.length === 0) {
-    cont.innerHTML = '<p>El carrito está vacío.</p>';
-    return;
-  }
-  carrito.forEach(item => {
-    const prod = productos.find(p => p.id === item.id);
-    const nombre = prod ? prod.nombre : `Producto #${item.id}`;
-    const div = document.createElement('div');
-    div.className = 'item-carrito';
-    div.innerHTML = `
-      <span>${nombre} x${item.cantidad}</span>
-      <button data-id="${item.id}">X</button>
-    `;
-    div.querySelector('button').addEventListener('click', () => eliminarDelCarrito(item.id));
-    cont.appendChild(div);
-  });
-}
-
-function actualizarContadorCarrito() {
-  const total = carrito.reduce((acc, i) => acc + (i.cantidad || 0), 0);
-  document.getElementById('btnCarrito').textContent = `Carrito (${total})`;
-}
-
-// --- SISTEMA DE SESIÓN / USUARIO (EN EL SERVIDOR) ---
+// --- SISTEMA DE LOGIN ---
 
 const usuarioMenuDiv = document.getElementById('usuarioMenu');
 
 function renderUsuarioMenu() {
-  if (!loggedUser) {
+  const user = localStorage.getItem('loggedUser');
+  if (!user) {
     usuarioMenuDiv.innerHTML = `<button id="btnMiCuenta">Mi cuenta</button>`;
     document.getElementById('btnMiCuenta').onclick = abrirModalCuenta;
   } else {
     usuarioMenuDiv.innerHTML = `
       <div id="usuarioMenuWrapper" style="position:relative;">
-        <button id="btnUsuario">${escapeHtml(loggedUser)} ▼</button>
+        <button id="btnUsuario">${user} ▼</button>
         <div id="usuarioDropdown">
           <button onclick="irAMiCuenta()">Mi cuenta</button>
           <button onclick="cerrarSesion()" style="color:#d9534f;">Cerrar sesión</button>
@@ -608,8 +552,7 @@ function renderUsuarioMenu() {
       dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     };
     document.body.onclick = (e) => {
-      const wrapper = document.getElementById('usuarioMenuWrapper');
-      if (wrapper && !wrapper.contains(e.target)) {
+      if (!document.getElementById('usuarioMenuWrapper').contains(e.target)) {
         dropdown.style.display = 'none';
       }
     };
@@ -623,31 +566,18 @@ function cerrarModalCuenta() {
   document.getElementById('modalCuenta').style.display = 'none';
 }
 
-async function cerrarSesion() {
-  try {
-    await fetch('/api/sesion/logout', { method: 'POST' });
-  } catch (err) {
-    console.error('Error cerrando sesión', err);
-  } finally {
-    loggedUser = null;
-    await cargarCarritoYSesion();
-    location.reload();
-  }
+function cerrarSesion() {
+  localStorage.removeItem('loggedUser');
+  location.reload();
 }
 
 function irAMiCuenta() {
   location.href = 'micuenta.html';
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
-}
-
-// Inicialización
+renderUsuarioMenu();
+actualizarContadorCarrito();
 cargarProductos();
-cargarCarritoYSesion();
-
 </script>
 </body>
 </html>
