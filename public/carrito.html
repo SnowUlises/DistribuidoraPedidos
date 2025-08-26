@@ -301,6 +301,7 @@ btnConfirmar.addEventListener('click', async () => {
       sinStockAviso.textContent = '';
       postActions.innerHTML = '<div style="color:#28a745;font-weight:bold;">Pedido procesado en el servidor correctamente.</div>';
       btnConfirmar.textContent = 'Enviado';
+      window.location.href = 'index.html';
     } catch (err) {
       console.error(err);
       alert('Error procesando pedido en el servidor: ' + err.message);
@@ -373,5 +374,6 @@ function formatMoney(n) {
 </script>
 </body>
 </html>
+
 
 
