@@ -369,35 +369,20 @@ function verCarrito() {
 
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
+<script>
 async function cargarProductos() {
   paginaActual = 1;
-
-  const candidateUrls = [
-    '/api/productos',    // Si tenés backend desplegado que sirva esta ruta
-    '/productos.json'    // Fallback: archivo estático en Netlify (en la raíz del deploy)
-  ];
-
-  let lista = null;
-
-  for (const url of candidateUrls) {
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (Array.isArray(data)) { lista = data; break; }
-      if (data && Array.isArray(data.productos)) { lista = data.productos; break; }
-    } catch (_) {}
+  try {
+    const res = await fetch('/productos.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Error al cargar productos');
+    productos = await res.json();
+  } catch (err) {
+    console.error('No se pudo cargar productos:', err);
+    productos = [];
   }
-
-  productos = lista || [];
-  if (!productos.length) {
-    console.error('No se pudo cargar la lista de productos desde ninguna ruta.');
-  }
-
-  try { mostrarProductos(); } catch(e) {
-    console.error('mostrarProductos() no encontrada', e);
-  }
+  try { mostrarProductos(); } catch(e) {}
 }
+</script>
 
 
 function filtrarCategoria(categoria, elemento) {
@@ -605,6 +590,7 @@ cargarProductos();
 </script>
 </body>
 </html>
+
 
 
 
