@@ -1,0 +1,866 @@
+[
+  {
+    "id": 4,
+    "nombre": "Ibuprofeno 600",
+    "precio": 1,
+    "categoria": "Remedios",
+    "stock": 0,
+    "imagen": "/imagenes/4.jpg"
+  },
+  {
+    "id": 5,
+    "nombre": "Actron 600",
+    "precio": 10,
+    "categoria": "Remedios",
+    "stock": 1,
+    "imagen": "/imagenes/5.jpg"
+  },
+  {
+    "id": 6,
+    "nombre": "AJI x 10 U",
+    "precio": 1802.8,
+    "categoria": "Remedios",
+    "stock": 1,
+    "imagen": "/imagenes/6.jpg"
+  },
+  {
+    "id": 7,
+    "nombre": "AJI X 1KG",
+    "precio": 5488.61,
+    "categoria": "Remedios",
+    "stock": 1,
+    "imagen": "/imagenes/7.jpg"
+  },
+  {
+    "id": 8,
+    "nombre": "BICARBONATO AROMA X10 U",
+    "precio": 1436.97,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/8.jpg"
+  },
+  {
+    "id": 9,
+    "nombre": "CHIMICHURRI X 1KG",
+    "precio": 8168.05,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/9.jpg"
+  },
+  {
+    "id": 10,
+    "nombre": "COMINO X 1KG",
+    "precio": 3790.17,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/10.jpg"
+  },
+  {
+    "id": 11,
+    "nombre": "OREGANO X 10U",
+    "precio": 1591.87,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/11.jpg"
+  },
+  {
+    "id": 12,
+    "nombre": "OREGANO X 1KG",
+    "precio": 7784.68,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/12.jpg"
+  },
+  {
+    "id": 13,
+    "nombre": "PIMENTON X 10U",
+    "precio": 1973.09,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/13.jpg"
+  },
+  {
+    "id": 14,
+    "nombre": "PIMENTON X 1KG",
+    "precio": 5295.25,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/14.jpg"
+  },
+  {
+    "id": 15,
+    "nombre": "PIMIENTA X 10U",
+    "precio": 3484.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/15.jpg"
+  },
+  {
+    "id": 16,
+    "nombre": "PROVENZAL X 10U",
+    "precio": 2828.9,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/16.jpg"
+  },
+  {
+    "id": 17,
+    "nombre": "SAL FINA AROMAS X 12U X500GR",
+    "precio": 3889.04,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/17.jpg"
+  },
+  {
+    "id": 18,
+    "nombre": "ACEITE COSTA DE SOL GIRASOL  X 900ML",
+    "precio": 1957,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/18.jpg"
+  },
+  {
+    "id": 19,
+    "nombre": "SAL GRUESA AROMAS X 10U x 500GR",
+    "precio": 3185.94,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/19.jpg"
+  },
+  {
+    "id": 20,
+    "nombre": "BICARBONATO YUSPE X50X20GR",
+    "precio": 5660.47,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/20.jpg"
+  },
+  {
+    "id": 21,
+    "nombre": "ALF. TRIP. FANTOCHE BLANCO 12X85GR",
+    "precio": 6595.47,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/21.jpg"
+  },
+  {
+    "id": 22,
+    "nombre": "PO- NETA X 16",
+    "precio": 7027.7,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/22.jpg"
+  },
+  {
+    "id": 23,
+    "nombre": "POLVO P/HORNEAR X 60GR",
+    "precio": 838.1,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/23.jpg"
+  },
+  {
+    "id": 24,
+    "nombre": "ALF. TRIP. FANTOCHE NEGRO 12X85GR",
+    "precio": 6595.47,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/24.jpg"
+  },
+  {
+    "id": 25,
+    "nombre": "ALF. ELIXIR FANTOCHE NEGRO X 12 U.",
+    "precio": 7849.96,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/25.jpg"
+  },
+  {
+    "id": 26,
+    "nombre": "BIL- E",
+    "precio": 4238.32,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/26.jpg"
+  },
+  {
+    "id": 27,
+    "nombre": "BIL- F",
+    "precio": 5001.92,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/27.jpg"
+  },
+  {
+    "id": 28,
+    "nombre": "BUS",
+    "precio": 28570.48,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/28.jpg"
+  },
+  {
+    "id": 29,
+    "nombre": "TAFIROL DUO",
+    "precio": 2493.64,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/29.jpg"
+  },
+  {
+    "id": 30,
+    "nombre": "H- EPA",
+    "precio": 3346.08,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/30.jpg"
+  },
+  {
+    "id": 31,
+    "nombre": "L- F- M",
+    "precio": 2861.51,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/31.jpg"
+  },
+  {
+    "id": 32,
+    "nombre": "MI",
+    "precio": 3112.64,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/32.jpg"
+  },
+  {
+    "id": 33,
+    "nombre": "MI-500",
+    "precio": 3518.62,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/33.jpg"
+  },
+  {
+    "id": 34,
+    "nombre": "MIL-MENTA",
+    "precio": 2636.93,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/34.jpg"
+  },
+  {
+    "id": 35,
+    "nombre": "NEXT - P",
+    "precio": 5273.4,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/35.jpg"
+  },
+  {
+    "id": 36,
+    "nombre": "NEXT - P",
+    "precio": 5339.2,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/36.jpg"
+  },
+  {
+    "id": 37,
+    "nombre": "PA- G",
+    "precio": 7790.19,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/37.jpg"
+  },
+  {
+    "id": 38,
+    "nombre": "REF",
+    "precio": 6007.79,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/38.jpg"
+  },
+  {
+    "id": 39,
+    "nombre": "REF- COMP",
+    "precio": 6086.46,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/39.jpg"
+  },
+  {
+    "id": 40,
+    "nombre": "TAF- 650",
+    "precio": 1821.34,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/40.jpg"
+  },
+  {
+    "id": 41,
+    "nombre": "TAF- 650",
+    "precio": 1848.66,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/41.jpg"
+  },
+  {
+    "id": 42,
+    "nombre": "TAF- PL",
+    "precio": 1809.68,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/42.jpg"
+  },
+  {
+    "id": 43,
+    "nombre": "TAF- PL",
+    "precio": 1854.92,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/43.jpg"
+  },
+  {
+    "id": 44,
+    "nombre": "TAF-1GR",
+    "precio": 1346.97,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/44.jpg"
+  },
+  {
+    "id": 45,
+    "nombre": "TAF-M",
+    "precio": 2827.03,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/45.jpg"
+  },
+  {
+    "id": 46,
+    "nombre": "TETRA-",
+    "precio": 3610.38,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/46.jpg"
+  },
+  {
+    "id": 47,
+    "nombre": "TAF- RESACA",
+    "precio": 2419.21,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/47.jpg"
+  },
+  {
+    "id": 48,
+    "nombre": "MILL 20",
+    "precio": 11699.82,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/48.jpg"
+  },
+  {
+    "id": 49,
+    "nombre": "CREMA NANTYR X 400 ML",
+    "precio": 2645.03,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/49.jpg"
+  },
+  {
+    "id": 50,
+    "nombre": "A-2%",
+    "precio": 3844.3,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/50.jpg"
+  },
+  {
+    "id": 51,
+    "nombre": "A-4%",
+    "precio": 8577.73,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/51.jpg"
+  },
+  {
+    "id": 52,
+    "nombre": "AL- 100GR",
+    "precio": 5201.71,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/52.jpg"
+  },
+  {
+    "id": 53,
+    "nombre": "AL- 50GR",
+    "precio": 4096.19,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/53.jpg"
+  },
+  {
+    "id": 54,
+    "nombre": "DI- 100",
+    "precio": 768.53,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/54.jpg"
+  },
+  {
+    "id": 55,
+    "nombre": "ENA",
+    "precio": 951.23,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/55.jpg"
+  },
+  {
+    "id": 56,
+    "nombre": "H- G",
+    "precio": 5575.98,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/56.jpg"
+  },
+  {
+    "id": 57,
+    "nombre": "K- M",
+    "precio": 475.29,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/57.jpg"
+  },
+  {
+    "id": 58,
+    "nombre": "MUEL-SOL",
+    "precio": 7347.08,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/58.jpg"
+  },
+  {
+    "id": 59,
+    "nombre": "OME-15",
+    "precio": 461.56,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/59.jpg"
+  },
+  {
+    "id": 60,
+    "nombre": "P- C",
+    "precio": 727.6,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/60.jpg"
+  },
+  {
+    "id": 61,
+    "nombre": "SUP- FTE",
+    "precio": 23353.31,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/61.jpg"
+  },
+  {
+    "id": 62,
+    "nombre": "BRILLAPISO PAYADO X 500 ML",
+    "precio": 1332.01,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/62.jpg"
+  },
+  {
+    "id": 63,
+    "nombre": "NANTYR 0.11",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/63.jpg"
+  },
+  {
+    "id": 64,
+    "nombre": "NANTYR 1.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/64.jpg"
+  },
+  {
+    "id": 65,
+    "nombre": "NANTYR 10.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/65.jpg"
+  },
+  {
+    "id": 66,
+    "nombre": "NANTYR 10.1",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/66.jpg"
+  },
+  {
+    "id": 67,
+    "nombre": "NANTYR 10.21",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/67.jpg"
+  },
+  {
+    "id": 68,
+    "nombre": "NANTYR 12.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/68.jpg"
+  },
+  {
+    "id": 69,
+    "nombre": "NANTYR 3.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/69.jpg"
+  },
+  {
+    "id": 70,
+    "nombre": "NANTYR 3.31",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/70.jpg"
+  },
+  {
+    "id": 71,
+    "nombre": "NANTYR 4.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/71.jpg"
+  },
+  {
+    "id": 72,
+    "nombre": "NANTYR 4.66",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/72.jpg"
+  },
+  {
+    "id": 73,
+    "nombre": "NANTYR 5.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/73.jpg"
+  },
+  {
+    "id": 74,
+    "nombre": "NANTYR 5.1",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/74.jpg"
+  },
+  {
+    "id": 75,
+    "nombre": "NANTYR 5.37",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/75.jpg"
+  },
+  {
+    "id": 76,
+    "nombre": "NANTYR 5.4",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/76.jpg"
+  },
+  {
+    "id": 77,
+    "nombre": "NANTYR 5.5",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/77.jpg"
+  },
+  {
+    "id": 78,
+    "nombre": "NANTYR 5.6",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/78.jpg"
+  },
+  {
+    "id": 79,
+    "nombre": "NANTYR 5.66",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/79.jpg"
+  },
+  {
+    "id": 80,
+    "nombre": "NANTYR 5.7",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/80.jpg"
+  },
+  {
+    "id": 81,
+    "nombre": "NANTYR 6.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/81.jpg"
+  },
+  {
+    "id": 82,
+    "nombre": "NANTYR 6.1",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/82.jpg"
+  },
+  {
+    "id": 83,
+    "nombre": "NANTYR 6.55",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/83.jpg"
+  },
+  {
+    "id": 84,
+    "nombre": "NANTYR 6.66",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/84.jpg"
+  },
+  {
+    "id": 85,
+    "nombre": "NANTYR 6.74",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/85.jpg"
+  },
+  {
+    "id": 86,
+    "nombre": "NANTYR 66.46",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/86.jpg"
+  },
+  {
+    "id": 87,
+    "nombre": "NANTYR 7.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/87.jpg"
+  },
+  {
+    "id": 88,
+    "nombre": "NANTYR 7.1",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/88.jpg"
+  },
+  {
+    "id": 89,
+    "nombre": "NANTYR 7.3",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/89.jpg"
+  },
+  {
+    "id": 90,
+    "nombre": "NANTYR 7.32",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/90.jpg"
+  },
+  {
+    "id": 91,
+    "nombre": "NANTYR 7.4",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/91.jpg"
+  },
+  {
+    "id": 92,
+    "nombre": "NANTYR 7.66",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/92.jpg"
+  },
+  {
+    "id": 93,
+    "nombre": "NANTYR 7.7",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/93.jpg"
+  },
+  {
+    "id": 94,
+    "nombre": "NANTYR 77.44",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/94.jpg"
+  },
+  {
+    "id": 95,
+    "nombre": "NANTYR 8.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/95.jpg"
+  },
+  {
+    "id": 96,
+    "nombre": "NANTYR 8.1",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/96.jpg"
+  },
+  {
+    "id": 97,
+    "nombre": "NANTYR 8.3",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/97.jpg"
+  },
+  {
+    "id": 98,
+    "nombre": "NANTYR 8.32",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/98.jpg"
+  },
+  {
+    "id": 99,
+    "nombre": "NANTYR 8.4",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/99.jpg"
+  },
+  {
+    "id": 100,
+    "nombre": "NANTYR 8.73",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/100.jpg"
+  },
+  {
+    "id": 101,
+    "nombre": "NANTYR 9.0",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/101.jpg"
+  },
+  {
+    "id": 102,
+    "nombre": "NANTYR 9.1",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/102.jpg"
+  },
+  {
+    "id": 103,
+    "nombre": "NANTYR 9.2",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/103.jpg"
+  },
+  {
+    "id": 104,
+    "nombre": "NANTYR 9.3",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/104.jpg"
+  },
+  {
+    "id": 105,
+    "nombre": "NANTYR 9.31",
+    "precio": 1473.76,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/105.jpg"
+  },
+  {
+    "id": 106,
+    "nombre": "RED POINT 20",
+    "precio": 14420.62,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/106.jpg"
+  },
+  {
+    "id": 107,
+    "nombre": "RED POINT BOX 20",
+    "precio": 14420.62,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/107.jpg"
+  },
+  {
+    "id": 108,
+    "nombre": "MILL EXPLOSION",
+    "precio": 11699.82,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/108.jpg"
+  },
+  {
+    "id": 109,
+    "nombre": "ALF. ELIXIR 70% CACAO X 60 GR",
+    "precio": 10160.55,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/109.jpg"
+  },
+  {
+    "id": 110,
+    "nombre": "RED POINT BOX 10",
+    "precio": 8350.22,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/110.jpg"
+  },
+  {
+    "id": 111,
+    "nombre": "ALF. ELIXIR FANTOCHE BLANCO X 12 U.",
+    "precio": 10160.55,
+    "categoria": null,
+    "stock": true,
+    "imagen": "/imagenes/111.jpg"
+  }
+]
