@@ -1,962 +1,239 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Panel de Administración - Distribuidora Funaz</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Distribuidora Funaz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      background: #f4f6f8;
-      color: #333;
-      padding: 2em;
+    :root{
+      --green-apple: #7ED957;
+      --bg: #f7fbf7;
+      --card: #ffffff;
+      --muted: #6b6b6b;
+      --radius: 12px;
     }
-    header {
-      background: #4a90e2;
-      color: white;
-      text-align: center;
-      padding: 1.5em 0;
-      font-size: 2em;
-      font-weight: bold;
-      user-select: none;
-      margin-bottom: 2em;
-      border-radius: 8px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:linear-gradient(180deg,var(--bg),#eef7ee);color:#0b2a12}
+
+    header{
+      display:flex;align-items:center;justify-content:center;padding:30px 0;background:linear-gradient(90deg,rgba(255,255,255,0.6),transparent);backdrop-filter: blur(4px);
     }
-    button.btn-volver {
-      background: #4a90e2;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 10px 16px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-      margin-bottom: 1.5em;
-      display: inline-block;
-    }
-    button.btn-volver:hover {
-      background: #357ABD;
-    }
-    main {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    details {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      margin-bottom: 1.5em;
-      padding: 1.5em;
-      cursor: pointer;
-      transition: box-shadow 0.3s;
-    }
-    details[open] {
-      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    }
-    summary {
-      font-size: 1.4em;
-      font-weight: 600;
-      outline: none;
-      list-style: none;
-      cursor: pointer;
-      user-select: none;
-      margin-bottom: 1em;
-      display: flex;
-      align-items: center;
-      gap: 0.5em;
-    }
-    summary::-webkit-details-marker {
-      display: none;
-    }
-    summary::before {
-      content: "▶";
-      display: inline-block;
-      transition: transform 0.3s ease;
-    }
-    details[open] summary::before {
-      transform: rotate(90deg);
-    }
-    form {
-      max-width: 400px;
-    }
-    form input, form select, form button, form label {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 1em;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1em;
-      box-sizing: border-box;
-      display: block;
-    }
-    form label {
-      font-weight: bold;
-      color: #555;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5em;
-      width: auto;
-    }
-    form input[type=checkbox] {
-      width: auto;
-      margin-bottom: 0;
-    }
-    form button {
-      background: #4a90e2;
-      border: none;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-      padding: 12px;
-    }
-    form button:hover {
-      background: #357ABD;
-    }
-    #listaAdmin {
-      max-width: 100%;
-    }
-    .producto-admin {
-      background: #fff;
-      border-radius: 8px;
-      padding: 1em;
-      margin-bottom: 1em;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      display: flex;
-      align-items: center;
-      gap: 1em;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-    .producto-info {
-      flex: 1 1 320px;
-      min-width: 280px;
-    }
-    .producto-info input, .producto-info select {
-      width: 100%;
-      margin-top: 4px;
-      padding: 6px 8px;
-      font-size: 1em;
-    }
-    .producto-info label {
-      font-weight: normal;
-      margin-top: 0.4em;
-      color: #555;
-      display: flex;
-      align-items: center;
-      gap: 0.5em;
-    }
-    .btn-eliminar {
-      background: #d9534f;
-      border: none;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-      height: 38px;
-      align-self: start;
-      margin-top: 1em;
-    }
-    .btn-eliminar:hover {
-      background: #c9302c;
-    }
-    #mensajeError {
-      margin-bottom: 1em;
-      color: red;
-      font-weight: bold;
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    /* Usuarios */
-    .usuario-item {
-      background: #eef3f7;
-      border-radius: 8px;
-      margin-bottom: 1em;
-      padding: 1em;
-      box-shadow: inset 0 0 5px #bbb;
-    }
-    .usuario-info {
-      margin-bottom: 0.8em;
-      font-size: 0.95em;
-    }
-    details.user-details summary {
-      font-size: 1.2em;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      margin-bottom: 0.5em;
-      color: #3a3a3a;
-    }
-    details.user-details {
-      margin-bottom: 1em;
-      background: #fff;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.08);
-    }
-    /* Status styles */
-    .status-container {
-      display: flex;
-      gap: 1em;
-      align-items: center;
-      margin-top: 0.5em;
-    }
-    .status-container label {
-      font-size: 0.9em;
-      cursor: pointer;
-      user-select: none;
-    }
-    .status-container input[type="checkbox"] {
-      margin-right: 4px;
-    }
-    /* NUEVO: estilos para sección Excel stock */
-    #excel-stock-section {
-      max-width: 100%;
-      margin-top: 1em;
-      background: #fff;
-      border-radius: 8px;
-      padding: 1em;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    #excel-stock-section input[type="file"] { width: auto; margin-bottom: 0.5em; }
-    #excel-stock-section button { background: #4a90e2; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; width: 100%; }
-    #excel-stock-section button:hover { background: #357ABD; }
-    #stockPreview { max-height: 240px; overflow:auto; border:1px solid #eee; padding:8px; border-radius:6px; margin:8px 0; background:#fafafa; }
-    #stockPreview table { width:100%; border-collapse:collapse; }
-    #stockPreview th, #stockPreview td { padding:6px 8px; border-bottom:1px solid #eee; text-align:left; font-size:0.95em; }
-    #stockResult { margin-top:8px; font-size:0.95em; }
-    .helper { font-size:0.9em; color:#666; margin-top:6px; }
+    .brand{display:flex;align-items:center;gap:18px}
+    .logo{width:100%;max-width:520px;height:auto;border-radius:0;overflow:hidden;flex-shrink:0;background:none;box-shadow:none}
+    .logo img{width:100%;height:auto;object-fit:contain;display:block}
+
+    .wrap{max-width:1200px;margin:28px auto;padding:0 20px}
+    .topbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}
+    .search{display:flex;gap:10px;align-items:center;flex:1;min-width:220px}
+    .search input{padding:12px 14px;border-radius:10px;border:1px solid #dfeede;background:transparent;min-width:220px}
+
+    /* categories */
+    .categories{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .cat-btn{background:transparent;border:1px solid transparent;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600}
+    .cat-btn:hover{transform:translateY(-2px)}
+    .cat-btn.active{background:var(--green-apple);color:#05310b;border-color:rgba(0,0,0,0.04)}
+    .cat-wrapper{display:flex;align-items:center;gap:12px}
+
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+    @media (max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+    @media (max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:420px){.grid{grid-template-columns:1fr}}
+
+    .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 8px 22px rgba(18,64,22,0.06);display:flex;flex-direction:column;gap:10px;min-height:240px}
+    .thumb{height:150px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,rgba(126,217,87,0.12),rgba(126,217,87,0.04));display:flex;align-items:center;justify-content:center}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .name{font-weight:700;color:#08330f;margin:0;font-size:16px}
+    .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .price{font-weight:800;color:#063b11;font-size:18px}
+    .muted{color:var(--muted);font-size:13px}
+
+    footer{margin:36px 0 80px;text-align:center;color:var(--muted)}
+    .empty{padding:40px;border-radius:12px;background:#fff;text-align:center;color:var(--muted);box-shadow:0 6px 18px rgba(18,64,22,0.04)}
   </style>
-  <!-- SheetJS for Excel processing -->
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <header>Panel de administración</header>
-  <main>
-    <button class="btn-volver" onclick="location.href='index.html'">← Volver a tienda</button>
-    <div id="mensajeError"></div>
-
-    <details>
-      <summary>Añadir producto</summary>
-      <form id="formAgregar" enctype="multipart/form-data">
-        <input type="text" id="nombre" placeholder="Nombre" required />
-        <input type="number" id="precio" placeholder="Precio" min="0" step="0.01" required />
-        <select id="categoria">
-          <option>Remedios</option>
-          <option>Cosméticos</option>
-          <option>Higiene</option>
-          <option>Otros</option>
-        </select>
-        <label>Stock:
-  <input type="number" id="stock" value="0" min="0" required />
-</label>
-        <input type="file" id="imagen-nuevo" name="imagen" accept=".png,.jpg,.jpeg" />
-        <button type="submit">Agregar producto</button>
-      </form>
-    </details>
-
-    <details>
-      <summary>Crear pedido desde archivo</summary>
-      <div style="margin-top:10px;">
-        <input type="file" id="pedidoArchivo" accept=".txt" />
-        <button id="btnPrevisualizarPedido">Previsualizar pedido</button>
-        <button id="btnEnviarPedidoArchivo">Enviar pedido</button>
-        <div id="previsualizacionPedido" style="margin-top:10px;"></div>
+  <header>
+    <div class="brand" style="justify-content:center;width:100%">
+      <div class="logo logo-wide">
+        <img src="imagenes/logo.png" alt="Logo" onerror="this.src='imagenes/placeholder.png'">
       </div>
-    </details>
+    </div>
+  </header>
 
-    <details>
-      <summary>Administrar productos</summary>
-      <div id="listaAdmin"></div>
-    </details>
-
-    <details>
-      <summary>Actualizar precios (Próximamente)</summary>
-      <div>
-        <label for="inputJson">Seleccionar productos.json:</label>
-        <input type="file" id="inputJson" accept=".json">
+  <main class="wrap">
+    <div class="topbar">
+      <div class="search">
+        <input id="search" placeholder="Buscar producto..." />
       </div>
-      <div>
-        <label for="inputExcel">Seleccionar precios.xlsx:</label>
-        <input type="file" id="inputExcel" accept=".xlsx,.xls">
+
+      <div class="cat-wrapper">
+        <div class="categories" id="categories"></div>
       </div>
-      <button id="btnCargarExcel">Actualizar y Descargar productos.json</button>
-    </details>
+    </div>
 
-    <!-- NUEVO: sección para actualizar stock desde Excel -->
-    <details>
-      <summary>Actualizar stock desde Excel</summary>
-      <div id="excel-stock-section">
-        <p class="helper">Formato: primera columna = NOMBRE (igual a producto.nombre), segunda columna = STOCK A SUMAR (entero). Puede tener encabezado.</p>
+    <section id="productsArea">
+      <div id="grid" class="grid"></div>
+      <div id="empty" class="empty" style="display:none;margin-top:18px">No se encontraron productos.</div>
+    </section>
 
-        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-          <input id="inputStockExcel" type="file" accept=".xlsx,.xls,.csv" />
-          <div style="flex:1;">
-            <div id="stockFileName" style="font-size:0.95em;color:#333;"></div>
-          </div>
-        </div>
-
-        <div id="stockPreview" style="display:none;">
-          <strong>Vista previa (nombre → cantidad a sumar):</strong>
-          <div id="stockPreviewWrap"></div>
-        </div>
-
-        <div style="display:flex; gap:8px; margin-top:8px;">
-          <button id="btnConfirmStock" style="flex:1;background:#28a745;color:white;" disabled>Confirmar</button>
-          <button id="btnCancelStock" style="flex:1;background:#d9534f;color:white;">Cancelar</button>
-        </div>
-
-        <div id="stockResult"></div>
-      </div>
-    </details>
-
-    <details>
-      <summary>Usuarios y pedidos</summary>
-      <div id="listaUsuarios"></div>
-    </details>
+    <footer>
+      © Distribuidora Funaz — Pedidos: 2645583761 · Consultas: 2645583761
+    </footer>
   </main>
 
   <script>
-    // Una sola declaración de productos + carga
-    let productos = [];
-    const user = localStorage.getItem('loggedUser');
-    if (user !== 'admin') window.location.href = 'index.html';
+    // categorías fijas (las que solicitaste). Cualquier producto con otra categoria irá a "Otros".
+    const FIXED_CATEGORIES = ['Todas','Limpieza','Alimentos','Accesorios','Higiene y Perfumería','Otros'];
 
-    // Estados de guardado/recibido
-    let estadosPedidos = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
-    function guardarEstados() {
-      localStorage.setItem('estadosPedidos', JSON.stringify(estadosPedidos));
+    const sampleData = [
+      { "id": 8, "nombre": "BICARBONATO AROMA X10 U", "precio": 1436.97, "categoria": null, "stock": true, "imagen": "imagenes/8.jpg" },
+      { "id": 9, "nombre": "CHIMICHURRI X 1KG", "precio": 8168.05, "categoria": null, "stock": true, "imagen": "imagenes/9.jpg" }
+    ];
+
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('empty');
+    const search = document.getElementById('search');
+    const categoriesEl = document.getElementById('categories');
+
+    let PRODUCTS = [];
+    let currentCategory = 'Todas';
+
+    function formatMoney(n){
+      try{ return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
+      catch(e){ return '$' + Number(n).toFixed(2); }
     }
 
-    function toggleGuardado(usuario, idx) {
-      const key = `${usuario}-${idx}`;
-      const checkbox = event.target;
-      const nuevo = checkbox.checked;
-      const confirmado = confirm(nuevo
-        ? '¿Marcar pedido como guardado?'
-        : '¿Desmarcar pedido recibido?');
-      if (!confirmado) { checkbox.checked = !nuevo; return; }
-      estadosPedidos[key] = { ...estadosPedidos[key], guardado: nuevo };
-      guardarEstados();
+    function normalizeCategory(c){
+      if(!c) return 'Otros';
+      c = String(c).trim();
+      // Si querés mapear categorías específicas, hacelo acá. Por defecto devolvemos la que venga.
+      return c;
     }
 
-    function toggleRecibido(usuario, idx) {
-      const key = `${usuario}-${idx}`;
-      const checkbox = event.target;
-      const nuevo = checkbox.checked;
-      const confirmado = confirm(nuevo
-        ? '¿Marcar pedido como recibido?'
-        : '¿Desmarcar pedido recibido?');
-      if (!confirmado) { checkbox.checked = !nuevo; return; }
-      estadosPedidos[key] = { ...estadosPedidos[key], recibido: nuevo };
-      guardarEstados();
+    function createCard(p){
+      const card = document.createElement('article');
+      card.className = 'card';
+
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      const img = document.createElement('img');
+      let src = (p.imagen || 'imagenes/placeholder.png');
+      if(src.startsWith('/')) src = src.slice(1);
+      img.src = src;
+      img.alt = p.nombre || 'Producto';
+      img.onerror = function(){ this.onerror = null; this.src = 'imagenes/placeholder.png'; }
+      thumb.appendChild(img);
+
+      const name = document.createElement('h3');
+      name.className = 'name';
+      name.textContent = p.nombre || 'Sin nombre';
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const precioCalculado = Number(p.precio || 0) * 1.10;
+      const priceEl = document.createElement('div');
+      priceEl.className = 'price';
+      priceEl.textContent = formatMoney(precioCalculado);
+
+      const catEl = document.createElement('div');
+      catEl.className = 'muted';
+      catEl.textContent = p.categoria || '';
+
+      meta.appendChild(priceEl);
+      meta.appendChild(catEl);
+
+      card.appendChild(thumb);
+      card.appendChild(name);
+      card.appendChild(meta);
+
+      return card;
     }
 
-    // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
-    async function cargarProductos() {
-      paginaActual = 1;
-
-      const candidates = [
-        '/api/productos',     // si el backend sirve API en la raíz
-        '/productos.json',    // productos.json en la raíz del sitio (preferible en producción)
-        '../productos.json',  // por si estás en /public/ y el JSON está en la raíz del sitio
-        'productos.json'      // por si admin está en la misma carpeta que el json
-      ];
-
-      let lista = null;
-      for (const url of candidates) {
-        try {
-          const res = await fetch(url, { cache: 'no-store' });
-          if (!res.ok) continue;
-          const data = await res.json();
-          if (Array.isArray(data)) { lista = data; break; }
-          if (data && Array.isArray(data.productos)) { lista = data.productos; break; }
-        } catch (err) {
-          // intento fallido -> pruebo siguiente
-        }
-      }
-
-      if (!lista) {
-        console.error('No se pudo cargar la lista de productos desde ninguna ruta.');
-        productos = [];
-        const listaAdminEl = document.getElementById('listaAdmin');
-        if (listaAdminEl) listaAdminEl.innerHTML = '<p style="color:red;">Error cargando productos.</p>';
-        return;
-      }
-
-      productos = lista;
-      mostrarProductos();
+    function renderProducts(list){
+      grid.innerHTML = '';
+      if(!list || !list.length){ empty.style.display='block'; return; }
+      empty.style.display='none';
+      list.forEach(p => grid.appendChild(createCard(p)));
     }
 
-    function mostrarProductos() {
-      const lista = document.getElementById('listaAdmin'); lista.innerHTML = '';
-      productos.forEach((p, i) => {
-        const detalle = document.createElement('details'); detalle.className = 'producto-admin';
-        detalle.innerHTML =`
-          <summary>${p.nombre}</summary>
-          <div class="producto-info" style="margin-top: 10px;"><b>ID:</b> ${p.id} <br>
-            <label>Nombre:<input type="text" value="${p.nombre}" id="nombre-${i}" /></label>
-            <label>Precio:<input type="number" value="${p.precio}" id="precio-${i}" min="0" step="0.01" /></label>
-            <label>Categoría:
-              <select id="categoria-${i}">
-                <option ${p.categoria==='Remedios'?'selected':''}>Remedios</option>
-                <option ${p.categoria==='Cosméticos'?'selected':''}>Cosméticos</option>
-                <option ${p.categoria==='Higiene'?'selected':''}>Higiene</option>
-                <option ${p.categoria==='Otros'?'selected':''}>Otros</option>
-              </select>
-            </label>
-            <label>Stock:  <input type="number" id="stock-${i}" value="${p.stock || 0}" min="0" /></label>
-            <p style="font-size:0.9em;color:#555">Imagen:<code>imagenes/${p.id}.jpg</code></p>
-            <button onclick="actualizarProducto(${p.id},${i})">Guardar cambios</button>
-            <button onclick="borrarImagen(${p.id})" style="margin-left:8px;background:#d9534f;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">Borrar imagen</button>
-            <button class="btn-eliminar" onclick="eliminarProducto(${p.id})">Eliminar</button>
-          </div>`;
-        lista.appendChild(detalle);
-      });
-    }
-
-    function mostrarError(msg) { document.getElementById('mensajeError').textContent = msg; }
-
-    async function agregarProducto(e) { e.preventDefault(); mostrarError('');
-      try {
-        const nombre = document.getElementById('nombre').value.trim();
-        const precio = parseFloat(document.getElementById('precio').value);
-        const categoria = document.getElementById('categoria').value;
-        const stock = parseInt(document.getElementById('stock').value) || 0;
-        const archivoImagen = document.getElementById('imagen-nuevo').files[0];
-        if (!nombre||isNaN(precio)||precio<0) { mostrarError('Completa correctamente el nombre y el precio.'); return; }
-
-        // Intentar POST a /api/productos
-        let nuevo = null;
-        try {
-          const res = await fetch('/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
-          if (!res.ok) {
-            const errBody = await res.text().catch(()=>null);
-            throw new Error(errBody || `HTTP ${res.status}`);
-          }
-          nuevo = await res.json();
-        } catch (err) {
-          console.warn('No se pudo crear producto en /api/productos:', err);
-          alert('No se pudo crear producto en el servidor. Si estás en modo estático, descarga el JSON y súbelo manualmente.');
-          return;
-        }
-
-        if(archivoImagen){
-          const formData=new FormData();
-          formData.append('imagen',archivoImagen);
-          try {
-            const resImg=await fetch(`/api/upload/${nuevo.id}`,{method:'POST',body:formData});
-            if(!resImg.ok) console.warn('Error al subir la imagen para id', nuevo.id);
-          } catch(e) { console.warn('Upload error', e); }
-        }
-        document.getElementById('formAgregar').reset(); await cargarProductos();
-      } catch(err){ console.error(err); mostrarError('Error inesperado al agregar producto'); }
-    }
-
-    async function actualizarProducto(id,i){
-      try{
-        const nombre=document.getElementById(`nombre-${i}`).value.trim();
-        const precio=parseFloat(document.getElementById(`precio-${i}`).value);
-        const categoria=document.getElementById(`categoria-${i}`).value;
-        const stock = parseInt(document.getElementById(`stock-${i}`).value) || 0;
-        if(!nombre||isNaN(precio)||precio<0){alert('Completa correctamente el nombre y el precio para actualizar.');return;}
-
-        try {
-          const res = await fetch(`/api/productos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
-          if (!res.ok) {
-            const txt = await res.text().catch(()=>null);
-            throw new Error(txt || `HTTP ${res.status}`);
-          }
-        } catch (err) {
-          console.warn('PUT /api/productos failed:', err);
-          alert('No se pudo actualizar en el servidor. Si estás en modo estático, actualiza el JSON manualmente.');
-          return;
-        }
-
-        await cargarProductos();
-      }catch(err){console.error(err);alert('Error inesperado al actualizar producto');}
-    }
-
-    async function eliminarProducto(id){ if(!confirm('¿Eliminar este producto?'))return;
-      try{
-        const res = await fetch(`/api/productos/${id}`,{method:'DELETE'});
-        if (!res.ok) {
-          console.warn('DELETE /api/productos returned', res.status);
-          alert('No se pudo eliminar en el servidor. Si estás en modo estático, elimina manualmente del JSON.');
-          return;
-        }
-        await cargarProductos();
-      }catch(err){console.error(err);alert('Error inesperado al eliminar producto');}
-    }
-
-    async function borrarImagen(id){ if(!confirm('¿Borrar imagen de este producto?'))return;
-      try{
-        const res = await fetch(`/api/upload/${id}`,{method:'DELETE'});
-        if (!res.ok) {
-          console.warn('DELETE /api/upload returned', res.status);
-          alert('No se pudo borrar la imagen en el servidor.');
-          return;
-        }
-        await cargarProductos();
-      }catch(err){console.error(err);alert('Error inesperado al borrar imagen');}
-    }
-
-    function cargarUsuarios(){
-      const usuarios=JSON.parse(localStorage.getItem('users')||'[]');
-      const datosUsuarios=JSON.parse(localStorage.getItem('userData')||'{}');
-      const pedidos=JSON.parse(localStorage.getItem('pedidos')||'{}');
-      const listaUsuarios=document.getElementById('listaUsuarios'); listaUsuarios.innerHTML='';
-      usuarios.forEach(userObj=>{
-        const userName=userObj.user;
-        const info=datosUsuarios[userName]||{};
-        const userPedidos=pedidos[userName]||[];
-        const userDiv=document.createElement('details'); userDiv.className='user-details';
-        let pedidosHTML='';
-        if(userPedidos.length===0){pedidosHTML='<p style="color:#777;font-style:italic;">No tiene pedidos.</p>';} else {
-          pedidosHTML='<ul style="padding-left:20px;">';
-          userPedidos.forEach((pedido,index)=>{
-            const key=`${userName}-${index}`;
-            const estado=estadosPedidos[key]||{};
-            pedidosHTML+=`<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${p.precio?.toFixed ? p.precio.toFixed(2) : (p.precio||0)}</li>`).join('')}</ul><button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button><button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button><div class='status-container'><label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index})">Guardado</label><label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index})">Recibido</label></div></li>`;
-          }); pedidosHTML+='</ul>';
-        }
-        userDiv.innerHTML=`<summary>${userName}</summary><div class='usuario-item'><div class='usuario-info'><b>Contraseña:</b> ${userObj.pass}</div><div class='usuario-info'><b>Nombre:</b> ${info.nombre||'No definido'}</div><div class='usuario-info'><b>Apellido:</b> ${info.apellido||'No definido'}</div><div class='usuario-info'><b>Email:</b> ${info.email||'No definido'}</div><div class='usuario-info'><b>Teléfono:</b> ${info.telefono||'No definido'}</div><details><summary>Pedidos</summary>${pedidosHTML}</details></div>`;
-        listaUsuarios.appendChild(userDiv);
-      });
-    }
-
-async function eliminarPedido(usuario, index) {
-  if (!confirm('¿Eliminar este pedido?')) return;
-
-  try {
-    const res = await fetch(`/api/eliminar-pedido/${encodeURIComponent(usuario)}/${encodeURIComponent(index)}`, {
-      method: 'DELETE'
-    });
-    if (!res.ok) {
-      console.warn('El servidor respondió con error al eliminar pedido:', res.status, await res.text().catch(()=>'')); 
-    }
-  } catch (err) {
-    console.warn('Error al llamar al endpoint de eliminación (se ignorará y se borrará localmente):', err);
-  }
-
-  const pedidos = JSON.parse(localStorage.getItem('pedidos') || '{}');
-  if (!pedidos[usuario] || !Array.isArray(pedidos[usuario]) || pedidos[usuario].length <= index) {
-    alert('Pedido no encontrado localmente.');
-    return;
-  }
-
-  pedidos[usuario].splice(index, 1);
-  localStorage.setItem('pedidos', JSON.stringify(pedidos));
-
-  const estados = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
-  const nuevosEstados = {};
-  Object.keys(estados).forEach(k => {
-    const m = k.match(new RegExp(`^${usuario}-(\\d+)$`));
-    if (!m) { nuevosEstados[k] = estados[k]; return; }
-    const idx = parseInt(m[1], 10);
-    if (idx < index) { nuevosEstados[k] = estados[k]; }
-    else if (idx === index) { /* omitido */ }
-    else { nuevosEstados[`${usuario}-${idx-1}`] = estados[k]; }
-  });
-  localStorage.setItem('estadosPedidos', JSON.stringify(nuevosEstados));
-
-  cargarUsuarios();
-  alert('Pedido eliminado correctamente (se actualizó también localmente).');
-}
-
-
-    async function descargarPedido(usuario,index){
-      const pedidos=JSON.parse(localStorage.getItem('pedidos')||'{}');
-      const datosUsuarios=JSON.parse(localStorage.getItem('userData')||'{}');
-      const pedido=pedidos[usuario]?.[index];
-      const info=datosUsuarios[usuario]||{};
-      if(!pedido) return alert('No se encontró el pedido');
-      try {
-        const res=await fetch('/api/guardar-pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,index,pedido,info})});
-        const msg=await res.text();
-        alert(msg);
-      } catch(err) {
-        console.warn('No se pudo guardar en servidor /api/guardar-pedido:', err);
-        alert('Pedido guardado localmente. No se pudo enviar al servidor.');
-      }
-    }
-
-    async function cargarExcel() {
-      try {
-        const inputJson = document.getElementById('inputJson');
-        const inputExcel = document.getElementById('inputExcel');
-        const jsonFile = inputJson.files[0];
-        const excelFile = inputExcel.files[0];
-
-        if (!jsonFile || !excelFile) {
-          mostrarError('Selecciona ambos archivos: productos.json y el archivo Excel.');
-          return;
-        }
-
-        const jsonText = await jsonFile.text();
-        let productosLocal = [];
-        try {
-          productosLocal = JSON.parse(jsonText);
-          if (!Array.isArray(productosLocal)) throw new Error('productos.json debe contener un array.');
-        } catch (error) {
-          mostrarError('Error leyendo productos.json: ' + error.message);
-          return;
-        }
-
-        const maxId = productosLocal.length > 0 ? Math.max(...productosLocal.map(p => p.id)) : 0;
-        const excelData = await excelFile.arrayBuffer();
-        const wb = XLSX.read(excelData, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { range: 2, defval: '' });
-
-        if (rows.length === 0) {
-          mostrarError('El Excel está vacío o no contiene datos después de las 2 primeras filas.');
-          return;
-        }
-
-        const updatedProductos = [...productosLocal];
-        const newProductos = [];
-        let currentId = maxId + 1;
-
-        for (const r of rows) {
-          let nombre = r['Producto'] || r['producto'] || '';
-          let precioStr = r['Nuevo precio'] || r['nuevo precio'] || '';
-
-          if (!nombre || !precioStr) continue;
-
-          precioStr = precioStr.toString().trim().replace(/\$/g, '').replace(/\s/g, '').replace(/,/g, '.').replace(/\.(?=\d{3})/g, '');
-
-          let precio = parseFloat(precioStr);
-          if (isNaN(precio) || precio < 0) continue;
-
-          const idxExist = updatedProductos.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
-
-          if (idxExist !== -1) {
-            updatedProductos[idxExist].precio = precio;
-          } else {
-            newProductos.push({
-              id: currentId++,
-              nombre,
-              precio,
-              categoria: null,
-              stock: 0
-            });
-          }
-        }
-
-        const finalProductos = [...updatedProductos, ...newProductos];
-        const jsonString = JSON.stringify(finalProductos, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `productos_${Date.now()}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        alert(`Archivo productos.json generado con ${finalProductos.length} productos (${newProductos.length} nuevos).`);
-      } catch (error) {
-        mostrarError('Error procesando archivos: ' + error.message);
-      }
-    }
-
-    /* ------------------ Sección: Crear pedido desde archivo (previsualización + envío) ------------------ */
-    (function(){
-      const archivoInput = document.getElementById('pedidoArchivo');
-      const btnPrevisualizar = document.getElementById('btnPrevisualizarPedido');
-      const btnEnviarPedidoArchivo = document.getElementById('btnEnviarPedidoArchivo');
-      const previsualizacion = document.getElementById('previsualizacionPedido');
-
-      let pedidoTemporal = [];
-
-      btnPrevisualizar.addEventListener('click', () => {
-        if (!archivoInput.files[0]) { alert('Selecciona un archivo'); return; }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const lines = reader.result.split('\n').map(l=>l.trim()).filter(l=>l);
-          previsualizacion.innerHTML = '';
-          pedidoTemporal = [];
-
-          lines.forEach((linea) => {
-            const partes = linea.split(' ').filter(Boolean);
-            if (partes.length < 2) return;
-            const cantidad = parseInt(partes[0], 10);
-            if (Number.isNaN(cantidad) || cantidad <= 0) return;
-            const nombre = partes.slice(1).join(' ').trim();
-            const prod = productos.find(p => (p.nombre||'').toString().trim().toLowerCase() === nombre.toLowerCase());
-
-            const row = document.createElement('div');
-            row.style.padding = '6px';
-            row.style.marginBottom = '6px';
-            row.style.borderRadius = '6px';
-            row.style.color = '#111';
-
-            if (!prod) {
-              row.style.background = '#ffcccc';
-              row.textContent = `${cantidad} x ${nombre} — NO ENCONTRADO`;
-            } else if (!prod.stock || prod.stock <= 0) {
-              row.style.background = '#ffcccc';
-              row.textContent = `${cantidad} x ${prod.nombre} — SIN STOCK (0)`;
-              pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: 0 });
-            } else {
-              const cantidadFinal = Math.min(cantidad, prod.stock);
-              row.style.background = '#ccffcc';
-              row.textContent = `${cantidad} x ${prod.nombre} — se agregarán ${cantidadFinal} (stock actual: ${prod.stock})`;
-              pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidadFinal });
-            }
-
-            previsualizacion.appendChild(row);
-          });
-
-          if (pedidoTemporal.length === 0) {
-            const empty = document.createElement('div');
-            empty.textContent = 'No se encontraron productos válidos para agregar.';
-            previsualizacion.appendChild(empty);
-          }
-        };
-        reader.readAsText(archivoInput.files[0]);
-      });
-
-      btnEnviarPedidoArchivo.addEventListener('click', async () => {
-        if (pedidoTemporal.length === 0) return alert('Previsualiza el pedido primero y asegúrate de que haya productos para agregar.');
-
-        const pedidos = JSON.parse(localStorage.getItem('pedidos')||'{}');
-        const usuario = 'admin';
-        pedidos[usuario] = pedidos[usuario] || [];
-        pedidos[usuario].push(pedidoTemporal.map(it => ({ id: it.id, nombre: it.nombre, cantidad: it.cantidad })));
-        localStorage.setItem('pedidos', JSON.stringify(pedidos));
-
-        for (const item of pedidoTemporal) {
-          if (!item.cantidad || item.cantidad <= 0) continue;
-          const prod = productos.find(p => p.id === item.id);
-          if (!prod) continue;
-          prod.stock = (Number(prod.stock) || 0) - Number(item.cantidad);
-          if (prod.stock < 0) prod.stock = 0;
-          try {
-            const res = await fetch(`/api/productos/${prod.id}`, {
-              method:'PUT',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify(prod)
-            });
-            if (!res.ok) console.warn('PUT failed for', prod.id, res.status);
-          } catch (err) {
-            console.warn('Error actualizando stock para', prod.id, err);
-          }
-        }
-
-        alert('Pedido creado y stock actualizado.');
-        pedidoTemporal = [];
-        previsualizacion.innerHTML = '';
-        await cargarProductos();
-        cargarUsuarios();
-      });
-    })();
-
-    /* ------------------ NUEVAS FUNCIONES: Actualizar stock desde Excel (cliente) ------------------ */
-    const inputStockExcel = document.getElementById('inputStockExcel');
-    const stockFileName = document.getElementById('stockFileName');
-    const stockPreview = document.getElementById('stockPreview');
-    const stockPreviewWrap = document.getElementById('stockPreviewWrap');
-    const btnConfirmStock = document.getElementById('btnConfirmStock');
-    const btnCancelStock = document.getElementById('btnCancelStock');
-    const stockResult = document.getElementById('stockResult');
-
-    let parsedStockMap = null; // { 'nombreLower': qty }
-
-    function escapeHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    inputStockExcel?.addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      stockResult.innerHTML = '';
-      if (!file) {
-        stockFileName.textContent = '';
-        stockPreview.style.display = 'none';
-        btnConfirmStock.disabled = true;
-        parsedStockMap = null;
-        return;
-      }
-      stockFileName.textContent = file.name;
-      try {
-        parsedStockMap = await parseStockFile(file);
-        renderStockPreview(parsedStockMap);
-        btnConfirmStock.disabled = !parsedStockMap || Object.keys(parsedStockMap).length === 0;
-      } catch (err) {
-        console.error(err);
-        alert('Error procesando el archivo. Asegurate del formato (nombre, stock).');
-        parsedStockMap = null;
-        stockPreview.style.display = 'none';
-        btnConfirmStock.disabled = true;
-      }
-    });
-
-    btnCancelStock?.addEventListener('click', () => {
-      inputStockExcel.value = '';
-      stockFileName.textContent = '';
-      stockPreviewWrap.innerHTML = '';
-      stockPreview.style.display = 'none';
-      parsedStockMap = null;
-      btnConfirmStock.disabled = true;
-      stockResult.innerHTML = '';
-    });
-
-    btnConfirmStock?.addEventListener('click', confirmStockUpdate);
-
-    function parseStockFile(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          try {
-            const data = ev.target.result;
-            let workbook;
-            if (file.name.toLowerCase().endsWith('.csv')) {
-              const text = typeof data === 'string' ? data : new TextDecoder().decode(data);
-              workbook = XLSX.read(text, { type: 'string' });
-            } else {
-              const arr = new Uint8Array(data);
-              workbook = XLSX.read(arr, { type: 'array' });
-            }
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
-
-            const map = {};
-            for (let r = 0; r < rows.length; r++) {
-              const row = rows[r];
-              if (!row || row.length === 0) continue;
-              const nameCell = row[0];
-              const qtyCell = row[1];
-
-              if (nameCell == null) continue;
-              const name = String(nameCell).trim();
-              if (!name) continue;
-
-              const qty = qtyCell != null && String(qtyCell).trim() !== '' ? parseInt(String(qtyCell).replace(/\s+/g, ''), 10) : NaN;
-              if (Number.isNaN(qty)) {
-                const lower0 = String(name).toLowerCase();
-                if (lower0.includes('nombre') || lower0.includes('producto') || lower0.includes('stock')) continue;
-                continue;
-              }
-
-              const key = name.toLowerCase();
-              if (!map[key]) map[key] = 0;
-              map[key] += qty;
-            }
-            resolve(map);
-          } catch (err) {
-            reject(err);
-          }
-        };
-
-        if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file, 'UTF-8');
-        else reader.readAsArrayBuffer(file);
-      });
-    }
-
-    function renderStockPreview(map) {
-      if (!map || Object.keys(map).length === 0) {
-        stockPreview.style.display = 'none';
-        stockPreviewWrap.innerHTML = '<p>No se encontraron filas válidas en el archivo.</p>';
-        return;
-      }
-      const rows = Object.entries(map).map(([name, qty]) => ({ name, qty }));
-      let html = '<table><thead><tr><th>Nombre (normalizado)</th><th>Stock a sumar</th></tr></thead><tbody>';
-      rows.forEach(r => {
-        html += `<tr><td>${escapeHtml(r.name)}</td><td>${r.qty}</td></tr>`;
-      });
-      html += '</tbody></table>';
-      stockPreviewWrap.innerHTML = html;
-      stockPreview.style.display = 'block';
-    }
-
-    async function confirmStockUpdate() {
-      if (!parsedStockMap || Object.keys(parsedStockMap).length === 0) {
-        alert('No hay datos para procesar.');
-        return;
-      }
-      if (!confirm('¿Aplicar las sumas de stock al inventario? Esto actualizará productos en el backend.')) return;
-
-      btnConfirmStock.disabled = true;
-      btnConfirmStock.textContent = 'Procesando...';
-      stockResult.innerHTML = '';
-
-      try {
-        const res = await fetch('/api/productos');
-        if (!res.ok) throw new Error('No se pudo obtener productos desde el backend.');
-        const prodList = await res.json();
-
-        const indexByName = {};
-        prodList.forEach(p => {
-          const key = (p.nombre || '').toString().trim().toLowerCase();
-          if (!indexByName[key]) indexByName[key] = [];
-          indexByName[key].push(p);
+    function buildCategoryButtons(){
+      categoriesEl.innerHTML = '';
+      FIXED_CATEGORIES.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn' + (cat === currentCategory ? ' active' : '');
+        btn.textContent = cat;
+        btn.addEventListener('click', ()=>{
+          currentCategory = cat;
+          document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          applyFilters();
         });
+        categoriesEl.appendChild(btn);
+      });
+    }
 
-        const notFound = [];
-        const updated = [];
-        const errors = [];
+    function applyFilters(){
+      const q = search.value.trim().toLowerCase();
+      let list = PRODUCTS.slice();
+      // category filter
+      if(currentCategory && currentCategory !== 'Todas'){
+        list = list.filter(p => {
+          const cat = normalizeCategory(p.categoria);
+          return cat.toLowerCase() === currentCategory.toLowerCase();
+        });
+      }
+      // search filter
+      if(q){
+        list = list.filter(p => (p.nombre || '').toLowerCase().includes(q));
+      }
+      renderProducts(list);
+    }
 
-        for (const [nameNorm, qtyToAdd] of Object.entries(parsedStockMap)) {
-          const key = nameNorm.toString().trim().toLowerCase();
-          const matches = indexByName[key];
-          if (!matches || matches.length === 0) {
-            notFound.push(nameNorm);
-            continue;
-          }
-
-          for (const prod of matches) {
-            try {
-              const currentStock = Number(prod.stock) || 0;
-              prod.stock = currentStock + Number(qtyToAdd);
-
-              const putRes = await fetch(`/api/productos/${prod.id}`, {
-                method: 'PUT',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(prod)
-              });
-
-              if (!putRes.ok) {
-                const txt = await putRes.text().catch(()=>null);
-                errors.push({ id: prod.id, nombre: prod.nombre, reason: txt || putRes.status });
-              } else {
-                updated.push({ id: prod.id, nombre: prod.nombre, added: qtyToAdd, newStock: prod.stock });
-              }
-            } catch (err) {
-              console.error('Error actualizando producto', prod, err);
-              errors.push({ id: prod.id, nombre: prod.nombre, reason: err.message || err.toString() });
-            }
-          }
+    // intenta parsear JSON de forma tolerante
+    function tryParseFlexible(text){
+      let t = text.trim();
+      try{ return JSON.parse(t); }catch(e){}
+      t = t.replace(/^[,\\s]+/, '');
+      if(!t.startsWith('[')) t = '[' + t;
+      if(!t.endsWith(']')) t = t + ']';
+      t = t.replace(/,\\s*\\]$/, ']');
+      t = t.replace(/,\\s*,/g, ',');
+      try{ return JSON.parse(t); }catch(e){
+        const objs = Array.from(t.matchAll(/{[^}]*}/g)).map(m => m[0]);
+        if(objs.length){
+          return objs.map(j => JSON.parse(j));
         }
-
-        let resultHtml = `<p><strong>Actualización finalizada.</strong></p>`;
-        resultHtml += `<p>Productos actualizados: ${updated.length}</p>`;
-        if (notFound.length > 0) resultHtml += `<p>No se encontraron coincidencias para: ${notFound.map(n=>escapeHtml(n)).join(', ')}</p>`;
-        if (errors.length > 0) resultHtml += `<p>Errores: ${errors.length}. Revisa la consola para más detalles.</p>`;
-
-        stockResult.innerHTML = resultHtml;
-        await cargarProductos();
-        alert('Proceso finalizado. Revisa el resumen en la sección.');
-      } catch (err) {
-        console.error(err);
-        alert('Error en el proceso: ' + (err.message || err));
-      } finally {
-        btnConfirmStock.disabled = false;
-        btnConfirmStock.textContent = 'Confirmar';
+        throw new Error('No se pudo parsear JSON');
       }
     }
 
-    document.getElementById('btnCargarExcel').addEventListener('click', cargarExcel);
-    document.getElementById('formAgregar').addEventListener('submit', agregarProducto);
-    window.onload = () => { cargarProductos(); cargarUsuarios(); };
+    async function load(){
+      try{
+        const r = await fetch('/api/productos.json', {cache: 'no-store'});
+        if(!r.ok) throw new Error('No existe productos.json (HTTP ' + r.status + ')');
+        const txt = await r.text();
+        const data = tryParseFlexible(txt);
+        if(!Array.isArray(data)) throw new Error('Formato inválido después del parseo');
+        // normalizar categorías
+        PRODUCTS = data.map(p => ({...p, categoria: normalizeCategory(p.categoria)}));
+        buildCategoryButtons();
+        applyFilters();
+      }catch(e){
+        console.warn('No se pudo cargar productos.json — usando datos de ejemplo:', e.message);
+        PRODUCTS = sampleData.map(p=> ({...p, categoria: normalizeCategory(p.categoria)}));
+        buildCategoryButtons();
+        applyFilters();
+      }
+    }
 
+    search.addEventListener('input', ()=>{
+      applyFilters();
+    });
+
+    // iniciar
+    load();
   </script>
 </body>
 </html>
