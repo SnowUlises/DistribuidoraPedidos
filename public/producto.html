@@ -82,7 +82,10 @@
       const id = new URLSearchParams(location.search).get('id');
       if (!id) return mostrarError('Producto no encontrado.');
       try {
-        const res = await fetch(`http://localhost:3000/api/productos/${id}`);
+        const res = await fetch('/productos.json');
+        const productos = await res.json();
+        producto = productos.find(p => p.id == id);
+
         if (!res.ok) throw new Error('Producto no encontrado');
         producto = await res.json();
 
