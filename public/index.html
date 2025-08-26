@@ -370,7 +370,7 @@ function verCarrito() {
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
-  const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
+  const res = await fetch('api/productos');
   const productos = await res.json();
   paginaActual = 1;
   cambiarCantidadPagina();
@@ -581,4 +581,5 @@ cargarProductos();
 </script>
 </body>
 </html>
+
 
