@@ -358,21 +358,20 @@
     }
 
     // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
-   async function cargarProductos() {
+   // Cargar productos: intenta desde la URL pública y luego muestra en admin
+async function cargarProductos() {
   try {
-    // Usamos el JSON público que tenés en Netlify.
-    // Si preferís usar ruta relativa: '/productos.json' en vez de la URL absoluta.
     const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
-    if (!res.ok) throw new Error(`Status ${res.status}`);
-    // ¡Asignar a la variable global, no crear const local!
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     productos = await res.json();
-    paginaActual = 1;
-    cambiarCantidadPagina();
+    // mostrar productos en la interfaz de administración
+    mostrarProductos();
   } catch (err) {
     console.error('Error cargando productos:', err);
-    alert('Error cargando productos desde productos.json (ver consola).');
+    mostrarError('No se pudieron cargar los productos. Revisa la consola.');
   }
 }
+
 
 
     function mostrarProductos() {
@@ -942,6 +941,7 @@ async function eliminarPedido(usuario, index) {
   </script>
 </body>
 </html>
+
 
 
 
