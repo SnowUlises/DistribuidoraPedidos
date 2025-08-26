@@ -104,13 +104,8 @@ async function detectApi() {
 // Cargar productos (API o productos.json)
 async function cargarProductos() {
   try {
-    if (apiMode) {
-      const r = await fetch(apiBase + '/productos');
-      productos = await r.json();
-    } else {
-      const r = await fetch('productos.json', {cache: 'no-store'});
-      productos = await r.json();
-    }
+    const r = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json', { cache: 'no-store' });
+    productos = await r.json();
     renderizarCarrito();
   } catch (err) {
     lista.innerHTML = '<p>Error cargando productos.</p>';
@@ -378,4 +373,5 @@ function formatMoney(n) {
 </script>
 </body>
 </html>
+
 
