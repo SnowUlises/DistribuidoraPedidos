@@ -215,7 +215,7 @@
         <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.src='imagenes/placeholder.png'"/>
         <div class="producto-info">
           <p><strong>${p.nombre}</strong></p>
-          <p>Precio: $${p.precio.toFixed(2)}</p>
+          <p>Precio: $${(p.precio * 1.17).toFixed(2)}</p>
           <p>Subtotal: $${(p.precio * item.cantidad).toFixed(2)}</p>
         </div>
         <div class="controles-cantidad">
@@ -274,26 +274,70 @@
     if (e.target === formOverlay) ocultarFormulario();
   });
 
-  btnConfirmar.addEventListener('click', () => {
-    const pedido = carrito.map(item => {
-      const producto = productos.find(p => p.id === item.id);
-      return {
-        id: item.id,
-        nombre: producto?.nombre || '',
-        precio: producto?.precio || 0,
-        cantidad: item.cantidad
-      };
-    });
+btnConfirmar.addEventListener('click', async () => {
+  const nuevosCarrito = [];
+  const sinStock = [];
 
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || {};
-    pedidos[usuario.user] = pedidos[usuario.user] || [];
-    pedidos[usuario.user].push(pedido);
+  for (const item of carrito) {
+    const producto = productos.find(p => p.id === item.id);
+    if (!producto) continue;
 
-    localStorage.setItem('pedidos', JSON.stringify(pedidos));
-    localStorage.removeItem('carrito');
-    alert('Pedido enviado correctamente');
-    window.location.href = 'index.html';
+    if (typeof producto.stock === 'number') {
+      if (producto.stock === 0) {
+        sinStock.push(producto.nombre);
+        continue;
+      }
+      if (item.cantidad > producto.stock) {
+        sinStock.push(producto.nombre + ` (solo ${producto.stock} disponibles)`);
+        item.cantidad = producto.stock;
+      }
+      producto.stock -= item.cantidad; // Restar stock
+
+      // Actualizar stock en el backend
+      try {
+        await fetch(`http://localhost:3000/api/productos/${producto.id}`, {
+          method: 'PUT',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(producto)
+        });
+      } catch (err) {
+        console.error("Error actualizando stock:", err);
+      }
+    }
+    nuevosCarrito.push(item);
+  }
+
+  if (sinStock.length > 0) {
+    alert(`No hay suficiente stock para: \n- ${sinStock.join('\n- ')}\nSe ajustó el pedido automáticamente.`);
+  }
+
+  if (nuevosCarrito.length === 0) {
+    alert('No hay productos disponibles para pedir.');
+    return;
+  }
+
+  // Guardar pedido con precio unitario
+  const pedido = nuevosCarrito.map(item => {
+    const producto = productos.find(p => p.id === item.id);
+    return {
+      id: item.id,
+      nombre: producto?.nombre || '',
+      precio: producto?.precio || 0,
+      cantidad: item.cantidad
+    };
   });
+
+  const pedidos = JSON.parse(localStorage.getItem('pedidos')) || {};
+  pedidos[usuario.user] = pedidos[usuario.user] || [];
+  pedidos[usuario.user].push(pedido);
+
+  localStorage.setItem('pedidos', JSON.stringify(pedidos));
+  localStorage.removeItem('carrito');
+  alert('Pedido enviado correctamente');
+  window.location.href = 'index.html';
+});
+
+
 
   cargarProductos();
 </script>

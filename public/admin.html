@@ -214,33 +214,23 @@
     .status-container input[type="checkbox"] {
       margin-right: 4px;
     }
-    /* NUEVO: estilos para sección Excel */
-    #excel-section {
-      max-width: 400px;
+    /* NUEVO: estilos para sección Excel stock */
+    #excel-stock-section {
+      max-width: 100%;
       margin-top: 1em;
       background: #fff;
       border-radius: 8px;
       padding: 1em;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    #excel-section input[type="file"] {
-      width: auto;
-      margin-bottom: 0.5em;
-    }
-    #excel-section button {
-      background: #4a90e2;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-      width: 100%;
-    }
-    #excel-section button:hover {
-      background: #357ABD;
-    }
+    #excel-stock-section input[type="file"] { width: auto; margin-bottom: 0.5em; }
+    #excel-stock-section button { background: #4a90e2; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; width: 100%; }
+    #excel-stock-section button:hover { background: #357ABD; }
+    #stockPreview { max-height: 240px; overflow:auto; border:1px solid #eee; padding:8px; border-radius:6px; margin:8px 0; background:#fafafa; }
+    #stockPreview table { width:100%; border-collapse:collapse; }
+    #stockPreview th, #stockPreview td { padding:6px 8px; border-bottom:1px solid #eee; text-align:left; font-size:0.95em; }
+    #stockResult { margin-top:8px; font-size:0.95em; }
+    .helper { font-size:0.9em; color:#666; margin-top:6px; }
   </style>
   <!-- SheetJS for Excel processing -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -262,10 +252,22 @@
           <option>Higiene</option>
           <option>Otros</option>
         </select>
-        <label><input type="checkbox" id="stock" checked /> En stock</label>
+        <label>Stock:
+  <input type="number" id="stock" value="0" min="0" required />
+</label>
         <input type="file" id="imagen-nuevo" name="imagen" accept=".png,.jpg,.jpeg" />
         <button type="submit">Agregar producto</button>
       </form>
+    </details>
+
+    <details>
+      <summary>Crear pedido desde archivo</summary>
+      <div style="margin-top:10px;">
+        <input type="file" id="pedidoArchivo" accept=".txt" />
+        <button id="btnPrevisualizarPedido">Previsualizar pedido</button>
+        <button id="btnEnviarPedidoArchivo">Enviar pedido</button>
+        <div id="previsualizacionPedido" style="margin-top:10px;"></div>
+      </div>
     </details>
 
     <details>
@@ -276,14 +278,41 @@
     <details>
       <summary>Actualizar precios (Próximamente)</summary>
       <div>
-    <label for="inputJson">Seleccionar productos.json:</label>
-    <input type="file" id="inputJson" accept=".json">
-  </div>
-  <div>
-    <label for="inputExcel">Seleccionar precios.xlsx:</label>
-    <input type="file" id="inputExcel" accept=".xlsx,.xls">
-  </div>
-  <button id="btnCargarExcel">Actualizar y Descargar productos.json</button>
+        <label for="inputJson">Seleccionar productos.json:</label>
+        <input type="file" id="inputJson" accept=".json">
+      </div>
+      <div>
+        <label for="inputExcel">Seleccionar precios.xlsx:</label>
+        <input type="file" id="inputExcel" accept=".xlsx,.xls">
+      </div>
+      <button id="btnCargarExcel">Actualizar y Descargar productos.json</button>
+    </details>
+
+    <!-- NUEVO: sección para actualizar stock desde Excel -->
+    <details>
+      <summary>Actualizar stock desde Excel</summary>
+      <div id="excel-stock-section">
+        <p class="helper">Formato: primera columna = NOMBRE (igual a producto.nombre), segunda columna = STOCK A SUMAR (entero). Puede tener encabezado.</p>
+
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <input id="inputStockExcel" type="file" accept=".xlsx,.xls,.csv" />
+          <div style="flex:1;">
+            <div id="stockFileName" style="font-size:0.95em;color:#333;"></div>
+          </div>
+        </div>
+
+        <div id="stockPreview" style="display:none;">
+          <strong>Vista previa (nombre → cantidad a sumar):</strong>
+          <div id="stockPreviewWrap"></div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button id="btnConfirmStock" style="flex:1;background:#28a745;color:white;" disabled>Confirmar</button>
+          <button id="btnCancelStock" style="flex:1;background:#d9534f;color:white;">Cancelar</button>
+        </div>
+
+        <div id="stockResult"></div>
+      </div>
     </details>
 
     <details>
@@ -293,6 +322,7 @@
   </main>
 
   <script>
+    // Una sola declaración de productos + carga
     let productos = [];
     const user = localStorage.getItem('loggedUser');
     if (user !== 'admin') window.location.href = 'index.html';
@@ -309,7 +339,7 @@
       const nuevo = checkbox.checked;
       const confirmado = confirm(nuevo
         ? '¿Marcar pedido como guardado?'
-        : '¿Desmarcar pedido guardado?');
+        : '¿Desmarcar pedido recibido?');
       if (!confirmado) { checkbox.checked = !nuevo; return; }
       estadosPedidos[key] = { ...estadosPedidos[key], guardado: nuevo };
       guardarEstados();
@@ -332,7 +362,7 @@
         const res = await fetch('http://localhost:3000/api/productos');
         productos = await res.json();
         mostrarProductos();
-      } catch (error) { mostrarError('Error al cargar productos: ' + error.message); }
+      } catch (error) { mostrarError('Error al cargar productos: ' + (error.message||error)); }
     }
 
     function mostrarProductos() {
@@ -352,7 +382,7 @@
                 <option ${p.categoria==='Otros'?'selected':''}>Otros</option>
               </select>
             </label>
-            <label><input type="checkbox" id="stock-${i}" ${p.stock?'checked':''}/>En stock</label>
+            <label>Stock:  <input type="number" id="stock-${i}" value="${p.stock || 0}" min="0" /></label>
             <p style="font-size:0.9em;color:#555">Imagen:<code>imagenes/${p.id}.jpg</code></p>
             <button onclick="actualizarProducto(${p.id},${i})">Guardar cambios</button>
             <button onclick="borrarImagen(${p.id})" style="margin-left:8px;background:#d9534f;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">Borrar imagen</button>
@@ -369,7 +399,7 @@
         const nombre = document.getElementById('nombre').value.trim();
         const precio = parseFloat(document.getElementById('precio').value);
         const categoria = document.getElementById('categoria').value;
-        const stock = document.getElementById('stock').checked;
+        const stock = parseInt(document.getElementById('stock').value) || 0;
         const archivoImagen = document.getElementById('imagen-nuevo').files[0];
         if (!nombre||isNaN(precio)||precio<0) { mostrarError('Completa correctamente el nombre y el precio.'); return; }
         const res = await fetch('http://localhost:3000/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
@@ -386,7 +416,7 @@
         const nombre=document.getElementById(`nombre-${i}`).value.trim();
         const precio=parseFloat(document.getElementById(`precio-${i}`).value);
         const categoria=document.getElementById(`categoria-${i}`).value;
-        const stock=document.getElementById(`stock-${i}`).checked;
+        const stock = parseInt(document.getElementById(`stock-${i}`).value) || 0;
         if(!nombre||isNaN(precio)||precio<0){alert('Completa correctamente el nombre y el precio para actualizar.');return;}
         await fetch(`http://localhost:3000/api/productos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
         await cargarProductos();
@@ -417,13 +447,71 @@
           userPedidos.forEach((pedido,index)=>{
             const key=`${userName}-${index}`;
             const estado=estadosPedidos[key]||{};
-            pedidosHTML+=`<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${p.precio.toFixed(2)}</li>`).join('')}</ul><button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button><button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button><div class='status-container'><label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index})">Guardado</label><label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index})">Recibido</label></div></li>`;
+            pedidosHTML+=`<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${p.precio?.toFixed ? p.precio.toFixed(2) : (p.precio||0)}</li>`).join('')}</ul><button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button><button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button><div class='status-container'><label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index})">Guardado</label><label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index})">Recibido</label></div></li>`;
           }); pedidosHTML+='</ul>';
         }
         userDiv.innerHTML=`<summary>${userName}</summary><div class='usuario-item'><div class='usuario-info'><b>Contraseña:</b> ${userObj.pass}</div><div class='usuario-info'><b>Nombre:</b> ${info.nombre||'No definido'}</div><div class='usuario-info'><b>Apellido:</b> ${info.apellido||'No definido'}</div><div class='usuario-info'><b>Email:</b> ${info.email||'No definido'}</div><div class='usuario-info'><b>Teléfono:</b> ${info.telefono||'No definido'}</div><details><summary>Pedidos</summary>${pedidosHTML}</details></div>`;
         listaUsuarios.appendChild(userDiv);
       });
     }
+
+    async function eliminarPedido(usuario, index) {
+  if (!confirm('¿Eliminar este pedido?')) return;
+
+  // Intentar borrar en servidor, pero no abortar si falla: hacemos fallback local siempre.
+  try {
+    const res = await fetch(`/api/eliminar-pedido/${encodeURIComponent(usuario)}/${encodeURIComponent(index)}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) {
+      console.warn('El servidor respondió con error al eliminar pedido:', res.status, await res.text().catch(()=>'')); 
+      // no retornamos: vamos a borrar localmente de todas formas (fallback)
+    }
+  } catch (err) {
+    console.warn('Error al llamar al endpoint de eliminación (se ignorará y se borrará localmente):', err);
+    // seguimos para borrar localmente
+  }
+
+  // Ahora borrar localmente y reindexar estadosPedidos
+  const pedidos = JSON.parse(localStorage.getItem('pedidos') || '{}');
+  if (!pedidos[usuario] || !Array.isArray(pedidos[usuario]) || pedidos[usuario].length <= index) {
+    alert('Pedido no encontrado localmente.');
+    return;
+  }
+
+  // eliminar pedido
+  pedidos[usuario].splice(index, 1);
+  localStorage.setItem('pedidos', JSON.stringify(pedidos));
+
+  // reindexar estadosPedidos: mover claves usuario-i para i>index a i-1, y eliminar la clave exacta index
+  const estados = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
+  const nuevosEstados = {};
+  Object.keys(estados).forEach(k => {
+    // buscamos claves que empiecen con "usuario-<num>"
+    const m = k.match(new RegExp(`^${usuario}-(\\d+)$`));
+    if (!m) {
+      // clave de otro tipo -> conservar
+      nuevosEstados[k] = estados[k];
+      return;
+    }
+    const idx = parseInt(m[1], 10);
+    if (idx < index) {
+      // antes del eliminado -> conservar igual
+      nuevosEstados[k] = estados[k];
+    } else if (idx === index) {
+      // clave del pedido eliminado -> omitimos (borrada)
+    } else {
+      // idx > index -> mover a idx-1
+      nuevosEstados[`${usuario}-${idx-1}`] = estados[k];
+    }
+  });
+  localStorage.setItem('estadosPedidos', JSON.stringify(nuevosEstados));
+
+  // refrescar UI
+  cargarUsuarios();
+  alert('Pedido eliminado correctamente (se actualizó también localmente).');
+}
+
 
     async function descargarPedido(usuario,index){
       const pedidos=JSON.parse(localStorage.getItem('pedidos')||'{}');
@@ -435,155 +523,402 @@
       const msg=await res.text(); alert(msg);
     }
 
-async function cargarExcel() {
-  console.log('Carga de archivos iniciada');
+    async function cargarExcel() {
+      try {
+        const inputJson = document.getElementById('inputJson');
+        const inputExcel = document.getElementById('inputExcel');
+        const jsonFile = inputJson.files[0];
+        const excelFile = inputExcel.files[0];
 
-  // Obtener ambos archivos
-  const inputJson = document.getElementById('inputJson');
-  const inputExcel = document.getElementById('inputExcel');
-  const jsonFile = inputJson.files[0];
-  const excelFile = inputExcel.files[0];
+        if (!jsonFile || !excelFile) {
+          mostrarError('Selecciona ambos archivos: productos.json y el archivo Excel.');
+          return;
+        }
 
-  if (!jsonFile || !excelFile) {
-    mostrarError('Por favor, selecciona ambos archivos: productos.json y el archivo Excel.');
-    console.log('Faltan archivos:', { json: !!jsonFile, excel: !!excelFile });
-    return;
-  }
+        // Leer productos.json
+        const jsonText = await jsonFile.text();
+        let productos = [];
+        try {
+          productos = JSON.parse(jsonText);
+          if (!Array.isArray(productos)) throw new Error('productos.json debe contener un array.');
+        } catch (error) {
+          mostrarError('Error leyendo productos.json: ' + error.message);
+          return;
+        }
 
-  try {
-    // Leer productos.json
-    const jsonText = await jsonFile.text();
-    let productos = [];
-    try {
-      productos = JSON.parse(jsonText);
-      if (!Array.isArray(productos)) {
-        throw new Error('El archivo productos.json no contiene un array válido.');
+        // Máximo ID actual
+        const maxId = productos.length > 0 ? Math.max(...productos.map(p => p.id)) : 0;
+
+        // Leer Excel
+        const excelData = await excelFile.arrayBuffer();
+        const wb = XLSX.read(excelData, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+
+        // Ignorar primeras 2 filas
+        const rows = XLSX.utils.sheet_to_json(ws, { range: 2, defval: '' });
+
+        if (rows.length === 0) {
+          mostrarError('El Excel está vacío o no contiene datos después de las 2 primeras filas.');
+          return;
+        }
+
+        const updatedProductos = [...productos];
+        const newProductos = [];
+        let currentId = maxId + 1;
+
+        for (const r of rows) {
+          let nombre = r['Producto'] || r['producto'] || '';
+          let precioStr = r['Nuevo precio'] || r['nuevo precio'] || '';
+
+          if (!nombre || !precioStr) continue;
+
+          precioStr = precioStr.toString().trim().replace(/\$/g, '').replace(/\s/g, '').replace(/,/g, '.').replace(/\.(?=\d{3})/g, '');
+
+          let precio = parseFloat(precioStr);
+          if (isNaN(precio) || precio < 0) continue;
+
+          // Buscar producto existente (case insensitive)
+          const idxExist = updatedProductos.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+
+          if (idxExist !== -1) {
+            updatedProductos[idxExist].precio = precio;
+          } else {
+            newProductos.push({
+              id: currentId++,
+              nombre,
+              precio,
+              categoria: null,
+              stock: 0 // stock inicial 0, se puede ajustar luego
+            });
+          }
+        }
+
+        const finalProductos = [...updatedProductos, ...newProductos];
+
+        // Descargar JSON
+        const jsonString = JSON.stringify(finalProductos, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `productos_${Date.now()}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert(`Archivo productos.json generado con ${finalProductos.length} productos (${newProductos.length} nuevos).`);
+      } catch (error) {
+        mostrarError('Error procesando archivos: ' + error.message);
       }
-    } catch (error) {
-      mostrarError('Error al leer productos.json: ' + error.message);
-      console.error('Error en JSON:', error);
-      return;
     }
-    console.log('Productos cargados desde JSON:', productos);
 
-    // Calcular el máximo ID
-    const maxId = productos.length > 0 ? Math.max(...productos.map(p => p.id)) : 0;
-    console.log('Máximo ID encontrado:', maxId);
+    /* ------------------ Sección: Crear pedido desde archivo (previsualización + envío) ------------------ */
+    (function(){
+      const archivoInput = document.getElementById('pedidoArchivo');
+      const btnPrevisualizar = document.getElementById('btnPrevisualizarPedido');
+      const btnEnviarPedidoArchivo = document.getElementById('btnEnviarPedidoArchivo');
+      const previsualizacion = document.getElementById('previsualizacionPedido');
 
-    // Leer archivo Excel
-    const excelData = await excelFile.arrayBuffer();
-    const wb = XLSX.read(excelData, { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    console.log('Hojas en el archivo Excel:', wb.SheetNames);
+      let pedidoTemporal = [];
 
-    // Log datos crudos para debugging
-    const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 });
-    console.log('Datos crudos del Excel:', rawData);
+      btnPrevisualizar.addEventListener('click', () => {
+        if (!archivoInput.files[0]) { alert('Selecciona un archivo'); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split('\n').map(l=>l.trim()).filter(l=>l);
+          previsualizacion.innerHTML = '';
+          pedidoTemporal = [];
 
-    // Ignorar las 2 primeras filas
-    const rows = XLSX.utils.sheet_to_json(ws, { range: 2, defval: '' });
-    console.log('Filas leídas del Excel (con nombres de columnas):', rows);
+          lines.forEach((linea) => {
+            const partes = linea.split(' ').filter(Boolean);
+            if (partes.length < 2) return;
+            const cantidad = parseInt(partes[0], 10);
+            if (Number.isNaN(cantidad) || cantidad <= 0) return;
+            const nombre = partes.slice(1).join(' ').trim();
+            const prod = productos.find(p => (p.nombre||'').toString().trim().toLowerCase() === nombre.toLowerCase());
 
-    if (rows.length === 0) {
-      mostrarError('El archivo Excel está vacío o no contiene datos válidos después de omitir las 2 primeras filas.');
-      return;
-    }
+            const row = document.createElement('div');
+            row.style.padding = '6px';
+            row.style.marginBottom = '6px';
+            row.style.borderRadius = '6px';
+            row.style.color = '#111';
 
-    // Mapa para actualizar productos existentes
-    const updatedProductos = [...productos]; // Copia de productos existentes
-    const newProductos = [];
-    let currentId = maxId + 1;
+            if (!prod) {
+              row.style.background = '#ffcccc';
+              row.textContent = `${cantidad} x ${nombre} — NO ENCONTRADO`;
+            } else if (!prod.stock || prod.stock <= 0) {
+              row.style.background = '#ffcccc';
+              row.textContent = `${cantidad} x ${prod.nombre} — SIN STOCK (0)`;
+              // push with cantidad 0 to indicate present but not addable
+              pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: 0 });
+            } else {
+              const cantidadFinal = Math.min(cantidad, prod.stock);
+              row.style.background = '#ccffcc';
+              row.textContent = `${cantidad} x ${prod.nombre} — se agregarán ${cantidadFinal} (stock actual: ${prod.stock})`;
+              pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidadFinal });
+            }
 
-    for (const [index, r] of rows.entries()) {
-      console.log(`Procesando fila ${index + 3}:`, r);
+            previsualizacion.appendChild(row);
+          });
 
-      // Obtener nombre y precio
-      let nombre = r['Producto'] || r['producto'] || '';
-      let precioStr = r['Nuevo precio'] || r['nuevo precio'] || '';
-
-      // Fallback: Acceder por índice si las columnas no se encuentran
-      if (!nombre && !precioStr && rawData[index + 2]) {
-        const rawRow = rawData[index + 2];
-        console.log(`Usando datos crudos para fila ${index + 3}:`, rawRow);
-        nombre = rawRow[0] || '';
-        precioStr = rawRow[1] || '';
-      }
-
-      if (!nombre || !precioStr) {
-        console.log(`Fila ${index + 3} ignorada: Nombre=${nombre}, Precio=${precioStr}`);
-        continue;
-      }
-
-      // Limpiar y parsear precio
-      precioStr = precioStr.toString().trim();
-      precioStr = precioStr.replace(/\$/g, '').replace(/\s/g, '');
-      precioStr = precioStr.replace(/,/g, '.');
-      precioStr = precioStr.replace(/\.(?=\d{3})/g, '');
-      const precio = parseFloat(precioStr);
-
-      if (isNaN(precio) || precio < 0) {
-        console.log(`Fila ${index + 3} ignorada: Precio inválido=${precioStr}`);
-        continue;
-      }
-
-      console.log(`Fila ${index + 3} procesada: Nombre=${nombre}, Precio=${precio}`);
-
-      // Buscar producto existente (insensible a mayúsculas)
-      const existingProductIndex = updatedProductos.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
-
-      if (existingProductIndex !== -1) {
-        // Actualizar precio del producto existente
-        updatedProductos[existingProductIndex].precio = precio;
-        console.log(`Producto actualizado: ${nombre}, Nuevo precio: ${precio}`);
-      } else {
-        // Agregar nuevo producto
-        const newProduct = {
-          id: currentId,
-          nombre,
-          precio,
-          categoria: null, // Categoría null por defecto
-          stock: true,
-          imagen: `/imagenes/${currentId}.jpg`
+          if (pedidoTemporal.length === 0) {
+            const empty = document.createElement('div');
+            empty.textContent = 'No se encontraron productos válidos para agregar.';
+            previsualizacion.appendChild(empty);
+          }
         };
-        newProductos.push(newProduct);
-        console.log(`Producto nuevo añadido: ${nombre}, ID: ${currentId}`);
-        currentId++;
+        reader.readAsText(archivoInput.files[0]);
+      });
+
+      btnEnviarPedidoArchivo.addEventListener('click', async () => {
+        if (pedidoTemporal.length === 0) return alert('Previsualiza el pedido primero y asegúrate de que haya productos para agregar.');
+        // Guardar pedido en localStorage bajo 'admin'
+        const pedidos = JSON.parse(localStorage.getItem('pedidos')||'{}');
+        const usuario = 'admin';
+        pedidos[usuario] = pedidos[usuario] || [];
+        pedidos[usuario].push(pedidoTemporal.map(it => ({ id: it.id, nombre: it.nombre, cantidad: it.cantidad })));
+        localStorage.setItem('pedidos', JSON.stringify(pedidos));
+
+        // Reducir stock en backend para los items con cantidad>0
+        for (const item of pedidoTemporal) {
+          if (!item.cantidad || item.cantidad <= 0) continue;
+          const prod = productos.find(p => p.id === item.id);
+          if (!prod) continue;
+          prod.stock = (Number(prod.stock) || 0) - Number(item.cantidad);
+          if (prod.stock < 0) prod.stock = 0;
+          try {
+            await fetch(`http://localhost:3000/api/productos/${prod.id}`, {
+              method:'PUT',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(prod)
+            });
+          } catch (err) {
+            console.error('Error actualizando stock para', prod.id, err);
+          }
+        }
+
+        alert('Pedido creado y stock actualizado.');
+        pedidoTemporal = [];
+        previsualizacion.innerHTML = '';
+        // refrescar lista de productos en UI
+        await cargarProductos();
+        cargarUsuarios();
+      });
+    })();
+
+    /* ------------------ NUEVAS FUNCIONES: Actualizar stock desde Excel (cliente) ------------------ */
+    const inputStockExcel = document.getElementById('inputStockExcel');
+    const stockFileName = document.getElementById('stockFileName');
+    const stockPreview = document.getElementById('stockPreview');
+    const stockPreviewWrap = document.getElementById('stockPreviewWrap');
+    const btnConfirmStock = document.getElementById('btnConfirmStock');
+    const btnCancelStock = document.getElementById('btnCancelStock');
+    const stockResult = document.getElementById('stockResult');
+
+    let parsedStockMap = null; // { 'nombreLower': qty }
+
+    // helper to escape HTML
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    inputStockExcel?.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      stockResult.innerHTML = '';
+      if (!file) {
+        stockFileName.textContent = '';
+        stockPreview.style.display = 'none';
+        btnConfirmStock.disabled = true;
+        parsedStockMap = null;
+        return;
+      }
+      stockFileName.textContent = file.name;
+      try {
+        parsedStockMap = await parseStockFile(file);
+        renderStockPreview(parsedStockMap);
+        btnConfirmStock.disabled = !parsedStockMap || Object.keys(parsedStockMap).length === 0;
+      } catch (err) {
+        console.error(err);
+        alert('Error procesando el archivo. Asegurate del formato (nombre, stock).');
+        parsedStockMap = null;
+        stockPreview.style.display = 'none';
+        btnConfirmStock.disabled = true;
+      }
+    });
+
+    btnCancelStock?.addEventListener('click', () => {
+      inputStockExcel.value = '';
+      stockFileName.textContent = '';
+      stockPreviewWrap.innerHTML = '';
+      stockPreview.style.display = 'none';
+      parsedStockMap = null;
+      btnConfirmStock.disabled = true;
+      stockResult.innerHTML = '';
+    });
+
+    btnConfirmStock?.addEventListener('click', confirmStockUpdate);
+
+    /**
+     * Parsea archivo Excel/CSV -> {nombreLower: qty}
+     */
+    function parseStockFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = ev.target.result;
+            let workbook;
+            if (file.name.toLowerCase().endsWith('.csv')) {
+              const text = typeof data === 'string' ? data : new TextDecoder().decode(data);
+              workbook = XLSX.read(text, { type: 'string' });
+            } else {
+              const arr = new Uint8Array(data);
+              workbook = XLSX.read(arr, { type: 'array' });
+            }
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+
+            const map = {};
+            for (let r = 0; r < rows.length; r++) {
+              const row = rows[r];
+              if (!row || row.length === 0) continue;
+              const nameCell = row[0];
+              const qtyCell = row[1];
+
+              if (nameCell == null) continue;
+              const name = String(nameCell).trim();
+              if (!name) continue;
+
+              // parse qty
+              const qty = qtyCell != null && String(qtyCell).trim() !== '' ? parseInt(String(qtyCell).replace(/\s+/g, ''), 10) : NaN;
+              if (Number.isNaN(qty)) {
+                const lower0 = String(name).toLowerCase();
+                // probable header row -> skip
+                if (lower0.includes('nombre') || lower0.includes('producto') || lower0.includes('stock')) continue;
+                // else skip this row as invalid qty
+                continue;
+              }
+
+              const key = name.toLowerCase();
+              if (!map[key]) map[key] = 0;
+              map[key] += qty;
+            }
+            resolve(map);
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file, 'UTF-8');
+        else reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function renderStockPreview(map) {
+      if (!map || Object.keys(map).length === 0) {
+        stockPreview.style.display = 'none';
+        stockPreviewWrap.innerHTML = '<p>No se encontraron filas válidas en el archivo.</p>';
+        return;
+      }
+      const rows = Object.entries(map).map(([name, qty]) => ({ name, qty }));
+      let html = '<table><thead><tr><th>Nombre (normalizado)</th><th>Stock a sumar</th></tr></thead><tbody>';
+      rows.forEach(r => {
+        html += `<tr><td>${escapeHtml(r.name)}</td><td>${r.qty}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      stockPreviewWrap.innerHTML = html;
+      stockPreview.style.display = 'block';
+    }
+
+    /**
+     * Confirmar: obtener productos del backend, buscar coincidencias por nombre y hacer PUT para actualizar stock.
+     */
+    async function confirmStockUpdate() {
+      if (!parsedStockMap || Object.keys(parsedStockMap).length === 0) {
+        alert('No hay datos para procesar.');
+        return;
+      }
+      if (!confirm('¿Aplicar las sumas de stock al inventario? Esto actualizará productos en el backend.')) return;
+
+      btnConfirmStock.disabled = true;
+      btnConfirmStock.textContent = 'Procesando...';
+      stockResult.innerHTML = '';
+
+      try {
+        const res = await fetch('http://localhost:3000/api/productos');
+        if (!res.ok) throw new Error('No se pudo obtener productos desde el backend.');
+        const prodList = await res.json();
+
+        const indexByName = {};
+        prodList.forEach(p => {
+          const key = (p.nombre || '').toString().trim().toLowerCase();
+          if (!indexByName[key]) indexByName[key] = [];
+          indexByName[key].push(p);
+        });
+
+        const notFound = [];
+        const updated = [];
+        const errors = [];
+
+        for (const [nameNorm, qtyToAdd] of Object.entries(parsedStockMap)) {
+          const key = nameNorm.toString().trim().toLowerCase();
+          const matches = indexByName[key];
+          if (!matches || matches.length === 0) {
+            notFound.push(nameNorm);
+            continue;
+          }
+
+          for (const prod of matches) {
+            try {
+              const currentStock = Number(prod.stock) || 0;
+              prod.stock = currentStock + Number(qtyToAdd);
+
+              const putRes = await fetch(`http://localhost:3000/api/productos/${prod.id}`, {
+                method: 'PUT',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(prod)
+              });
+
+              if (!putRes.ok) {
+                const txt = await putRes.text().catch(()=>null);
+                errors.push({ id: prod.id, nombre: prod.nombre, reason: txt || putRes.status });
+              } else {
+                updated.push({ id: prod.id, nombre: prod.nombre, added: qtyToAdd, newStock: prod.stock });
+              }
+            } catch (err) {
+              console.error('Error actualizando producto', prod, err);
+              errors.push({ id: prod.id, nombre: prod.nombre, reason: err.message || err.toString() });
+            }
+          }
+        }
+
+        let resultHtml = `<p><strong>Actualización finalizada.</strong></p>`;
+        resultHtml += `<p>Productos actualizados: ${updated.length}</p>`;
+        if (notFound.length > 0) resultHtml += `<p>No se encontraron coincidencias para: ${notFound.map(n=>escapeHtml(n)).join(', ')}</p>`;
+        if (errors.length > 0) resultHtml += `<p>Errores: ${errors.length}. Revisa la consola para más detalles.</p>`;
+
+        stockResult.innerHTML = resultHtml;
+
+        // refrescar productos en UI
+        await cargarProductos();
+
+        alert('Proceso finalizado. Revisa el resumen en la sección.');
+      } catch (err) {
+        console.error(err);
+        alert('Error en el proceso: ' + (err.message || err));
+      } finally {
+        btnConfirmStock.disabled = false;
+        btnConfirmStock.textContent = 'Confirmar';
       }
     }
 
-    // Combinar productos existentes y nuevos
-    const finalProductos = [...updatedProductos, ...newProductos];
-
-    if (finalProductos.length === productos.length && newProductos.length === 0 && rows.length > 0) {
-      mostrarError('No se actualizaron ni añadieron productos. Verifica que los nombres en el Excel coincidan con los de productos.json.');
-      console.log('No se generaron cambios en los productos');
-      return;
-    }
-
-    // Crear archivo JSON para descargar
-    const jsonString = JSON.stringify(finalProductos, null, 2);
-    console.log('JSON generado:', jsonString);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `productos_${Date.now()}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    console.log(`Archivo JSON generado y descargado con ${finalProductos.length} productos (${newProductos.length} nuevos, ${updatedProductos.length - productos.length + newProductos.length} actualizados)`);
-    alert(`Archivo productos.json creado y descargado correctamente con ${finalProductos.length} productos (${newProductos.length} nuevos)`);
-  } catch (error) {
-    console.error('Error al procesar archivos:', error);
-    mostrarError('Error al procesar los archivos: ' + error.message);
-  }
-}
-
-document.getElementById('btnCargarExcel').addEventListener('click', cargarExcel);
+    /* ------------------ helpers y eventos existentes ------------------ */
+    document.getElementById('btnCargarExcel').addEventListener('click', cargarExcel);
     document.getElementById('formAgregar').addEventListener('submit', agregarProducto);
     window.onload = () => { cargarProductos(); cargarUsuarios(); };
+
   </script>
 </body>
 </html>
