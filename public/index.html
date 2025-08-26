@@ -369,20 +369,26 @@ function verCarrito() {
 
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
-<script>
 async function cargarProductos() {
-  paginaActual = 1;
   try {
     const res = await fetch('/productos.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('Error al cargar productos');
+    if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+
     productos = await res.json();
+
+    if (!Array.isArray(productos)) {
+      console.error('El JSON no es un array de productos');
+      productos = [];
+    }
+
+    paginaActual = 1;
+    renderProductos();
   } catch (err) {
-    console.error('No se pudo cargar productos:', err);
+    console.error('No se pudieron cargar los productos:', err);
     productos = [];
   }
-  try { mostrarProductos(); } catch(e) {}
 }
-</script>
+
 
 
 function filtrarCategoria(categoria, elemento) {
@@ -590,6 +596,7 @@ cargarProductos();
 </script>
 </body>
 </html>
+
 
 
 
