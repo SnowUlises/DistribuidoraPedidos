@@ -1,1 +1,312 @@
-<!DOCTYPE html> <html lang="es"> <head> <meta charset="UTF-8" /> <title>Carrito de Compras</title> <style> main { max-width: 900px; margin: auto; padding: 2em; display: flex; flex-direction: column; gap: 1em; } h2 { text-align: center; margin-bottom: 1em; color: #4a90e2; } .producto-carrito { display: flex; align-items: center; gap: 1em; background: #fff; padding: 1em; margin-bottom: 1em; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); justify-content: space-between; } .producto-carrito img { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; } .producto-info { flex: 1; } .producto-info p { margin: 4px 0; } .controles-cantidad { display: flex; flex-direction: column; align-items: center; gap: 0.3em; min-width: 110px; } .controles-cantidad button { padding: 4px 8px; border: none; background: #4a90e2; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s; width: 100%; } .controles-cantidad button:hover { background: #357abd; } #formOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 10000; } #formDatos { background: #f4f4f4; padding: 2em; border-radius: 10px; max-width: 400px; width: 90%; box-shadow: 0 2px 12px rgba(0,0,0,0.3); position: relative; } #formDatos h3 { text-align: center; margin-bottom: 1em; color: #4a90e2; } #formDatos input { width: 100%; padding: 10px; margin-bottom: 1em; border-radius: 6px; border: 1px solid #ccc; font-size: 1em; } button.enviar { background: #4a90e2; border: none; color: white; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; display: block; margin: 0 auto; min-width: 140px; font-size: 1em; } button.enviar:hover { background: #357ABD; } #btnCerrarFormulario { position: absolute; top: 8px; right: 8px; background: #d9534f; border: none; color: white; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 18px; line-height: 22px; text-align: center; padding: 0; transition: background 0.2s; } #btnCerrarFormulario:hover { background: #c9302c; } </style> </head> <body> <main> <h2>Tu Carrito</h2> <div id="listaCarrito"></div> <button id="btnMostrarFormulario" class="enviar">Enviar pedido</button> <div id="formOverlay"> <div id="formDatos"> <button type="button" id="btnCerrarFormulario" title="Cerrar">&times;</button> <h3>¿Estás seguro de enviar el pedido?</h3> <p id="totalPedido" style="text-align:center; font-weight:bold;"></p> <button class="enviar" id="confirmarEnvio">Sí, enviar</button> </div> </div> </main> <script> let productos = []; let carrito = JSON.parse(localStorage.getItem('carrito')) || []; const lista = document.getElementById('listaCarrito'); const formOverlay = document.getElementById('formOverlay'); const formDatos = document.getElementById('formDatos'); const btnMostrarFormulario = document.getElementById('btnMostrarFormulario'); const btnCerrarFormulario = document.getElementById('btnCerrarFormulario'); const totalPedido = document.getElementById('totalPedido'); const btnConfirmar = document.getElementById('confirmarEnvio'); const usuario = { user: localStorage.getItem('loggedUser')}; async function cargarProductos() { try { const res = await fetch('http://localhost:3000/api/productos'); productos = await res.json(); renderizarCarrito(); } catch (error) { lista.innerHTML = '<p>Error cargando productos.</p>'; } } function guardarCarrito() { localStorage.setItem('carrito', JSON.stringify(carrito)); } function renderizarCarrito() { lista.innerHTML = ''; if (carrito.length === 0) { lista.innerHTML = '<p>El carrito está vacío.</p>'; btnMostrarFormulario.style.display = 'none'; ocultarFormulario(); return; } btnMostrarFormulario.style.display = 'block'; carrito.forEach((item, i) => { const p = productos.find(prod => prod.id === item.id); if (!p) return; const div = document.createElement('div'); div.className = 'producto-carrito'; div.innerHTML = <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.src='imagenes/placeholder.png'"/> <div class="producto-info"> <p><strong>${p.nombre}</strong></p> <p>Precio: $${(p.precio * 1.17).toFixed(2)}</p> <p>Subtotal: $${(p.precio * item.cantidad).toFixed(2)}</p> </div> <div class="controles-cantidad"> <button class="btn-aumentar" title="Aumentar cantidad">+</button> <span>${item.cantidad}</span> <button class="btn-reducir" title="Reducir cantidad">-</button> <button class="btn-eliminar" title="Eliminar producto" style="background:#d9534f;">X</button> </div> ; div.querySelector('.btn-aumentar').addEventListener('click', () => { carrito[i].cantidad++; guardarCarrito(); renderizarCarrito(); }); div.querySelector('.btn-reducir').addEventListener('click', () => { if (carrito[i].cantidad > 1) { carrito[i].cantidad--; } else { carrito.splice(i, 1); } guardarCarrito(); renderizarCarrito(); }); div.querySelector('.btn-eliminar').addEventListener('click', () => { carrito.splice(i, 1); guardarCarrito(); renderizarCarrito(); }); lista.appendChild(div); }); } function mostrarFormulario() { const total = carrito.reduce((acc, item) => { const p = productos.find(prod => prod.id === item.id); return acc + (p ? p.precio * item.cantidad : 0); }, 0); totalPedido.textContent = 'Total: $' + total.toFixed(2); formOverlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; } function ocultarFormulario() { formOverlay.style.display = 'none'; document.body.style.overflow = ''; } btnMostrarFormulario.addEventListener('click', mostrarFormulario); btnCerrarFormulario.addEventListener('click', ocultarFormulario); formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); }); btnConfirmar.addEventListener('click', async () => { const nuevosCarrito = []; const sinStock = []; for (const item of carrito) { const producto = productos.find(p => p.id === item.id); if (!producto) continue; if (typeof producto.stock === 'number') { if (producto.stock === 0) { sinStock.push(producto.nombre); continue; } if (item.cantidad > producto.stock) { sinStock.push(producto.nombre + (solo ${producto.stock} disponibles)); item.cantidad = producto.stock; } producto.stock -= item.cantidad; // Restar stock // Actualizar stock en el backend try { await fetch(http://localhost:3000/api/productos/${producto.id}, { method: 'PUT', headers: { "Content-Type": "application/json" }, body: JSON.stringify(producto) }); } catch (err) { console.error("Error actualizando stock:", err); } } nuevosCarrito.push(item); } if (sinStock.length > 0) { alert(No hay suficiente stock para: \n- ${sinStock.join('\n- ')}\nSe ajustó el pedido automáticamente.); } if (nuevosCarrito.length === 0) { alert('No hay productos disponibles para pedir.'); return; } // Guardar pedido con precio unitario const pedido = nuevosCarrito.map(item => { const producto = productos.find(p => p.id === item.id); return { id: item.id, nombre: producto?.nombre || '', precio: producto?.precio || 0, cantidad: item.cantidad }; }); const pedidos = JSON.parse(localStorage.getItem('pedidos')) || {}; pedidos[usuario.user] = pedidos[usuario.user] || []; pedidos[usuario.user].push(pedido); localStorage.setItem('pedidos', JSON.stringify(pedidos)); localStorage.removeItem('carrito'); alert('Pedido enviado correctamente'); window.location.href = 'index.html'; }); cargarProductos(); </script> </body> </html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Carrito de Compras</title>
+  <style>
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 2em;
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 1em;
+      color: #4a90e2;
+    }
+    .producto-carrito {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      background: #fff;
+      padding: 1em;
+      margin-bottom: 1em;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      justify-content: space-between;
+    }
+    .producto-carrito img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    .producto-info {
+      flex: 1;
+    }
+    .producto-info p {
+      margin: 4px 0;
+    }
+    .controles-cantidad {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3em;
+      min-width: 110px;
+    }
+    .controles-cantidad button {
+      padding: 4px 8px;
+      border: none;
+      background: #4a90e2;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    .controles-cantidad button:hover {
+      background: #357abd;
+    }
+    #formOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+    #formDatos {
+      background: #f4f4f4;
+      padding: 2em;
+      border-radius: 10px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    #formDatos h3 {
+      text-align: center;
+      margin-bottom: 1em;
+      color: #4a90e2;
+    }
+    #formDatos input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    button.enviar {
+      background: #4a90e2;
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: block;
+      margin: 0 auto;
+      min-width: 140px;
+      font-size: 1em;
+    }
+    button.enviar:hover {
+      background: #357ABD;
+    }
+    #btnCerrarFormulario {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: #d9534f;
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 22px;
+      text-align: center;
+      padding: 0;
+      transition: background 0.2s;
+    }
+    #btnCerrarFormulario:hover {
+      background: #c9302c;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>Tu Carrito</h2>
+    <div id="listaCarrito"></div>
+    <button id="btnMostrarFormulario" class="enviar">Enviar pedido</button>
+
+    <div id="formOverlay">
+      <div id="formDatos">
+        <button type="button" id="btnCerrarFormulario" title="Cerrar">&times;</button>
+        <h3>¿Estás seguro de enviar el pedido?</h3>
+        <p id="totalPedido" style="text-align:center; font-weight:bold;"></p>
+        <button class="enviar" id="confirmarEnvio">Sí, enviar</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let productos = [];
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const lista = document.getElementById('listaCarrito');
+    const formOverlay = document.getElementById('formOverlay');
+    const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
+    const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
+    const totalPedido = document.getElementById('totalPedido');
+    const btnConfirmar = document.getElementById('confirmarEnvio');
+    const usuario = { user: localStorage.getItem('loggedUser') };
+
+    async function cargarProductos() {
+      try {
+        const res = await fetch('http://localhost:3000/api/productos');
+        productos = await res.json();
+        renderizarCarrito();
+      } catch (error) {
+        lista.innerHTML = '<p>Error cargando productos.</p>';
+      }
+    }
+
+    function guardarCarrito() {
+      localStorage.setItem('carrito', JSON.stringify(carrito));
+    }
+
+    function renderizarCarrito() {
+      lista.innerHTML = '';
+      if (carrito.length === 0) {
+        lista.innerHTML = '<p>El carrito está vacío.</p>';
+        btnMostrarFormulario.style.display = 'none';
+        ocultarFormulario();
+        return;
+      }
+      btnMostrarFormulario.style.display = 'block';
+
+      carrito.forEach((item, i) => {
+        const p = productos.find(prod => prod.id === item.id);
+        if (!p) return;
+        const div = document.createElement('div');
+        div.className = 'producto-carrito';
+        div.innerHTML = `
+          <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.src='imagenes/placeholder.png'"/>
+          <div class="producto-info">
+            <p><strong>${p.nombre}</strong></p>
+            <p>Precio: $${(p.precio * 1.17).toFixed(2)}</p>
+            <p>Subtotal: $${(p.precio * item.cantidad).toFixed(2)}</p>
+          </div>
+          <div class="controles-cantidad">
+            <button class="btn-aumentar" title="Aumentar cantidad">+</button>
+            <span>${item.cantidad}</span>
+            <button class="btn-reducir" title="Reducir cantidad">-</button>
+            <button class="btn-eliminar" title="Eliminar producto" style="background:#d9534f;">X</button>
+          </div>
+        `;
+
+        div.querySelector('.btn-aumentar').addEventListener('click', () => {
+          carrito[i].cantidad++;
+          guardarCarrito();
+          renderizarCarrito();
+        });
+        div.querySelector('.btn-reducir').addEventListener('click', () => {
+          if (carrito[i].cantidad > 1) {
+            carrito[i].cantidad--;
+          } else {
+            carrito.splice(i, 1);
+          }
+          guardarCarrito();
+          renderizarCarrito();
+        });
+        div.querySelector('.btn-eliminar').addEventListener('click', () => {
+          carrito.splice(i, 1);
+          guardarCarrito();
+          renderizarCarrito();
+        });
+
+        lista.appendChild(div);
+      });
+    }
+
+    function mostrarFormulario() {
+      const total = carrito.reduce((acc, item) => {
+        const p = productos.find(prod => prod.id === item.id);
+        return acc + (p ? p.precio * item.cantidad : 0);
+      }, 0);
+      totalPedido.textContent = 'Total: $' + total.toFixed(2);
+      formOverlay.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function ocultarFormulario() {
+      formOverlay.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    btnMostrarFormulario.addEventListener('click', mostrarFormulario);
+    btnCerrarFormulario.addEventListener('click', ocultarFormulario);
+    formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
+
+    btnConfirmar.addEventListener('click', async () => {
+      const nuevosCarrito = [];
+      const sinStock = [];
+
+      for (const item of carrito) {
+        const producto = productos.find(p => p.id === item.id);
+        if (!producto) continue;
+
+        if (typeof producto.stock === 'number') {
+          if (producto.stock === 0) {
+            sinStock.push(producto.nombre);
+            continue;
+          }
+          if (item.cantidad > producto.stock) {
+            sinStock.push(`${producto.nombre} (solo ${producto.stock} disponibles)`);
+            item.cantidad = producto.stock;
+          }
+          producto.stock -= item.cantidad;
+
+          try {
+            await fetch(`http://localhost:3000/api/productos/${producto.id}`, {
+              method: 'PUT',
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(producto)
+            });
+          } catch (err) {
+            console.error("Error actualizando stock:", err);
+          }
+        }
+
+        nuevosCarrito.push(item);
+      }
+
+      if (sinStock.length > 0) {
+        alert(`No hay suficiente stock para:\n- ${sinStock.join('\n- ')}\nSe ajustó el pedido automáticamente.`);
+      }
+
+      if (nuevosCarrito.length === 0) {
+        alert('No hay productos disponibles para pedir.');
+        return;
+      }
+
+      const pedido = nuevosCarrito.map(item => {
+        const producto = productos.find(p => p.id === item.id);
+        return {
+          id: item.id,
+          nombre: producto?.nombre || '',
+          precio: producto?.precio || 0,
+          cantidad: item.cantidad
+        };
+      });
+
+      const pedidos = JSON.parse(localStorage.getItem('pedidos')) || {};
+      pedidos[usuario.user] = pedidos[usuario.user] || [];
+      pedidos[usuario.user].push(pedido);
+      localStorage.setItem('pedidos', JSON.stringify(pedidos));
+      localStorage.removeItem('carrito');
+
+      alert('Pedido enviado correctamente');
+      window.location.href = 'index.html';
+    });
+
+    cargarProductos();
+  </script>
+</body>
+</html>
