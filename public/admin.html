@@ -358,38 +358,33 @@
     }
 
     // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
-    async function cargarProductos() {
+   async function cargarProductos() {
+  try {
+    // preferimos la API del backend (archivo productos en raíz, fuera de public)
+    const candidate = ['/api/productos', '../api/productos', 'http://localhost:3000/api/productos'];
+    let res = null;
+    for (const url of candidate) {
       try {
-        let res;
-        try {
-          res = await fetch('/api/productos', {cache: 'no-store'});
-        } catch(err) {
-          console.warn('Error llamando /api/productos:', err);
-          res = null;
-        }
-
-        if (res && res.ok) {
-          productos = await res.json();
-        } else {
-          // fallback a productos.json (si desplegaste estático)
-          try {
-            const r2 = await fetch('/productos.json', {cache: 'no-store'});
-            if (r2.ok) {
-              productos = await r2.json();
-              console.info('Cargando productos desde /productos.json (fallback).');
-            } else {
-              productos = [];
-              mostrarError('No se pudo cargar /api/productos ni /productos.json');
-            }
-          } catch (err2) {
-            productos = [];
-            mostrarError('No se pudo cargar productos (revisa servidor o archivo productos.json).');
-            console.error(err2);
-          }
-        }
-        mostrarProductos();
-      } catch (error) { mostrarError('Error al cargar productos: ' + (error.message||error)); }
+        res = await fetch(url, { cache: 'no-store' });
+        if (res && res.ok) break;
+      } catch (e) { res = null; }
     }
+    if (!res || !res.ok) throw new Error('No se pudo contactar API');
+    productos = await res.json();
+    mostrarProductos();
+  } catch (error) {
+    // fallback a localStorage o archivos (si tenés copia local)
+    console.error('Error cargando productos desde el backend:', error);
+    const local = JSON.parse(localStorage.getItem('productos') || 'null');
+    if (Array.isArray(local)) {
+      productos = local;
+      mostrarProductos();
+      return;
+    }
+    mostrarError('No fue posible cargar productos desde el backend ni desde cache local.');
+  }
+}
+
 
     function mostrarProductos() {
       const lista = document.getElementById('listaAdmin'); lista.innerHTML = '';
@@ -958,3 +953,4 @@ async function eliminarPedido(usuario, index) {
   </script>
 </body>
 </html>
+
