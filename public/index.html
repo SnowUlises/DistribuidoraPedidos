@@ -376,10 +376,15 @@ function verCarrito() {
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
-  const res = await fetch('http://distribuidorafunaz.com/api/productos');
-  productos = await res.json();
-  paginaActual = 1;
-  cambiarCantidadPagina();
+  try {
+    const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    productos = await res.json();
+    cambiarCantidadPagina(); // Aquí sí existe y controla el paginado
+  } catch (err) {
+    console.error('Error cargando productos:', err);
+    mostrarError('No se pudieron cargar los productos. Revisa la consola.');
+  }
 }
 
 function filtrarCategoria(categoria, elemento) {
@@ -604,3 +609,4 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
+
