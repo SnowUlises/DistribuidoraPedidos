@@ -2,234 +2,173 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Detalle del producto - Distribuidora Funaz </title>
+  <title>Producto | Distribuidora Funaz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family:'Segoe UI',sans-serif; background:#f9f9f9; color:#333; margin:0; min-height:100vh; display:flex; flex-direction:column; }
-    header { background:#4a90e2; color:#fff; padding:1em 2em; display:flex; align-items:center; gap:1em; position:relative; }
-    header img { height:40px; width:40px; border-radius:50%; }
-    header h1 { margin:0; font-size:1.8em; }
-    header button { padding:8px 12px; border:none; border-radius:6px; background:#fff; color:#4a90e2; font-weight:bold; cursor:pointer; }
-    header button:hover { background:#dceeff; }
-    #btnCarritoHeader { margin-left:auto; background:#fff; color:#4a90e2; }
-    #btnCarritoHeader:hover { background:#388E3C; color:#fff; }
-    main { flex:1; display:flex; justify-content:center; align-items:center; padding:2em; }
-    .producto { background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1); max-width:600px; width:100%; display:flex; padding:1.5em; gap:1.5em; align-items:center; }
-    .imagen-container { flex:0 0 200px; height:200px; }
-    .imagen-container img { width:100%; height:100%; object-fit:contain; border-radius:12px; background:#eee; }
-    .detalle { flex:1; display:flex; flex-direction:column; justify-content:space-between; height:200px; }
-    .nombre { font-size:1.6em; font-weight:bold; margin-bottom:0.5em; }
-    .precio { font-size:1.3em; color:#4a90e2; margin-bottom:0.5em; }
-    .stock { font-weight:bold; margin-bottom:1em; display:flex; align-items:center; gap:0.5em; }
-    .checkmark { width:20px; height:20px; border:2px solid #28a745; border-radius:4px; position:relative; background:white; display:inline-block; }
-    .checkmark.checked::after { content:''; position:absolute; left:5px; top:1px; width:6px; height:12px; border:solid #28a745; border-width:0 2px 2px 0; transform:rotate(45deg); }
-    .acciones { display:flex; align-items:center; gap:1em; }
-    .acciones input[type=number]{ width:70px; padding:8px; font-size:1em; border-radius:6px; border:1px solid #ccc; text-align:center; }
-    button.agregar { padding:10px 16px; background:#4CAF50; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer; transition:background 0.3s; }
-    button.agregar:hover:not(:disabled){ background:#388E3C; }
-    button.agregar:disabled{ background:#a0c1a7; cursor:not-allowed; }
-    #carritoDesplegable{ position:fixed; top:60px; right:20px; width:320px; max-height:400px; background:white; box-shadow:0 2px 12px rgba(0,0,0,0.3); border-radius:8px; overflow-y:auto; padding:1em; display:none; z-index:100; }
-    #carritoDesplegable h3{ margin:0 0 1em; font-weight:bold; text-align:center; }
-    .item-carrito{ display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8em; border-bottom:1px solid #eee; padding-bottom:0.5em; }
-    .item-carrito span{ flex:1; }
-    .item-carrito .cantidad{ margin-left:1em; font-weight:bold; }
-    .item-carrito button{ background:#d9534f; border:none; color:white; border-radius:6px; cursor:pointer; padding:4px 8px; font-weight:bold; margin-left:1em; }
-    .item-carrito button:hover{ background:#b52b27; }
-    #carritoAcciones { margin-top: 0.6em; display:flex; gap:8px; justify-content:center; }
-    #carritoAcciones button { padding:8px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:bold; }
-    #verCarritoBtn { background:#4a90e2; color:white; }
-    #vaciarCarritoBtn { background:#d9534f; color:white; }
-    #mensajeAgregado{ position:fixed; bottom:20px; right:20px; background:white; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.2); padding:12px 16px; font-weight:bold; color:black; display:none; z-index:200; min-width:250px; }
-    #mensajeAgregado span.producto-nombre{ display:block; margin-top:4px; font-weight:normal; }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;margin:0;background:#f6f7fb;color:#222}
+    header{background:#4a90e2;color:#fff;padding:18px;text-align:center;font-weight:700}
+    main{max-width:980px;margin:20px auto;padding:16px}
+    .volver{display:inline-block;margin-bottom:16px;background:#4a90e2;color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:600}
+    .card{background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:18px;display:grid;grid-template-columns:320px 1fr;gap:20px}
+    .card img{width:100%;height:auto;border-radius:10px;background:#eee;object-fit:contain}
+    .title{font-size:1.6rem;margin:0 0 8px}
+    .price{font-size:1.4rem;font-weight:700;margin:0 0 8px}
+    .meta{color:#555;margin:6px 0}
+    .stock{margin:10px 0;font-weight:600}
+    .notfound{background:#fff3f3;border:1px solid #ffc9c9;color:#a33;padding:14px;border-radius:10px}
+    .hidden{display:none}
+    .actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+    button{background:#4a90e2;border:none;color:#fff;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
   </style>
 </head>
 <body>
-  <header>
-    <button onclick="location.href='index.html'">⬅ Volver</button>
-    <img src="imagenes/logo.png" alt="Logo" />
-    <h1>Distribuidora Funaz</h1>
-    <button onclick="location.href='admin.html'">Mi cuenta</button>
-    <button id="btnCarritoHeader" onclick="toggleCarrito()">Carrito (0)</button>
-  </header>
-
+  <header>Detalle de producto</header>
   <main>
-    <div class="producto" id="detalle"></div>
+    <a class="volver" href="index.html">← Volver a la tienda</a>
+
+    <div id="error" class="notfound hidden"></div>
+
+    <section id="prodCard" class="card hidden">
+      <img id="prodImg" alt="Imagen del producto" />
+      <div>
+        <h1 id="prodNombre" class="title"></h1>
+        <p id="prodPrecio" class="price"></p>
+        <p id="prodCat" class="meta"></p>
+        <p id="prodStock" class="stock"></p>
+        <div class="actions">
+          <button id="btnAgregar">Agregar al carrito</button>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <div id="carritoDesplegable">
-    <h3>Carrito</h3>
-    <div id="listaCarrito"></div>
-    <div id="carritoAcciones">
-      <button id="verCarritoBtn" onclick="verCarrito()">Ver carrito</button>
-      <button id="vaciarCarritoBtn" onclick="vaciarCarrito()">Vaciar</button>
-    </div>
-  </div>
-
-  <div id="mensajeAgregado"></div>
-
   <script>
-    // Mantener igual que tu código original, solo se integran mejoras:
-    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-    let producto = null;
-
-    // Actualizar texto del botón carrito en header
-    function actualizarContadorCarrito() {
-      const total = carrito.reduce((acc, i) => acc + (i.cantidad || 0), 0);
-      const btn = document.getElementById('btnCarritoHeader');
-      if (btn) btn.textContent = `Carrito (${total})`;
-    }
-
-    async function cargarProducto() {
-      const id = new URLSearchParams(location.search).get('id');
-      if (!id) return mostrarError('Producto no encontrado.');
-      try {
-        const res = await fetch('../productos.json');
-        const productos = await res.json();
-        const producto = productos.find(p => p.id == id);
-
-        if (!res.ok) throw new Error('Producto no encontrado');
-        producto = await res.json();
-
-        // si el carrito ya contiene este producto, no alteramos el stock original (stock representa disponible en tienda)
-        const stockCheck = producto.stock ? '<span class="checkmark checked"></span>' : '<span class="checkmark"></span>';
-
-        document.getElementById('detalle').innerHTML = `
-          <div class="imagen-container">
-            <img src="imagenes/${producto.id}.png" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" alt="Producto" />
-          </div>
-          <div class="detalle">
-            <div>
-              <div class="nombre">${producto.nombre}</div>
-              <div class="precio">$${(producto.precio * 1.17).toFixed(2)}</div>
-              <div class="stock" id="stockDisplay">${stockCheck} Stock: ${producto.stock > 0 ? producto.stock : 'Sin stock'}</div>
-            </div>
-            <div class="acciones">
-              <input type="number" id="cantidad" value="1" min="1" max="${producto.stock}" ${producto.stock ? '' : 'disabled'} />
-              <button class="agregar" id="btnAgregar" onclick="agregarAlCarrito()" ${producto.stock ? '' : 'disabled'}>Agregar al carrito</button>
-            </div>
-          </div>
-        `;
-        actualizarContadorCarrito();
-      } catch {
-        mostrarError('Error cargando producto.');
-      }
-    }
-
-    function mostrarError(msg){ document.getElementById('detalle').innerHTML=`<p style="color:red;font-weight:bold;">${msg}</p>`; }
-
-    function agregarAlCarrito(){
-      const cantidadInput = document.getElementById('cantidad');
-      if(!cantidadInput) return;
-      let cantidad = parseInt(cantidadInput.value);
-      if (isNaN(cantidad) || cantidad < 1) return;
-
-      // No permitir agregar más de lo disponible
-      if (producto.stock === 0) return;
-      if (cantidad > producto.stock) cantidad = producto.stock;
-
-      // sumar al carrito (solo información local; stock real se resta en confirmación de pedido)
-      const existente = carrito.find(p => p.id === producto.id);
-      if (existente) {
-        existente.cantidad += cantidad;
-      } else {
-        // guardamos solo campos necesarios para el carrito (evitar duplicar propiedades del producto)
-        carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
-      }
-
-      // Reducir stock mostrado en esta vista para reflejar la acción inmediata
-      producto.stock -= cantidad;
-      updateStockDisplay();
-
-      // actualizar max del input y deshabilitar si llega a 0
-      const cantidadEl = document.getElementById('cantidad');
-      if (cantidadEl) {
-        cantidadEl.max = producto.stock;
-        if (producto.stock <= 0) {
-          cantidadEl.disabled = true;
-          const btn = document.getElementById('btnAgregar');
-          if (btn) btn.disabled = true;
-        } else {
-          // ajustar valor si supera el nuevo stock
-          if (parseInt(cantidadEl.value) > producto.stock) cantidadEl.value = producto.stock;
+    // =============== Utils de red ===============
+    async function tryFetchSequential(paths, opts) {
+      for (const p of paths) {
+        try {
+          const r = await fetch(p, opts);
+          if (r && r.ok) return r;
+        } catch (e) {
+          // pasa al siguiente
         }
       }
+      return null;
+    }
+    function apiPaths(suffix){ return [`..${suffix}`, `${suffix}`]; } // desde /public/ hacia raíz y absoluta
 
-      // guardar y actualizar UI del carrito (igual que en index)
-      localStorage.setItem('carrito', JSON.stringify(carrito));
-      actualizarCarrito();
-      actualizarContadorCarrito();
-      mostrarMensaje(producto.nombre, cantidad);
+    // =============== Lógica de página ===============
+    const q = new URLSearchParams(location.search);
+    const id = Number(q.get('id'));
+
+    const $ = sel => document.querySelector(sel);
+    const elCard   = $('#prodCard');
+    const elError  = $('#error');
+    const elImg    = $('#prodImg');
+    const elNom    = $('#prodNombre');
+    const elPrecio = $('#prodPrecio');
+    const elCat    = $('#prodCat');
+    const elStock  = $('#prodStock');
+    const btnAdd   = $('#btnAgregar');
+
+    if (!Number.isFinite(id)) {
+      showError('ID de producto inválido.');
+    } else {
+      cargarProducto(id);
     }
 
-    function updateStockDisplay(){
-      const stockEl = document.getElementById('stockDisplay');
-      if(!stockEl) return;
-      const check = producto.stock > 0 ? '<span class="checkmark checked"></span>' : '<span class="checkmark"></span>';
-      stockEl.innerHTML = `${check} Stock: ${producto.stock > 0 ? producto.stock : 'Sin stock'}`;
+    function showError(msg){
+      elError.textContent = msg;
+      elError.classList.remove('hidden');
+      elCard.classList.add('hidden');
     }
 
-    function mostrarMensaje(nombre,cantidad){
-      const msg=document.getElementById('mensajeAgregado');
-      msg.innerHTML=`Se agregó:<br><span class="producto-nombre">${nombre} x${cantidad}</span>`;
-      msg.style.display='block';
-      clearTimeout(msg.timeoutId);
-      msg.timeoutId=setTimeout(()=>{ msg.style.display='none'; },2000);
-    }
-
-    function toggleCarrito(){
-      const c=document.getElementById('carritoDesplegable');
-      c.style.display = c.style.display === 'block' ? 'none' : 'block';
-      if (c.style.display === 'block') actualizarCarrito();
-    }
-
-    function actualizarCarrito(){
-      const lista=document.getElementById('listaCarrito');
-      lista.innerHTML='';
-      // refrescar carrito desde localStorage por si cambió en otra pestaña
-      carrito = JSON.parse(localStorage.getItem('carrito')) || carrito;
-      if(carrito.length===0) return lista.innerHTML='<p>Carrito vacío.</p>';
-      carrito.forEach((item,idx)=>{
-        const div=document.createElement('div');
-        div.className='item-carrito';
-        div.innerHTML=`<span>${item.nombre}</span><span class="cantidad">x${item.cantidad}</span><button onclick="removerDelCarrito(${idx})">X</button>`;
-        lista.appendChild(div);
-      });
-    }
-
-    function removerDelCarrito(index){
-      carrito.splice(index,1);
-      localStorage.setItem('carrito',JSON.stringify(carrito));
-      actualizarCarrito();
-      actualizarContadorCarrito();
-    }
-
-    function verCarrito(){
-      // permite ir a la página de carrito (como en index)
-      location.href = 'carrito.html';
-    }
-
-    function vaciarCarrito(){
-      if(!confirm('Vaciar todo el carrito?')) return;
-      carrito = [];
-      localStorage.setItem('carrito', JSON.stringify(carrito));
-      actualizarCarrito();
-      actualizarContadorCarrito();
-    }
-
-    // sincronizar con cambios de localStorage desde otras pestañas
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'carrito') {
-        carrito = JSON.parse(e.newValue) || [];
-        actualizarCarrito();
-        actualizarContadorCarrito();
+    async function cargarProducto(pid){
+      // 1) intentar API por ID
+      let res = await tryFetchSequential(apiPaths(`/api/productos/${encodeURIComponent(pid)}`), {cache:'no-store'});
+      if (res) {
+        const p = await res.json();
+        if (p && (p.id==pid || p.id===String(pid))) return renderProducto(p);
       }
-    });
 
-    // inicializar
-    actualizarCarrito();
-    actualizarContadorCarrito();
-    cargarProducto();
+      // 2) API listado completo y buscar
+      res = await tryFetchSequential(apiPaths('/api/productos'), {cache:'no-store'});
+      if (res) {
+        const lista = await res.json();
+        const p = (lista || []).find(x => Number(x.id) === Number(pid));
+        if (p) return renderProducto(p);
+      }
+
+      // 3) Fallback a JSON estático en raíz (repo/public puede estar en subcarpeta)
+      res = await tryFetchSequential(['../productos.json','/productos.json','productos.json'], {cache:'no-store'});
+      if (res) {
+        const lista = await res.json();
+        const p = (lista || []).find(x => Number(x.id) === Number(pid));
+        if (p) return renderProducto(p);
+      }
+
+      showError('Producto no encontrado o no disponible.');
+    }
+
+    function renderProducto(p){
+      // nombre, precio, categoria, stock
+      elNom.textContent = p.nombre || `Producto #${p.id}`;
+      elPrecio.textContent = (typeof p.precio === 'number')
+        ? `$${p.precio.toFixed(2)}`
+        : (p.precio ? `$${Number(p.precio).toFixed(2)}` : '—');
+
+      elCat.textContent = p.categoria ? `Categoría: ${p.categoria}` : 'Categoría: —';
+      const stockNum = Number(p.stock || 0);
+      elStock.textContent = `Stock: ${stockNum}`;
+      btnAdd.disabled = stockNum <= 0;
+
+      // imagen: intentos relativos y absolutos
+      // si tus imágenes están en /public/imagenes/ID.jpg, la ruta relativa simple funciona desde /public/producto.html
+      const candidates = [
+        `imagenes/${p.id}.jpg`,        // /public/imagenes (cuando estás dentro de /public)
+        `/imagenes/${p.id}.jpg`,       // raíz /imagenes
+        `../imagenes/${p.id}.jpg`      // subir un nivel por si el deploy expone raíz con subcarpeta
+      ];
+      setImageWithFallback(elImg, candidates);
+
+      // carrito local (simple)
+      btnAdd.onclick = () => {
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const idx = cart.findIndex(i => Number(i.id) === Number(p.id));
+        if (idx === -1) {
+          cart.push({ id: p.id, nombre: p.nombre, precio: Number(p.precio)||0, cantidad: 1 });
+        } else {
+          cart[idx].cantidad = Number(cart[idx].cantidad || 0) + 1;
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        alert('Producto agregado al carrito.');
+      };
+
+      elCard.classList.remove('hidden');
+      elError.classList.add('hidden');
+    }
+
+    function setImageWithFallback(imgEl, urls){
+      let i = 0;
+      function tryNext(){
+        if (i >= urls.length) {
+          imgEl.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
+              <rect width="100%" height="100%" fill="#eee"/>
+              <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#888" font-size="20">Sin imagen</text>
+            </svg>`
+          );
+          return;
+        }
+        const url = urls[i++];
+        const test = new Image();
+        test.onload = () => { imgEl.src = url; };
+        test.onerror = tryNext;
+        test.src = url;
+      }
+      tryNext();
+    }
   </script>
 </body>
 </html>
-
-
