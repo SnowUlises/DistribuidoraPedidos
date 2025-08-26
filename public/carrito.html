@@ -263,103 +263,33 @@ btnConfirmar.addEventListener('click', async () => {
   };
 
   if (apiMode) {
-    // MODO API: actualizamos stock por producto y luego enviamos pedido al backend
-    try {
-      // actualizar stock por producto (PUT)
-      for (const item of nuevosCarrito) {
-        const prod = productos.find(p => p.id === item.id);
-        if (typeof prod?.stock === 'number') {
-          const updated = {...prod, stock: prod.stock - item.cantidad};
-          const res = await fetch(apiBase + '/productos/' + prod.id, {
-            method: 'PUT',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(updated)
-          });
-          if (!res.ok) throw new Error('Error actualizando producto ' + prod.id);
-        }
-      }
+  // ✅ MODO API: un solo POST al servidor que actualiza stock y guarda pedido
+  try {
+    const res = await fetch(apiBase + '/guardar-pedidos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pedido: nuevosCarrito })
+    });
 
-      // intentar POST /api/pedidos (si tu backend lo soporta)
-      try {
-        const resPed = await fetch(apiBase + '/pedidos', {
-          method:'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(pedido)
-        });
-        if (!resPed.ok) {
-          // no fatal: puede que endpoint no exista
-          console.warn('No se pudo guardar pedido en /api/pedidos (ok=false)');
-        }
-      } catch(e) {
-        console.warn('No existe endpoint /api/pedidos o falló:', e);
-      }
+    if (!res.ok) throw new Error('Error en el servidor');
 
-      // éxito
-      localStorage.removeItem('carrito');
-      carrito = [];
-      renderizarCarrito();
-      sinStockAviso.textContent = '';
-      postActions.innerHTML = '<div style="color:#28a745;font-weight:bold;">Pedido procesado en el servidor correctamente.</div>';
-      btnConfirmar.textContent = 'Enviado';
-      window.location.href = 'index.html';
-    } catch (err) {
-      console.error(err);
-      alert('Error procesando pedido en el servidor: ' + err.message);
-      postActions.innerHTML = '<div style="color:#d9534f;font-weight:bold;">Error procesando pedido en servidor.</div>';
-    } finally {
-      btnConfirmar.disabled = false;
-      btnConfirmar.textContent = 'Sí, enviar';
-    }
-
-  } else {
-    // MODO ESTÁTICO: No podemos escribir en el servidor desde el navegador.
-    // Generamos archivos descargables:
-    try {
-      // 1) productos_actualizado.json -> para que lo subas al server reemplazando productos.json
-      const blobProductos = new Blob([JSON.stringify(productosClon, null, 2)], {type:'application/json'});
-      const urlProductos = URL.createObjectURL(blobProductos);
-      const aProductos = document.createElement('a');
-      aProductos.href = urlProductos;
-      aProductos.download = 'productos_actualizado.json';
-      aProductos.textContent = 'Descargar productos_actualizado.json (subilo al server para aplicar stock)';
-      aProductos.className = 'download-link';
-
-      // 2) pedido (archivo)
-      const blobPedido = new Blob([JSON.stringify(pedido, null, 2)], {type:'application/json'});
-      const urlPedido = URL.createObjectURL(blobPedido);
-      const aPedido = document.createElement('a');
-      aPedido.href = urlPedido;
-      aPedido.download = `pedido_${usuario.user || 'anonimo'}_${Date.now()}.json`;
-      aPedido.textContent = 'Descargar archivo del pedido (guárdalo o envíalo por mail)';
-      aPedido.className = 'download-link';
-
-      // mostrar links y guardar pedido localmente
-      postActions.innerHTML = '';
-      postActions.appendChild(aProductos);
-      postActions.appendChild(aPedido);
-
-      // guardar pedido en localStorage por si lo querés recuperar
-      const pedidos = JSON.parse(localStorage.getItem('pedidos')) || {};
-      pedidos[usuario.user] = pedidos[usuario.user] || [];
-      pedidos[usuario.user].push(pedido);
-      localStorage.setItem('pedidos', JSON.stringify(pedidos));
-
-      // vaciar carrito local
-      localStorage.removeItem('carrito');
-      carrito = [];
-      renderizarCarrito();
-
-      postActions.insertAdjacentHTML('afterbegin', '<div style="color:#f39c12;font-weight:bold;">Modo estático: descarga los archivos y súbelos al servidor manualmente.</div>');
-
-    } catch (err) {
-      console.error(err);
-      alert('Error generando archivos locales: ' + err.message);
-    } finally {
-      btnConfirmar.disabled = false;
-      btnConfirmar.textContent = 'Sí, enviar';
-    }
+    alert('Pedido enviado y stock actualizado en el servidor.');
+    localStorage.removeItem('carrito');
+    carrito = [];
+    renderizarCarrito();
+    window.location.href = 'index.html';
+  } catch (err) {
+    console.error(err);
+    alert('Error procesando pedido en servidor: ' + err.message);
+  } finally {
+    btnConfirmar.disabled = false;
+    btnConfirmar.textContent = 'Sí, enviar';
   }
-});
+} else {
+  // (deja tu bloque de modo estático igual que ahora)
+  ...
+}
+
 
 // helpers
 function formatMoney(n) {
@@ -374,6 +304,7 @@ function formatMoney(n) {
 </script>
 </body>
 </html>
+
 
 
 
