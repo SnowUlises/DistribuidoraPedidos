@@ -273,7 +273,7 @@
       <button id="btnCarrito">Carrito (0)</button>
     </div>
   </header>
-
+  
   <div id="carritoContainer" style="display:none;">
     <h3>Carrito de compras</h3>
     <div id="itemsCarrito"></div>
@@ -286,28 +286,33 @@
       </button>
     </div>
   </div>
-
+ 
   <div class="container">
     <aside>
       <h2>Categorías</h2>
       <ul id="listaCategorias">
         <li class="active" onclick="filtrarCategoria('Todos', this)">Todos</li>
-        <li onclick="filtrarCategoria('Remedios', this)">Remedios</li>
-        <li onclick="filtrarCategoria('Cosméticos', this)">Cosméticos</li>
+        <li onclick="filtrarCategoria('Accesorios', this)">Accesorios</li>
+        <li onclick="filtrarCategoria('Limpieza', this)">Limpieza</li>
         <li onclick="filtrarCategoria('Higiene', this)">Higiene</li>
-        <li onclick="filtrarCategoria('Otros', this)">Otros</li>
+        <li onclick="filtrarCategoria('Perfumería', this)">Perfumería</li>
+        <li onclick="filtrarCategoria('Alimentos', this)">Alimentos</li>
       </ul>
     </aside>
 
     <main>
       <div class="ordenar">
-        Ordenar por:
-        <select id="orden" onchange="renderProductos()">
-          <option value="nombre">Nombre</option>
-          <option value="precioAsc">Precio ↑</option>
-          <option value="precioDesc">Precio ↓</option>
-        </select>
-      </div>
+  Ordenar por:
+  <select id="orden" onchange="renderProductos()">
+    <option value="nombre">Nombre</option>
+    <option value="precioAsc">Precio ↑</option>
+    <option value="precioDesc">Precio ↓</option>
+  </select>
+
+  <!-- BUSCADOR -->
+  <label for="buscador" style="margin-left:12px;">Buscar:</label>
+  <input id="buscador" type="search" placeholder="Buscar producto..." style="padding:0.45em; border-radius:6px; border:1px solid #ccc; margin-left:6px;" />
+</div>
 
       <div class="cantidad-por-pagina">
         Mostrar productos por página:
@@ -352,6 +357,7 @@ let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 let categoriaSeleccionada = 'Todos';
 let paginaActual = 1;
 let cantidadPorPagina = 9;
+let terminoBusqueda = '';
 
 function toggleCarrito() {
   const c = document.getElementById('carritoContainer');
@@ -370,19 +376,10 @@ function verCarrito() {
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
-  try {
-    // Usamos el JSON público que tenés en Netlify.
-    // Si preferís usar ruta relativa: '/productos.json' en vez de la URL absoluta.
-    const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
-    if (!res.ok) throw new Error(`Status ${res.status}`);
-    // ¡Asignar a la variable global, no crear const local!
-    productos = await res.json();
-    paginaActual = 1;
-    cambiarCantidadPagina();
-  } catch (err) {
-    console.error('Error cargando productos:', err);
-    alert('Error cargando productos desde productos.json (ver consola).');
-  }
+  const res = await fetch('http://distribuidorafunaz.com/api/productos');
+  productos = await res.json();
+  paginaActual = 1;
+  cambiarCantidadPagina();
 }
 
 function filtrarCategoria(categoria, elemento) {
@@ -420,6 +417,14 @@ function renderProductos() {
     filtrados.sort((a,b) => b.precio - a.precio);
   }
 
+  if (terminoBusqueda) {
+  filtrados = filtrados.filter(p => {
+    const nombre = (p.nombre || '').toString().toLowerCase();
+    const desc   = (p.descripcion || '').toString().toLowerCase();
+    return nombre.includes(terminoBusqueda) || desc.includes(terminoBusqueda);
+  });
+}
+
   const totalPaginas = Math.ceil(filtrados.length / cantidadPorPagina);
   if(paginaActual > totalPaginas) paginaActual = totalPaginas || 1;
 
@@ -433,7 +438,7 @@ function renderProductos() {
     div.innerHTML = `
       <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
       <h3>${p.nombre}</h3>
-      <div>$${(p.precio * 1.17).toFixed(2)}</div>
+      <div>$${(p.precio * 1.10).toFixed(2)}</div>
       <div class="stock ${p.stock ? 'con-stock' : 'sin-stock'}"> ${p.stock ? `En stock: ${p.stock}` : 'Sin stock'} </div>
       <button class="btn-carrito" ${!p.stock ? 'disabled' : ''} onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
     `;
@@ -587,10 +592,15 @@ function irAMiCuenta() {
 renderUsuarioMenu();
 actualizarContadorCarrito();
 cargarProductos();
+
+const buscadorInput = document.getElementById('buscador');
+if (buscadorInput) {
+  buscadorInput.addEventListener('input', (e) => {
+    terminoBusqueda = e.target.value.trim().toLowerCase();
+    paginaActual = 1;
+    renderProductos();
+  });
+}
 </script>
 </body>
 </html>
-
-
-
-
