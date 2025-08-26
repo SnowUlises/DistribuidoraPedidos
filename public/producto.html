@@ -1,51 +1,96 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Producto</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Producto - Distribuidora Funaz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+      font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
-      text-align: center;
+      background-color: #f7fbf7;
+      color: #0b2a12;
     }
     header {
-      background-color: #7ED957; /* Verde manzana */
-      padding: 20px;
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     header img {
-      max-height: 80px;
+      height: 60px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     .producto {
-      max-width: 500px;
-      margin: 30px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
     }
     .producto img {
-      max-width: 100%;
+      max-width: 300px;
       border-radius: 12px;
+      object-fit: cover;
     }
-    .producto h1 {
-      font-size: 1.8em;
-      margin: 15px 0;
+    .detalle {
+      flex: 1;
     }
-    .producto p {
-      font-size: 1.2em;
-      color: #333;
+    .detalle h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+    }
+    .detalle p {
+      margin: 5px 0;
+      font-size: 18px;
+    }
+    footer {
+      text-align: center;
+      padding: 15px;
+      background: #4CAF50;
+      color: white;
+      margin-top: 30px;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 10px 15px;
+      background: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: 0.3s;
+    }
+    .back:hover {
+      background: #45a049;
     }
   </style>
 </head>
 <body>
   <header>
-    <img src="../imagenes/logo.png" alt="Distribuidora Funaz" />
+    <img src="/imagenes/logo.png" alt="Distribuidora Funaz">
+    <h2>Distribuidora Funaz</h2>
   </header>
-  <div class="producto" id="producto"></div>
+
+  <div class="container">
+    <div id="producto" class="producto">
+      <p>Cargando producto...</p>
+    </div>
+    <a href="/public/index.html" class="back">Volver</a>
+  </div>
+
+  <footer>
+    &copy; 2025 Distribuidora Funaz
+  </footer>
 
   <script>
     async function cargarProducto() {
@@ -53,27 +98,34 @@
       const id = params.get('id');
 
       try {
-        const res = await fetch('../productos.json'); // 🔹 FIX: Subimos un nivel
-        if (!res.ok) throw new Error('No se pudo cargar productos.json');
+        // 🔥 Cambio ÚNICO: ruta absoluta para productos.json
+        const res = await fetch('/productos.json');
         const productos = await res.json();
-
         const producto = productos.find(p => p.id == id);
+
+        const contenedor = document.getElementById('producto');
+
         if (!producto) {
-          document.getElementById('producto').innerHTML = '<h2>Producto no encontrado</h2>';
+          contenedor.innerHTML = '<p>Producto no encontrado.</p>';
           return;
         }
 
-        const imagen = producto.imagen ? `..${producto.imagen}` : '../imagenes/placeholder.png';
         const precioPublico = (producto.precio * 1.10).toFixed(2);
+        const imagen = producto.imagen && producto.imagen.trim() !== ""
+          ? producto.imagen
+          : "/imagenes/placeholder.png";
 
-        document.getElementById('producto').innerHTML = `
+        contenedor.innerHTML = `
           <img src="${imagen}" alt="${producto.nombre}">
-          <h1>${producto.nombre}</h1>
-          <p>Precio: $${precioPublico}</p>
+          <div class="detalle">
+            <h1>${producto.nombre}</h1>
+            <p><strong>Precio:</strong> $${precioPublico}</p>
+            <p><strong>Categoría:</strong> ${producto.categoria || 'Sin categoría'}</p>
+          </div>
         `;
       } catch (error) {
         console.error(error);
-        document.getElementById('producto').innerHTML = '<h2>Error cargando producto</h2>';
+        document.getElementById('producto').innerHTML = '<p>Error al cargar producto.</p>';
       }
     }
 
