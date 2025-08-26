@@ -370,9 +370,37 @@ function verCarrito() {
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
-  const res = await fetch('productos.json');
-  productos = await res.json();
   paginaActual = 1;
+  const candidateApis = [
+    '/api/productos',       // preferido cuando el backend sirve la API en la misma raíz
+    '../api/productos',     // si tu index está dentro de /public y API en la raíz
+    'http://localhost:3000/api/productos', // durante desarrollo local (opcional)
+    '../productos.json',
+    '/productos.json',
+    'productos.json'
+  ];
+
+  let lista = null;
+  for (const url of candidateApis) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('no ok ' + res.status);
+      const data = await res.json();
+      if (Array.isArray(data)) { lista = data; break; }
+      // Si la API devuelve { pedidos:..., pdfs:... } u otro wrapper, intentar detectar .productos
+      if (data && Array.isArray(data.productos)) { lista = data.productos; break; }
+    } catch (err) {
+      // console.warn('Intento fallido:', url, err);
+    }
+  }
+
+  if (!lista) {
+    console.error('No se pudo cargar la lista de productos desde ninguna ruta.');
+    productos = [];
+  } else {
+    productos = lista;
+  }
+
   cambiarCantidadPagina();
 }
 
@@ -581,4 +609,5 @@ cargarProductos();
 </script>
 </body>
 </html>
+
 
