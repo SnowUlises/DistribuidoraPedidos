@@ -2,286 +2,230 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Carrito de Compras</title>
+  <title>Carrito de Compras — Distribuidora Funaz</title>
   <style>
-    main {
-      max-width: 900px;
-      margin: auto;
-      padding: 2em;
-      display: flex;
-      flex-direction: column;
-      gap: 1em;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 1em;
-      color: #4a90e2;
-    }
-
-    .producto-carrito {
-      display: flex;
-      align-items: center;
-      gap: 1em;
-      background: #fff;
-      padding: 1em;
-      margin-bottom: 1em;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      justify-content: space-between;
-    }
-
-    .producto-carrito img {
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      border-radius: 6px;
-    }
-
-    .producto-info {
-      flex: 1;
-    }
-
-    .producto-info p {
-      margin: 4px 0;
-    }
-
-    .controles-cantidad {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.3em;
-      min-width: 110px;
-    }
-
-    .controles-cantidad button {
-      padding: 4px 8px;
-      border: none;
-      background: #4a90e2;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-      width: 100%;
-    }
-
-    .controles-cantidad button:hover {
-      background: #357abd;
-    }
-
-    #formOverlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.4);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-    }
-
-    #formDatos {
-      background: #f4f4f4;
-      padding: 2em;
-      border-radius: 10px;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-      position: relative;
-    }
-
-    #formDatos h3 {
-      text-align: center;
-      margin-bottom: 1em;
-      color: #4a90e2;
-    }
-
-    #formDatos input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 1em;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1em;
-    }
-
-    button.enviar {
-      background: #4a90e2;
-      border: none;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-      display: block;
-      margin: 0 auto;
-      min-width: 140px;
-      font-size: 1em;
-    }
-
-    button.enviar:hover {
-      background: #357ABD;
-    }
-
-    #btnCerrarFormulario {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: #d9534f;
-      border: none;
-      color: white;
-      border-radius: 50%;
-      width: 28px;
-      height: 28px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 22px;
-      text-align: center;
-      padding: 0;
-      transition: background 0.2s;
-    }
-
-    #btnCerrarFormulario:hover {
-      background: #c9302c;
-    }
+    /* (mismo CSS que tenías, le agregué un pequeño aviso-mode) */
+    main { max-width: 900px; margin: auto; padding: 2em; display:flex; flex-direction:column; gap:1em; }
+    h2 { text-align:center; margin-bottom:1em; color:#4a90e2; }
+    .producto-carrito { display:flex; align-items:center; gap:1em; background:#fff; padding:1em; margin-bottom:1em; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); justify-content:space-between; }
+    .producto-carrito img { width:100px; height:100px; object-fit:cover; border-radius:6px; }
+    .producto-info { flex:1; }
+    .producto-info p { margin:4px 0; }
+    .controles-cantidad { display:flex; flex-direction:column; align-items:center; gap:0.3em; min-width:110px; }
+    .controles-cantidad button { padding:4px 8px; border:none; background:#4a90e2; color:white; border-radius:6px; cursor:pointer; font-weight:bold; width:100%; }
+    .controles-cantidad button:hover { background:#357abd; }
+    #formOverlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); display:none; justify-content:center; align-items:center; z-index:10000; }
+    #formDatos { background:#f4f4f4; padding:2em; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 12px rgba(0,0,0,0.3); position:relative; }
+    #formDatos h3 { text-align:center; margin-bottom:1em; color:#4a90e2; }
+    button.enviar { background:#4a90e2; border:none; color:white; padding:12px 20px; border-radius:6px; font-weight:bold; cursor:pointer; display:block; margin:0 auto; min-width:140px; }
+    button.enviar:hover { background:#357ABD; }
+    #btnCerrarFormulario { position:absolute; top:8px; right:8px; background:#d9534f; border:none; color:white; border-radius:50%; width:28px; height:28px; font-weight:bold; cursor:pointer; font-size:18px; line-height:22px; text-align:center; padding:0; }
+    #btnCerrarFormulario:hover { background:#c9302c; }
+    footer { text-align:center; color:#777; margin-top:2em }
+    .mode-banner { text-align:center; padding:8px; border-radius:6px; font-weight:700; color:#fff; margin-bottom:0.6em; }
+    .api-mode { background:#28a745; }
+    .static-mode { background:#f39c12; }
+    .download-link { display:block; margin-top:10px; text-align:center; }
   </style>
 </head>
 <body>
   <main>
     <h2>Tu Carrito</h2>
+    <div id="modeBanner" style="display:none" class="mode-banner"></div>
+
     <div id="listaCarrito"></div>
 
     <button id="btnMostrarFormulario" class="enviar">Enviar pedido</button>
 
     <div id="formOverlay">
-  <div id="formDatos">
-    <button type="button" id="btnCerrarFormulario" title="Cerrar">&times;</button>
-    <h3>¿Estás seguro de enviar el pedido?</h3>
-    <p id="totalPedido" style="text-align:center; font-weight:bold;"></p>
-    <button class="enviar" id="confirmarEnvio">Sí, enviar</button>
-  </div>
-</div>
+      <div id="formDatos">
+        <button type="button" id="btnCerrarFormulario" title="Cerrar">&times;</button>
+        <h3>¿Estás seguro de enviar el pedido?</h3>
+        <p id="totalPedido" style="text-align:center; font-weight:bold;"></p>
+        <div id="sinStockAviso" style="color:#d9534f; margin-bottom:8px; text-align:center;"></div>
+        <button class="enviar" id="confirmarEnvio">Sí, enviar</button>
+
+        <div id="postActions" style="margin-top:12px; text-align:center;"></div>
+      </div>
+    </div>
   </main>
 
+  <footer>
+    Distribuidora Funaz
+  </footer>
 
+<script>
+/*
+  Comportamiento:
+  - Si hay API en /api/productos, se usa MODO API (PUT para stock y POST para pedidos).
+  - Si no hay API, se usa MODO ESTÁTICO: genera archivos descargables con productos actualizados y pedido.
+*/
+let productos = [];
+let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+const usuario = { user: localStorage.getItem('loggedUser') || 'invitado' };
 
+const lista = document.getElementById('listaCarrito');
+const formOverlay = document.getElementById('formOverlay');
+const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
+const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
+const totalPedido = document.getElementById('totalPedido');
+const btnConfirmar = document.getElementById('confirmarEnvio');
+const modeBanner = document.getElementById('modeBanner');
+const postActions = document.getElementById('postActions');
+const sinStockAviso = document.getElementById('sinStockAviso');
 
+let apiMode = false; // detectado
+let apiBase = '/api'; // puedes cambiar si tu API usa prefijo distinto
 
-  <script>
-  let productos = [];
-  let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-  const lista = document.getElementById('listaCarrito');
-  const formOverlay = document.getElementById('formOverlay');
-  const formDatos = document.getElementById('formDatos');
-  const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
-  const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
-  const totalPedido = document.getElementById('totalPedido');
-  const btnConfirmar = document.getElementById('confirmarEnvio');
-
-  const usuario = { user: localStorage.getItem('loggedUser')};
-  async function cargarProductos() {
-    try {
-      const res = await fetch('http://localhost:3000/api/productos');
-      productos = await res.json();
-      renderizarCarrito();
-    } catch (error) {
-      lista.innerHTML = '<p>Error cargando productos.</p>';
-    }
-  }
-
-  function guardarCarrito() {
-    localStorage.setItem('carrito', JSON.stringify(carrito));
-  }
-
-  function renderizarCarrito() {
-    lista.innerHTML = '';
-    if (carrito.length === 0) {
-      lista.innerHTML = '<p>El carrito está vacío.</p>';
-      btnMostrarFormulario.style.display = 'none';
-      ocultarFormulario();
+// Detecta si existe endpoint API /api/productos (tiempo límite 2s)
+async function detectApi() {
+  try {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(apiBase + '/productos', { method: 'GET', signal: controller.signal });
+    clearTimeout(id);
+    if (!res.ok) throw new Error('no api');
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      apiMode = true;
+      modeBanner.textContent = 'MODO: API (actualiza JSON en el servidor)';
+      modeBanner.className = 'mode-banner api-mode';
+      modeBanner.style.display = 'block';
       return;
     }
-    btnMostrarFormulario.style.display = 'block';
+  } catch (e) {
+    apiMode = false;
+    modeBanner.textContent = 'MODO: Estático (no hay API). Se generarán archivos descargables con los cambios.';
+    modeBanner.className = 'mode-banner static-mode';
+    modeBanner.style.display = 'block';
+  }
+}
 
-    carrito.forEach((item, i) => {
-      const p = productos.find(prod => prod.id === item.id);
-      if (!p) return;
+// Cargar productos (API o productos.json)
+async function cargarProductos() {
+  try {
+    if (apiMode) {
+      const r = await fetch(apiBase + '/productos');
+      productos = await r.json();
+    } else {
+      const r = await fetch('productos.json', {cache: 'no-store'});
+      productos = await r.json();
+    }
+    renderizarCarrito();
+  } catch (err) {
+    lista.innerHTML = '<p>Error cargando productos.</p>';
+    console.error(err);
+  }
+}
 
-      const div = document.createElement('div');
-      div.className = 'producto-carrito';
-      div.innerHTML = `
-        <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.src='imagenes/placeholder.png'"/>
-        <div class="producto-info">
-          <p><strong>${p.nombre}</strong></p>
-          <p>Precio: $${(p.precio * 1.17).toFixed(2)}</p>
-          <p>Subtotal: $${(p.precio * item.cantidad).toFixed(2)}</p>
-        </div>
-        <div class="controles-cantidad">
-          <button class="btn-aumentar" title="Aumentar cantidad">+</button>
-          <span>${item.cantidad}</span>
-          <button class="btn-reducir" title="Reducir cantidad">-</button>
-          <button class="btn-eliminar" title="Eliminar producto" style="background:#d9534f;">X</button>
-        </div>
-      `;
+function guardarCarrito() {
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+}
 
-      div.querySelector('.btn-aumentar').addEventListener('click', () => {
-        carrito[i].cantidad++;
-        guardarCarrito();
-        renderizarCarrito();
-      });
+function renderizarCarrito() {
+  lista.innerHTML = '';
+  postActions.innerHTML = '';
+  sinStockAviso.textContent = '';
 
-      div.querySelector('.btn-reducir').addEventListener('click', () => {
-        if (carrito[i].cantidad > 1) {
-          carrito[i].cantidad--;
-        } else {
-          carrito.splice(i, 1);
-        }
-        guardarCarrito();
-        renderizarCarrito();
-      });
+  if (carrito.length === 0) {
+    lista.innerHTML = '<p>El carrito está vacío.</p>';
+    btnMostrarFormulario.style.display = 'none';
+    ocultarFormulario();
+    return;
+  }
+  btnMostrarFormulario.style.display = 'block';
 
-      div.querySelector('.btn-eliminar').addEventListener('click', () => {
-        carrito.splice(i, 1);
-        guardarCarrito();
-        renderizarCarrito();
-      });
+  carrito.forEach((item, i) => {
+    const p = productos.find(prod => prod.id === item.id);
+    if (!p) return;
 
-      lista.appendChild(div);
+    const div = document.createElement('div');
+    div.className = 'producto-carrito';
+    const precioPublico = (p.precio * 1.10);
+
+    div.innerHTML = `
+      <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.src='imagenes/placeholder.png'"/>
+      <div class="producto-info">
+        <p><strong>${p.nombre}</strong></p>
+        <p>Precio unitario: ${formatMoney(precioPublico)}</p>
+        <p>Subtotal: ${formatMoney(precioPublico * item.cantidad)}</p>
+      </div>
+      <div class="controles-cantidad">
+        <button class="btn-aumentar" title="Aumentar cantidad">+</button>
+        <span>${item.cantidad}</span>
+        <button class="btn-reducir" title="Reducir cantidad">-</button>
+        <button class="btn-eliminar" title="Eliminar producto" style="background:#d9534f;">X</button>
+      </div>
+    `;
+
+    // handlers
+    div.querySelector('.btn-aumentar').addEventListener('click', () => {
+      // si hay stock como número, respeta el límite
+      const prod = productos.find(pr=>pr.id === item.id);
+      if (typeof prod?.stock === 'number' && item.cantidad + 1 > prod.stock) {
+        alert(`No hay más stock disponible (${prod.stock}).`);
+        return;
+      }
+      carrito[i].cantidad++;
+      guardarCarrito();
+      renderizarCarrito();
     });
-  }
 
-  function mostrarFormulario() {
-    const total = carrito.reduce((acc, item) => {
-      const p = productos.find(prod => prod.id === item.id);
-      return acc + (p ? p.precio * item.cantidad : 0);
-    }, 0);
-    totalPedido.textContent = 'Total: $' + total.toFixed(2);
-    formOverlay.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
+    div.querySelector('.btn-reducir').addEventListener('click', () => {
+      if (carrito[i].cantidad > 1) carrito[i].cantidad--;
+      else carrito.splice(i, 1);
+      guardarCarrito();
+      renderizarCarrito();
+    });
 
-  function ocultarFormulario() {
-    formOverlay.style.display = 'none';
-    document.body.style.overflow = '';
-  }
+    div.querySelector('.btn-eliminar').addEventListener('click', () => {
+      carrito.splice(i, 1);
+      guardarCarrito();
+      renderizarCarrito();
+    });
 
-  btnMostrarFormulario.addEventListener('click', mostrarFormulario);
-  btnCerrarFormulario.addEventListener('click', ocultarFormulario);
-
-  formOverlay.addEventListener('click', e => {
-    if (e.target === formOverlay) ocultarFormulario();
+    lista.appendChild(div);
   });
+}
+
+// Modal formulario
+function mostrarFormulario() {
+  const total = carrito.reduce((acc, item) => {
+    const p = productos.find(prod => prod.id === item.id);
+    const precioPublico = p ? p.precio * 1.10 : 0;
+    return acc + (precioPublico * item.cantidad);
+  }, 0);
+  totalPedido.textContent = 'Total: ' + formatMoney(total);
+  sinStockAviso.textContent = '';
+  postActions.innerHTML = '';
+  formOverlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function ocultarFormulario() {
+  formOverlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+btnMostrarFormulario.addEventListener('click', mostrarFormulario);
+btnCerrarFormulario.addEventListener('click', ocultarFormulario);
+formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
 btnConfirmar.addEventListener('click', async () => {
+  btnConfirmar.disabled = true;
+  btnConfirmar.textContent = 'Procesando...';
+
   const nuevosCarrito = [];
   const sinStock = [];
 
+  // clonamos productos para modo estático
+  const productosClon = productos.map(p => ({...p}));
+
   for (const item of carrito) {
-    const producto = productos.find(p => p.id === item.id);
+    const producto = productosClon.find(p => p.id === item.id);
     if (!producto) continue;
 
+    // interpretamos stock: aceptamos boolean, number, or undefined
     if (typeof producto.stock === 'number') {
       if (producto.stock === 0) {
         sinStock.push(producto.nombre);
@@ -291,55 +235,147 @@ btnConfirmar.addEventListener('click', async () => {
         sinStock.push(producto.nombre + ` (solo ${producto.stock} disponibles)`);
         item.cantidad = producto.stock;
       }
-      producto.stock -= item.cantidad; // Restar stock
-
-      // Actualizar stock en el backend
-      try {
-        await fetch(`http://localhost:3000/api/productos/${producto.id}`, {
-          method: 'PUT',
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(producto)
-        });
-      } catch (err) {
-        console.error("Error actualizando stock:", err);
-      }
+      // restamos del clon (para descargar luego)
+      producto.stock = Math.max(0, producto.stock - item.cantidad);
     }
-    nuevosCarrito.push(item);
+    nuevosCarrito.push({...item});
   }
 
   if (sinStock.length > 0) {
-    alert(`No hay suficiente stock para: \n- ${sinStock.join('\n- ')}\nSe ajustó el pedido automáticamente.`);
+    sinStockAviso.textContent = `Ajustado: falta stock para: ${sinStock.join(', ')}`;
   }
 
   if (nuevosCarrito.length === 0) {
     alert('No hay productos disponibles para pedir.');
+    btnConfirmar.disabled = false;
+    btnConfirmar.textContent = 'Sí, enviar';
     return;
   }
 
-  // Guardar pedido con precio unitario
-  const pedido = nuevosCarrito.map(item => {
-    const producto = productos.find(p => p.id === item.id);
-    return {
-      id: item.id,
-      nombre: producto?.nombre || '',
-      precio: producto?.precio || 0,
-      cantidad: item.cantidad
-    };
-  });
+  // construir objeto pedido (precio unitario final = precio * 1.10)
+  const pedido = {
+    user: usuario.user,
+    fecha: new Date().toISOString(),
+    items: nuevosCarrito.map(item => {
+      const prod = productos.find(p => p.id === item.id) || {};
+      const unit = Number(prod.precio || 0) * 1.10;
+      return { id: item.id, nombre: prod.nombre || '', cantidad: item.cantidad, precio_unitario: unit };
+    }),
+    total: nuevosCarrito.reduce((s, it) => {
+      const prod = productos.find(p => p.id === it.id) || {};
+      return s + (Number(prod.precio || 0) * 1.10 * it.cantidad);
+    }, 0)
+  };
 
-  const pedidos = JSON.parse(localStorage.getItem('pedidos')) || {};
-  pedidos[usuario.user] = pedidos[usuario.user] || [];
-  pedidos[usuario.user].push(pedido);
+  if (apiMode) {
+    // MODO API: actualizamos stock por producto y luego enviamos pedido al backend
+    try {
+      // actualizar stock por producto (PUT)
+      for (const item of nuevosCarrito) {
+        const prod = productos.find(p => p.id === item.id);
+        if (typeof prod?.stock === 'number') {
+          const updated = {...prod, stock: prod.stock - item.cantidad};
+          const res = await fetch(apiBase + '/productos/' + prod.id, {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(updated)
+          });
+          if (!res.ok) throw new Error('Error actualizando producto ' + prod.id);
+        }
+      }
 
-  localStorage.setItem('pedidos', JSON.stringify(pedidos));
-  localStorage.removeItem('carrito');
-  alert('Pedido enviado correctamente');
-  window.location.href = 'index.html';
+      // intentar POST /api/pedidos (si tu backend lo soporta)
+      try {
+        const resPed = await fetch(apiBase + '/pedidos', {
+          method:'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(pedido)
+        });
+        if (!resPed.ok) {
+          // no fatal: puede que endpoint no exista
+          console.warn('No se pudo guardar pedido en /api/pedidos (ok=false)');
+        }
+      } catch(e) {
+        console.warn('No existe endpoint /api/pedidos o falló:', e);
+      }
+
+      // éxito
+      localStorage.removeItem('carrito');
+      carrito = [];
+      renderizarCarrito();
+      sinStockAviso.textContent = '';
+      postActions.innerHTML = '<div style="color:#28a745;font-weight:bold;">Pedido procesado en el servidor correctamente.</div>';
+      btnConfirmar.textContent = 'Enviado';
+    } catch (err) {
+      console.error(err);
+      alert('Error procesando pedido en el servidor: ' + err.message);
+      postActions.innerHTML = '<div style="color:#d9534f;font-weight:bold;">Error procesando pedido en servidor.</div>';
+    } finally {
+      btnConfirmar.disabled = false;
+      btnConfirmar.textContent = 'Sí, enviar';
+    }
+
+  } else {
+    // MODO ESTÁTICO: No podemos escribir en el servidor desde el navegador.
+    // Generamos archivos descargables:
+    try {
+      // 1) productos_actualizado.json -> para que lo subas al server reemplazando productos.json
+      const blobProductos = new Blob([JSON.stringify(productosClon, null, 2)], {type:'application/json'});
+      const urlProductos = URL.createObjectURL(blobProductos);
+      const aProductos = document.createElement('a');
+      aProductos.href = urlProductos;
+      aProductos.download = 'productos_actualizado.json';
+      aProductos.textContent = 'Descargar productos_actualizado.json (subilo al server para aplicar stock)';
+      aProductos.className = 'download-link';
+
+      // 2) pedido (archivo)
+      const blobPedido = new Blob([JSON.stringify(pedido, null, 2)], {type:'application/json'});
+      const urlPedido = URL.createObjectURL(blobPedido);
+      const aPedido = document.createElement('a');
+      aPedido.href = urlPedido;
+      aPedido.download = `pedido_${usuario.user || 'anonimo'}_${Date.now()}.json`;
+      aPedido.textContent = 'Descargar archivo del pedido (guárdalo o envíalo por mail)';
+      aPedido.className = 'download-link';
+
+      // mostrar links y guardar pedido localmente
+      postActions.innerHTML = '';
+      postActions.appendChild(aProductos);
+      postActions.appendChild(aPedido);
+
+      // guardar pedido en localStorage por si lo querés recuperar
+      const pedidos = JSON.parse(localStorage.getItem('pedidos')) || {};
+      pedidos[usuario.user] = pedidos[usuario.user] || [];
+      pedidos[usuario.user].push(pedido);
+      localStorage.setItem('pedidos', JSON.stringify(pedidos));
+
+      // vaciar carrito local
+      localStorage.removeItem('carrito');
+      carrito = [];
+      renderizarCarrito();
+
+      postActions.insertAdjacentHTML('afterbegin', '<div style="color:#f39c12;font-weight:bold;">Modo estático: descarga los archivos y súbelos al servidor manualmente.</div>');
+
+    } catch (err) {
+      console.error(err);
+      alert('Error generando archivos locales: ' + err.message);
+    } finally {
+      btnConfirmar.disabled = false;
+      btnConfirmar.textContent = 'Sí, enviar';
+    }
+  }
 });
 
+// helpers
+function formatMoney(n) {
+  try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
+  catch(e){ return '$' + Number(n).toFixed(2); }
+}
 
-
-  cargarProductos();
+// iniciar: detect API -> cargar productos
+(async function init(){
+  await detectApi();
+  await cargarProductos();
+})();
 </script>
 </body>
 </html>
