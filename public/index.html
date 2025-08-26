@@ -2,603 +2,961 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Distribuidora Funaz</title>
+  <title>Panel de Administración - Distribuidora Funaz</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; margin:0; background:#f2f2f2; color:#333; }
-    header { 
-      background:#4a90e2; color:#fff; padding:1em 2em; 
-      display:flex; align-items:center; gap:1em; 
-      justify-content: flex-start;
-      position: relative; 
-    }
-    footer {
-      background: #f8f8f8;
-      padding: 1.5em 2em;
+    body {
       font-family: 'Segoe UI', sans-serif;
-      color: #555;
-      font-size: 0.9em;
-      text-align: center;
-      border-top: 1px solid #ddd;
-      margin-top: 2em;
-    }
-    footer .contacto {
-      font-weight: bold;
+      margin: 0;
+      background: #f4f6f8;
       color: #333;
-      margin-bottom: 0.5em;
-      text-transform: uppercase;
+      padding: 2em;
+    }
+    header {
+      background: #4a90e2;
+      color: white;
+      text-align: center;
+      padding: 1.5em 0;
+      font-size: 2em;
+      font-weight: bold;
+      user-select: none;
+      margin-bottom: 2em;
+      border-radius: 8px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    button.btn-volver {
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 1.5em;
+      display: inline-block;
+    }
+    button.btn-volver:hover {
+      background: #357ABD;
+    }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    details {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 1.5em;
+      padding: 1.5em;
+      cursor: pointer;
+      transition: box-shadow 0.3s;
+    }
+    details[open] {
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    summary {
+      font-size: 1.4em;
+      font-weight: 600;
+      outline: none;
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 1em;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    summary::-webkit-details-marker {
+      display: none;
+    }
+    summary::before {
+      content: "▶";
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+    form {
+      max-width: 400px;
+    }
+    form input, form select, form button, form label {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+      box-sizing: border-box;
+      display: block;
+    }
+    form label {
+      font-weight: bold;
+      color: #555;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      width: auto;
+    }
+    form input[type=checkbox] {
+      width: auto;
+      margin-bottom: 0;
+    }
+    form button {
+      background: #4a90e2;
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      padding: 12px;
+    }
+    form button:hover {
+      background: #357ABD;
+    }
+    #listaAdmin {
+      max-width: 100%;
+    }
+    .producto-admin {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1em;
+      margin-bottom: 1em;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .producto-info {
+      flex: 1 1 320px;
+      min-width: 280px;
+    }
+    .producto-info input, .producto-info select {
+      width: 100%;
+      margin-top: 4px;
+      padding: 6px 8px;
       font-size: 1em;
     }
-    footer .derechos {
-      color: #999;
-      font-size: 0.8em;
-      margin-top: 0.3em;
-    }
-    header img { height:40px; width:40px; border-radius:50%; }
-    header h1 { margin:0; font-size:1.8em; flex-grow: 1; }
-    header button, #btnCarrito {
-      margin-left: 0.5em;
-      padding:8px 12px; border:none; border-radius:6px; background:#fff; color:#4a90e2;
-      font-weight:bold; cursor:pointer; white-space: nowrap;
-    }
-    header button:hover, #btnCarrito:hover { background:#dceeff; }
-    .container { display:flex; }
-    aside { width:200px; background:#fff; padding:1em; border-right:1px solid #ddd; min-height:100vh; }
-    aside h2 { font-size:1.2em; margin-bottom:1em; }
-    aside ul { list-style:none; padding:0; }
-    aside li { margin:0.5em 0; cursor:pointer; padding:0.5em; border-radius:6px; transition:background 0.2s; }
-    aside li:hover, aside li.active { background:#e6f0ff; font-weight:bold; }
-    main { flex:1; padding:2em; }
-    .ordenar, .paginacion, .cantidad-por-pagina { margin-bottom:1em; display:flex; align-items:center; justify-content:flex-end; gap:0.7em; }
-    select { padding:0.5em; border-radius:6px; border:1px solid #ccc; font-size:1em; transition:border 0.2s; }
-    select:focus { outline:none; border-color:#4a90e2; }
-    .productos {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: repeat(var(--cols, 3), 1fr);
-    }
-    .producto {
-      background:#fff;
-      border-radius:12px;
-      box-shadow:0 2px 10px rgba(0,0,0,0.05);
-      padding:1em;
-      transition:transform 0.2s;
+    .producto-info label {
+      font-weight: normal;
+      margin-top: 0.4em;
+      color: #555;
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       align-items: center;
-      cursor: pointer;
+      gap: 0.5em;
     }
-    .producto:hover { transform:scale(1.02); }
-    .producto h3 { margin-top:0.5em; text-align:center; }
-    .producto img {
-      width: 100px; height: 100px;
-      border-radius: 10px;
-      object-fit: cover;
-      margin-bottom: 0.5em;
-      pointer-events:none;
-    }
-    .stock { font-weight:bold; margin-top:0.5em; }
-    .con-stock { color:#28a745; }
-    .sin-stock { color:#d9534f; }
-    .paginacion button {
-      background:#4a90e2; border:none; color:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;
-      transition:background 0.2s;
-    }
-    .paginacion button:disabled {
-      background:#a0c1f7; cursor:default;
-    }
-    .btn-carrito {
-      margin-top:8px;
-      background:#4CAF50;
-      color:#fff;
-      padding:8px 12px;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-      font-weight:bold;
-      width: 100%;
-    }
-    .btn-carrito:hover {
-      background:#388E3C;
-    }
-    #carritoContainer {
-      position: fixed;
-      top: 65px;
-      right: 20px;
-      width: 320px;
-      max-height: 400px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      overflow-y: auto;
-      display: none;
-      z-index: 1000;
-      padding: 10px;
-    }
-    #carritoContainer h3 {
-      margin-top: 0;
-      margin-bottom: 10px;
-      font-size: 1.2em;
-      text-align: center;
-    }
-    .item-carrito {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 0.95em;
-    }
-    .item-carrito button {
+    .btn-eliminar {
       background: #d9534f;
       border: none;
       color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 6px;
       font-weight: bold;
-      font-size: 0.9em;
+      cursor: pointer;
       transition: background 0.2s;
+      height: 38px;
+      align-self: start;
+      margin-top: 1em;
     }
-    .item-carrito button:hover {
+    .btn-eliminar:hover {
       background: #c9302c;
     }
-    #mensajeCarrito {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: white;
-      color: black;
-      padding: 12px 20px;
+    #mensajeError {
+      margin-bottom: 1em;
+      color: red;
+      font-weight: bold;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    /* Usuarios */
+    .usuario-item {
+      background: #eef3f7;
       border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      font-weight: bold;
-      z-index: 1100;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      min-width: 220px;
-      max-width: 320px;
+      margin-bottom: 1em;
+      padding: 1em;
+      box-shadow: inset 0 0 5px #bbb;
     }
-    #mensajeCarrito.visible {
-      opacity: 1;
-      pointer-events: auto;
+    .usuario-info {
+      margin-bottom: 0.8em;
+      font-size: 0.95em;
     }
-
-    /* Modal Mi Cuenta */
-    #modalCuenta {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1500;
+    details.user-details summary {
+      font-size: 1.2em;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 0.5em;
+      color: #3a3a3a;
     }
-    #modalCuenta .modal-content {
+    details.user-details {
+      margin-bottom: 1em;
       background: #fff;
-      padding: 2em;
-      border-radius: 12px;
-      max-width: 320px;
-      width: 90%;
-      text-align: center;
-      position: relative;
+      padding: 1em;
+      border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.08);
     }
-    #modalCuenta .modal-content button.close-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: none;
-      border: none;
-      font-size: 1.5em;
-      cursor: pointer;
-    }
-    #modalCuenta .modal-content button.action-btn {
-      margin: 1em 0;
-      padding: 10px 20px;
-      width: 100%;
-      font-weight: bold;
-      cursor: pointer;
-      border-radius: 6px;
-      border: none;
-      background: #4a90e2;
-      color: white;
-      transition: background 0.2s;
-    }
-    #modalCuenta .modal-content button.action-btn:hover {
-      background: #357ABD;
-    }
-
-    /* Dropdown usuario */
-    #usuarioMenu {
-      position: relative;
-    }
-    #usuarioMenu button {
-      background: #fff;
-      color: #4a90e2;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-weight: bold;
-      cursor: pointer;
-      white-space: nowrap;
+    /* Status styles */
+    .status-container {
       display: flex;
+      gap: 1em;
       align-items: center;
-      gap: 6px;
+      margin-top: 0.5em;
     }
-    #usuarioMenu button:hover {
-      background: #dceeff;
-    }
-    #usuarioDropdown {
-      display: none;
-      position: absolute;
-      top: 38px;
-      right: 0;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-      width: 140px;
-      z-index: 2000;
-    }
-    #usuarioDropdown button {
-      width: 100%;
-      border: none;
-      background: none;
-      padding: 10px;
-      text-align: left;
+    .status-container label {
+      font-size: 0.9em;
       cursor: pointer;
-      font-weight: normal;
-      color: #333;
-      border-bottom: 1px solid #eee;
-      transition: background 0.2s;
+      user-select: none;
     }
-    #usuarioDropdown button:hover {
-      background: #f0f8ff;
+    .status-container input[type="checkbox"] {
+      margin-right: 4px;
     }
-    #usuarioDropdown button:last-child {
-      border-bottom: none;
-      color: #d9534f;
-      font-weight: bold;
+    /* NUEVO: estilos para sección Excel stock */
+    #excel-stock-section {
+      max-width: 100%;
+      margin-top: 1em;
+      background: #fff;
+      border-radius: 8px;
+      padding: 1em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+    #excel-stock-section input[type="file"] { width: auto; margin-bottom: 0.5em; }
+    #excel-stock-section button { background: #4a90e2; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; width: 100%; }
+    #excel-stock-section button:hover { background: #357ABD; }
+    #stockPreview { max-height: 240px; overflow:auto; border:1px solid #eee; padding:8px; border-radius:6px; margin:8px 0; background:#fafafa; }
+    #stockPreview table { width:100%; border-collapse:collapse; }
+    #stockPreview th, #stockPreview td { padding:6px 8px; border-bottom:1px solid #eee; text-align:left; font-size:0.95em; }
+    #stockResult { margin-top:8px; font-size:0.95em; }
+    .helper { font-size:0.9em; color:#666; margin-top:6px; }
   </style>
+  <!-- SheetJS for Excel processing -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <header>
-    <img src="imagenes/logo.png" alt="Logo" />
-    <h1>Distribuidora Funaz</h1>
-    <div style="margin-left:auto; display:flex; gap:0.5em; align-items:center;">
-      <div id="usuarioMenu"></div>
-      <button id="btnCarrito">Carrito (0)</button>
-    </div>
-  </header>
+  <header>Panel de administración</header>
+  <main>
+    <button class="btn-volver" onclick="location.href='index.html'">← Volver a tienda</button>
+    <div id="mensajeError"></div>
 
-  <div id="carritoContainer" style="display:none;">
-    <h3>Carrito de compras</h3>
-    <div id="itemsCarrito"></div>
-    <div style="margin-top:10px; text-align:center;">
-      <button onclick="vaciarCarrito()" style="background:#d9534f; padding:6px 12px; border:none; color:#fff; border-radius:6px; cursor:pointer;">Vaciar carrito</button>
-    </div>
-    <div style="margin-top:10px; text-align:center;">
-      <button onclick="verCarrito()" style="background:#4a90e2; padding:8px 14px; border:none; color:#fff; border-radius:6px; cursor:pointer; font-weight:bold;">
-        Ver carrito
-      </button>
-    </div>
-  </div>
-
-  <div class="container">
-    <aside>
-      <h2>Categorías</h2>
-      <ul id="listaCategorias">
-        <li class="active" onclick="filtrarCategoria('Todos', this)">Todos</li>
-        <li onclick="filtrarCategoria('Remedios', this)">Remedios</li>
-        <li onclick="filtrarCategoria('Cosméticos', this)">Cosméticos</li>
-        <li onclick="filtrarCategoria('Higiene', this)">Higiene</li>
-        <li onclick="filtrarCategoria('Otros', this)">Otros</li>
-      </ul>
-    </aside>
-
-    <main>
-      <div class="ordenar">
-        Ordenar por:
-        <select id="orden" onchange="renderProductos()">
-          <option value="nombre">Nombre</option>
-          <option value="precioAsc">Precio ↑</option>
-          <option value="precioDesc">Precio ↓</option>
+    <details>
+      <summary>Añadir producto</summary>
+      <form id="formAgregar" enctype="multipart/form-data">
+        <input type="text" id="nombre" placeholder="Nombre" required />
+        <input type="number" id="precio" placeholder="Precio" min="0" step="0.01" required />
+        <select id="categoria">
+          <option>Remedios</option>
+          <option>Cosméticos</option>
+          <option>Higiene</option>
+          <option>Otros</option>
         </select>
+        <label>Stock:
+  <input type="number" id="stock" value="0" min="0" required />
+</label>
+        <input type="file" id="imagen-nuevo" name="imagen" accept=".png,.jpg,.jpeg" />
+        <button type="submit">Agregar producto</button>
+      </form>
+    </details>
+
+    <details>
+      <summary>Crear pedido desde archivo</summary>
+      <div style="margin-top:10px;">
+        <input type="file" id="pedidoArchivo" accept=".txt" />
+        <button id="btnPrevisualizarPedido">Previsualizar pedido</button>
+        <button id="btnEnviarPedidoArchivo">Enviar pedido</button>
+        <div id="previsualizacionPedido" style="margin-top:10px;"></div>
       </div>
+    </details>
 
-      <div class="cantidad-por-pagina">
-        Mostrar productos por página:
-        <select id="cantidadPagina" onchange="cambiarCantidadPagina()">
-          <option value="4">2x2 (4)</option>
-          <option value="9" selected>3x3 (9)</option>
-          <option value="16">4x4 (16)</option>
-          <option value="25">5x5 (25)</option>
-        </select>
+    <details>
+      <summary>Administrar productos</summary>
+      <div id="listaAdmin"></div>
+    </details>
+
+    <details>
+      <summary>Actualizar precios (Próximamente)</summary>
+      <div>
+        <label for="inputJson">Seleccionar productos.json:</label>
+        <input type="file" id="inputJson" accept=".json">
       </div>
-
-      <div class="productos"></div>
-
-      <div class="paginacion" style="margin-top:1em;">
-        <button onclick="paginaAnterior()" id="btnPrev">Anterior</button>
-        <span id="infoPagina" style="align-self:center;"></span>
-        <button onclick="paginaSiguiente()" id="btnNext">Siguiente</button>
+      <div>
+        <label for="inputExcel">Seleccionar precios.xlsx:</label>
+        <input type="file" id="inputExcel" accept=".xlsx,.xls">
       </div>
-    </main>
-  </div>
+      <button id="btnCargarExcel">Actualizar y Descargar productos.json</button>
+    </details>
 
-  <div id="mensajeCarrito"></div>
+    <!-- NUEVO: sección para actualizar stock desde Excel -->
+    <details>
+      <summary>Actualizar stock desde Excel</summary>
+      <div id="excel-stock-section">
+        <p class="helper">Formato: primera columna = NOMBRE (igual a producto.nombre), segunda columna = STOCK A SUMAR (entero). Puede tener encabezado.</p>
 
-  <!-- Modal Mi Cuenta -->
-  <div id="modalCuenta">
-    <div class="modal-content">
-      <button class="close-btn" onclick="cerrarModalCuenta()">×</button>
-      <h2>Mi cuenta</h2>
-      <button class="action-btn" onclick="location.href='login.html'">Iniciar sesión</button>
-      <button class="action-btn" onclick="location.href='register.html'">Registrarse</button>
-    </div>
-  </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <input id="inputStockExcel" type="file" accept=".xlsx,.xls,.csv" />
+          <div style="flex:1;">
+            <div id="stockFileName" style="font-size:0.95em;color:#333;"></div>
+          </div>
+        </div>
 
-  <footer>
-    <div class="contacto">Información de contacto</div>
-    <div class="derechos">Distribuidora Funaz, © 2025. Todos los derechos reservados.</div>
-  </footer>
+        <div id="stockPreview" style="display:none;">
+          <strong>Vista previa (nombre → cantidad a sumar):</strong>
+          <div id="stockPreviewWrap"></div>
+        </div>
 
-<script>
-let productos = [];
-let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-let categoriaSeleccionada = 'Todos';
-let paginaActual = 1;
-let cantidadPorPagina = 9;
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button id="btnConfirmStock" style="flex:1;background:#28a745;color:white;" disabled>Confirmar</button>
+          <button id="btnCancelStock" style="flex:1;background:#d9534f;color:white;">Cancelar</button>
+        </div>
 
-function toggleCarrito() {
-  const c = document.getElementById('carritoContainer');
-  c.style.display = c.style.display === 'block' ? 'none' : 'block';
-  renderCarrito();
-}
+        <div id="stockResult"></div>
+      </div>
+    </details>
 
-function verCarrito() {
-  if (carrito.length === 0) {
-    alert('El carrito está vacío. Agrega productos antes de ver el carrito.');
-  } else {
-    location.href = 'carrito.html';
-  }
-}
+    <details>
+      <summary>Usuarios y pedidos</summary>
+      <div id="listaUsuarios"></div>
+    </details>
+  </main>
 
-document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
+  <script>
+    // Una sola declaración de productos + carga
+    let productos = [];
+    const user = localStorage.getItem('loggedUser');
+    if (user !== 'admin') window.location.href = 'index.html';
 
-async function cargarProductos() {
-  try {
-    const res = await fetch('/productos.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
-
-    productos = await res.json();
-
-    if (!Array.isArray(productos)) {
-      console.error('El JSON no es un array de productos');
-      productos = [];
+    // Estados de guardado/recibido
+    let estadosPedidos = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
+    function guardarEstados() {
+      localStorage.setItem('estadosPedidos', JSON.stringify(estadosPedidos));
     }
 
-    paginaActual = 1;
-    renderProductos();
-  } catch (err) {
-    console.error('No se pudieron cargar los productos:', err);
-    productos = [];
-  }
-}
+    function toggleGuardado(usuario, idx) {
+      const key = `${usuario}-${idx}`;
+      const checkbox = event.target;
+      const nuevo = checkbox.checked;
+      const confirmado = confirm(nuevo
+        ? '¿Marcar pedido como guardado?'
+        : '¿Desmarcar pedido recibido?');
+      if (!confirmado) { checkbox.checked = !nuevo; return; }
+      estadosPedidos[key] = { ...estadosPedidos[key], guardado: nuevo };
+      guardarEstados();
+    }
 
+    function toggleRecibido(usuario, idx) {
+      const key = `${usuario}-${idx}`;
+      const checkbox = event.target;
+      const nuevo = checkbox.checked;
+      const confirmado = confirm(nuevo
+        ? '¿Marcar pedido como recibido?'
+        : '¿Desmarcar pedido recibido?');
+      if (!confirmado) { checkbox.checked = !nuevo; return; }
+      estadosPedidos[key] = { ...estadosPedidos[key], recibido: nuevo };
+      guardarEstados();
+    }
 
+    // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
+    async function cargarProductos() {
+      paginaActual = 1;
 
-function filtrarCategoria(categoria, elemento) {
-  categoriaSeleccionada = categoria;
-  document.querySelectorAll('#listaCategorias li').forEach(li => li.classList.remove('active'));
-  elemento.classList.add('active');
-  paginaActual = 1;
-  renderProductos();
-}
+      const candidates = [
+        '/api/productos',     // si el backend sirve API en la raíz
+        '/productos.json',    // productos.json en la raíz del sitio (preferible en producción)
+        '../productos.json',  // por si estás en /public/ y el JSON está en la raíz del sitio
+        'productos.json'      // por si admin está en la misma carpeta que el json
+      ];
 
-function cambiarCantidadPagina() {
-  const sel = document.getElementById('cantidadPagina');
-  cantidadPorPagina = parseInt(sel.value);
-  paginaActual = 1;
-  const cols = Math.sqrt(cantidadPorPagina);
-  document.querySelector('.productos').style.setProperty('--cols', cols);
-  renderProductos();
-}
-
-function renderProductos() {
-  const cont = document.querySelector('.productos');
-  cont.innerHTML = '';
-
-  let filtrados = productos;
-  if (categoriaSeleccionada !== 'Todos') {
-    filtrados = productos.filter(p => p.categoria === categoriaSeleccionada);
-  }
-
-  const orden = document.getElementById('orden').value;
-  if (orden === 'nombre') {
-    filtrados.sort((a,b) => a.nombre.localeCompare(b.nombre));
-  } else if (orden === 'precioAsc') {
-    filtrados.sort((a,b) => a.precio - b.precio);
-  } else if (orden === 'precioDesc') {
-    filtrados.sort((a,b) => b.precio - a.precio);
-  }
-
-  const totalPaginas = Math.ceil(filtrados.length / cantidadPorPagina);
-  if(paginaActual > totalPaginas) paginaActual = totalPaginas || 1;
-
-  const inicio = (paginaActual -1) * cantidadPorPagina;
-  const fin = inicio + cantidadPorPagina;
-  const productosPagina = filtrados.slice(inicio, fin);
-
-  productosPagina.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'producto';
-    div.innerHTML = `
-      <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
-      <h3>${p.nombre}</h3>
-      <div>$${(p.precio * 1.17).toFixed(2)}</div>
-      <div class="stock ${p.stock ? 'con-stock' : 'sin-stock'}"> ${p.stock ? `En stock: ${p.stock}` : 'Sin stock'} </div>
-      <button class="btn-carrito" ${!p.stock ? 'disabled' : ''} onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
-    `;
-    div.style.cursor = 'pointer'; // opcional para indicar que es clickeable
-    div.onclick = () => {
-  window.location.href = `producto.html?id=${p.id}`;
-};
-    
-div.querySelector('button.btn-carrito').onclick = (event) => {
-  event.stopPropagation();
-  agregarAlCarrito(p.id);
-};
-    cont.appendChild(div);
-  });
-
-  document.getElementById('infoPagina').textContent = `Página ${paginaActual} de ${totalPaginas || 1}`;
-  document.getElementById('btnPrev').disabled = paginaActual === 1;
-  document.getElementById('btnNext').disabled = paginaActual === totalPaginas || totalPaginas === 0;
-}
-
-
-
-function paginaAnterior() {
-  if (paginaActual > 1) {
-    paginaActual--;
-    renderProductos();
-  }
-}
-function paginaSiguiente() {
-  const totalPaginas = Math.ceil((categoriaSeleccionada === 'Todos' ? productos.length : productos.filter(p => p.categoria === categoriaSeleccionada).length) / cantidadPorPagina);
-  if (paginaActual < totalPaginas) {
-    paginaActual++;
-    renderProductos();
-  }
-}
-
-function agregarAlCarrito(id) {
-  if (!localStorage.getItem('loggedUser')) {
-    abrirModalCuenta();
-    return;
-  }
-  const producto = productos.find(p => p.id === id);
-  if (!producto || !producto.stock) return;
-
-  const item = carrito.find(i => i.id === id);
-  if (item) item.cantidad++;
-  else carrito.push({ id, cantidad: 1 });
-
-  localStorage.setItem('carrito', JSON.stringify(carrito));
-  actualizarContadorCarrito();
-  mostrarMensaje('Producto agregado al carrito');
-  renderCarrito();
-}
-
-function actualizarContadorCarrito() {
-  const total = carrito.reduce((acc, i) => acc + i.cantidad, 0);
-  document.getElementById('btnCarrito').textContent = `Carrito (${total})`;
-}
-
-function renderCarrito() {
-  const cont = document.getElementById('itemsCarrito');
-  cont.innerHTML = '';
-  if(carrito.length === 0){
-    cont.innerHTML = '<p>El carrito está vacío.</p>';
-    return;
-  }
-  carrito.forEach(item => {
-    const prod = productos.find(p => p.id === item.id);
-    if (!prod) return;
-    const div = document.createElement('div');
-    div.className = 'item-carrito';
-    div.innerHTML = `
-      <span>${prod.nombre} x${item.cantidad}</span>
-      <button onclick="eliminarDelCarrito(${item.id})">X</button>
-    `;
-    cont.appendChild(div);
-  });
-}
-
-function eliminarDelCarrito(id) {
-  carrito = carrito.filter(i => i.id !== id);
-  localStorage.setItem('carrito', JSON.stringify(carrito));
-  actualizarContadorCarrito();
-  renderCarrito();
-}
-
-function vaciarCarrito() {
-  if(confirm('¿Vaciar todo el carrito?')){
-    carrito = [];
-    localStorage.setItem('carrito', JSON.stringify(carrito));
-    actualizarContadorCarrito();
-    renderCarrito();
-  }
-}
-
-function mostrarMensaje(texto) {
-  const m = document.getElementById('mensajeCarrito');
-  m.textContent = texto;
-  m.classList.add('visible');
-  setTimeout(() => m.classList.remove('visible'), 2500);
-}
-
-// --- SISTEMA DE LOGIN ---
-
-const usuarioMenuDiv = document.getElementById('usuarioMenu');
-
-function renderUsuarioMenu() {
-  const user = localStorage.getItem('loggedUser');
-  if (!user) {
-    usuarioMenuDiv.innerHTML = `<button id="btnMiCuenta">Mi cuenta</button>`;
-    document.getElementById('btnMiCuenta').onclick = abrirModalCuenta;
-  } else {
-    usuarioMenuDiv.innerHTML = `
-      <div id="usuarioMenuWrapper" style="position:relative;">
-        <button id="btnUsuario">${user} ▼</button>
-        <div id="usuarioDropdown">
-          <button onclick="irAMiCuenta()">Mi cuenta</button>
-          <button onclick="cerrarSesion()" style="color:#d9534f;">Cerrar sesión</button>
-        </div>
-      </div>
-    `;
-    const btnUsuario = document.getElementById('btnUsuario');
-    const dropdown = document.getElementById('usuarioDropdown');
-    btnUsuario.onclick = () => {
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    };
-    document.body.onclick = (e) => {
-      if (!document.getElementById('usuarioMenuWrapper').contains(e.target)) {
-        dropdown.style.display = 'none';
+      let lista = null;
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (Array.isArray(data)) { lista = data; break; }
+          if (data && Array.isArray(data.productos)) { lista = data.productos; break; }
+        } catch (err) {
+          // intento fallido -> pruebo siguiente
+        }
       }
-    };
+
+      if (!lista) {
+        console.error('No se pudo cargar la lista de productos desde ninguna ruta.');
+        productos = [];
+        const listaAdminEl = document.getElementById('listaAdmin');
+        if (listaAdminEl) listaAdminEl.innerHTML = '<p style="color:red;">Error cargando productos.</p>';
+        return;
+      }
+
+      productos = lista;
+      mostrarProductos();
+    }
+
+    function mostrarProductos() {
+      const lista = document.getElementById('listaAdmin'); lista.innerHTML = '';
+      productos.forEach((p, i) => {
+        const detalle = document.createElement('details'); detalle.className = 'producto-admin';
+        detalle.innerHTML =`
+          <summary>${p.nombre}</summary>
+          <div class="producto-info" style="margin-top: 10px;"><b>ID:</b> ${p.id} <br>
+            <label>Nombre:<input type="text" value="${p.nombre}" id="nombre-${i}" /></label>
+            <label>Precio:<input type="number" value="${p.precio}" id="precio-${i}" min="0" step="0.01" /></label>
+            <label>Categoría:
+              <select id="categoria-${i}">
+                <option ${p.categoria==='Remedios'?'selected':''}>Remedios</option>
+                <option ${p.categoria==='Cosméticos'?'selected':''}>Cosméticos</option>
+                <option ${p.categoria==='Higiene'?'selected':''}>Higiene</option>
+                <option ${p.categoria==='Otros'?'selected':''}>Otros</option>
+              </select>
+            </label>
+            <label>Stock:  <input type="number" id="stock-${i}" value="${p.stock || 0}" min="0" /></label>
+            <p style="font-size:0.9em;color:#555">Imagen:<code>imagenes/${p.id}.jpg</code></p>
+            <button onclick="actualizarProducto(${p.id},${i})">Guardar cambios</button>
+            <button onclick="borrarImagen(${p.id})" style="margin-left:8px;background:#d9534f;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">Borrar imagen</button>
+            <button class="btn-eliminar" onclick="eliminarProducto(${p.id})">Eliminar</button>
+          </div>`;
+        lista.appendChild(detalle);
+      });
+    }
+
+    function mostrarError(msg) { document.getElementById('mensajeError').textContent = msg; }
+
+    async function agregarProducto(e) { e.preventDefault(); mostrarError('');
+      try {
+        const nombre = document.getElementById('nombre').value.trim();
+        const precio = parseFloat(document.getElementById('precio').value);
+        const categoria = document.getElementById('categoria').value;
+        const stock = parseInt(document.getElementById('stock').value) || 0;
+        const archivoImagen = document.getElementById('imagen-nuevo').files[0];
+        if (!nombre||isNaN(precio)||precio<0) { mostrarError('Completa correctamente el nombre y el precio.'); return; }
+
+        // Intentar POST a /api/productos
+        let nuevo = null;
+        try {
+          const res = await fetch('/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
+          if (!res.ok) {
+            const errBody = await res.text().catch(()=>null);
+            throw new Error(errBody || `HTTP ${res.status}`);
+          }
+          nuevo = await res.json();
+        } catch (err) {
+          console.warn('No se pudo crear producto en /api/productos:', err);
+          alert('No se pudo crear producto en el servidor. Si estás en modo estático, descarga el JSON y súbelo manualmente.');
+          return;
+        }
+
+        if(archivoImagen){
+          const formData=new FormData();
+          formData.append('imagen',archivoImagen);
+          try {
+            const resImg=await fetch(`/api/upload/${nuevo.id}`,{method:'POST',body:formData});
+            if(!resImg.ok) console.warn('Error al subir la imagen para id', nuevo.id);
+          } catch(e) { console.warn('Upload error', e); }
+        }
+        document.getElementById('formAgregar').reset(); await cargarProductos();
+      } catch(err){ console.error(err); mostrarError('Error inesperado al agregar producto'); }
+    }
+
+    async function actualizarProducto(id,i){
+      try{
+        const nombre=document.getElementById(`nombre-${i}`).value.trim();
+        const precio=parseFloat(document.getElementById(`precio-${i}`).value);
+        const categoria=document.getElementById(`categoria-${i}`).value;
+        const stock = parseInt(document.getElementById(`stock-${i}`).value) || 0;
+        if(!nombre||isNaN(precio)||precio<0){alert('Completa correctamente el nombre y el precio para actualizar.');return;}
+
+        try {
+          const res = await fetch(`/api/productos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
+          if (!res.ok) {
+            const txt = await res.text().catch(()=>null);
+            throw new Error(txt || `HTTP ${res.status}`);
+          }
+        } catch (err) {
+          console.warn('PUT /api/productos failed:', err);
+          alert('No se pudo actualizar en el servidor. Si estás en modo estático, actualiza el JSON manualmente.');
+          return;
+        }
+
+        await cargarProductos();
+      }catch(err){console.error(err);alert('Error inesperado al actualizar producto');}
+    }
+
+    async function eliminarProducto(id){ if(!confirm('¿Eliminar este producto?'))return;
+      try{
+        const res = await fetch(`/api/productos/${id}`,{method:'DELETE'});
+        if (!res.ok) {
+          console.warn('DELETE /api/productos returned', res.status);
+          alert('No se pudo eliminar en el servidor. Si estás en modo estático, elimina manualmente del JSON.');
+          return;
+        }
+        await cargarProductos();
+      }catch(err){console.error(err);alert('Error inesperado al eliminar producto');}
+    }
+
+    async function borrarImagen(id){ if(!confirm('¿Borrar imagen de este producto?'))return;
+      try{
+        const res = await fetch(`/api/upload/${id}`,{method:'DELETE'});
+        if (!res.ok) {
+          console.warn('DELETE /api/upload returned', res.status);
+          alert('No se pudo borrar la imagen en el servidor.');
+          return;
+        }
+        await cargarProductos();
+      }catch(err){console.error(err);alert('Error inesperado al borrar imagen');}
+    }
+
+    function cargarUsuarios(){
+      const usuarios=JSON.parse(localStorage.getItem('users')||'[]');
+      const datosUsuarios=JSON.parse(localStorage.getItem('userData')||'{}');
+      const pedidos=JSON.parse(localStorage.getItem('pedidos')||'{}');
+      const listaUsuarios=document.getElementById('listaUsuarios'); listaUsuarios.innerHTML='';
+      usuarios.forEach(userObj=>{
+        const userName=userObj.user;
+        const info=datosUsuarios[userName]||{};
+        const userPedidos=pedidos[userName]||[];
+        const userDiv=document.createElement('details'); userDiv.className='user-details';
+        let pedidosHTML='';
+        if(userPedidos.length===0){pedidosHTML='<p style="color:#777;font-style:italic;">No tiene pedidos.</p>';} else {
+          pedidosHTML='<ul style="padding-left:20px;">';
+          userPedidos.forEach((pedido,index)=>{
+            const key=`${userName}-${index}`;
+            const estado=estadosPedidos[key]||{};
+            pedidosHTML+=`<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${p.precio?.toFixed ? p.precio.toFixed(2) : (p.precio||0)}</li>`).join('')}</ul><button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button><button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button><div class='status-container'><label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index})">Guardado</label><label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index})">Recibido</label></div></li>`;
+          }); pedidosHTML+='</ul>';
+        }
+        userDiv.innerHTML=`<summary>${userName}</summary><div class='usuario-item'><div class='usuario-info'><b>Contraseña:</b> ${userObj.pass}</div><div class='usuario-info'><b>Nombre:</b> ${info.nombre||'No definido'}</div><div class='usuario-info'><b>Apellido:</b> ${info.apellido||'No definido'}</div><div class='usuario-info'><b>Email:</b> ${info.email||'No definido'}</div><div class='usuario-info'><b>Teléfono:</b> ${info.telefono||'No definido'}</div><details><summary>Pedidos</summary>${pedidosHTML}</details></div>`;
+        listaUsuarios.appendChild(userDiv);
+      });
+    }
+
+async function eliminarPedido(usuario, index) {
+  if (!confirm('¿Eliminar este pedido?')) return;
+
+  try {
+    const res = await fetch(`/api/eliminar-pedido/${encodeURIComponent(usuario)}/${encodeURIComponent(index)}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) {
+      console.warn('El servidor respondió con error al eliminar pedido:', res.status, await res.text().catch(()=>'')); 
+    }
+  } catch (err) {
+    console.warn('Error al llamar al endpoint de eliminación (se ignorará y se borrará localmente):', err);
   }
+
+  const pedidos = JSON.parse(localStorage.getItem('pedidos') || '{}');
+  if (!pedidos[usuario] || !Array.isArray(pedidos[usuario]) || pedidos[usuario].length <= index) {
+    alert('Pedido no encontrado localmente.');
+    return;
+  }
+
+  pedidos[usuario].splice(index, 1);
+  localStorage.setItem('pedidos', JSON.stringify(pedidos));
+
+  const estados = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
+  const nuevosEstados = {};
+  Object.keys(estados).forEach(k => {
+    const m = k.match(new RegExp(`^${usuario}-(\\d+)$`));
+    if (!m) { nuevosEstados[k] = estados[k]; return; }
+    const idx = parseInt(m[1], 10);
+    if (idx < index) { nuevosEstados[k] = estados[k]; }
+    else if (idx === index) { /* omitido */ }
+    else { nuevosEstados[`${usuario}-${idx-1}`] = estados[k]; }
+  });
+  localStorage.setItem('estadosPedidos', JSON.stringify(nuevosEstados));
+
+  cargarUsuarios();
+  alert('Pedido eliminado correctamente (se actualizó también localmente).');
 }
 
-function abrirModalCuenta() {
-  document.getElementById('modalCuenta').style.display = 'flex';
-}
-function cerrarModalCuenta() {
-  document.getElementById('modalCuenta').style.display = 'none';
-}
 
-function cerrarSesion() {
-  localStorage.removeItem('loggedUser');
-  location.reload();
-}
+    async function descargarPedido(usuario,index){
+      const pedidos=JSON.parse(localStorage.getItem('pedidos')||'{}');
+      const datosUsuarios=JSON.parse(localStorage.getItem('userData')||'{}');
+      const pedido=pedidos[usuario]?.[index];
+      const info=datosUsuarios[usuario]||{};
+      if(!pedido) return alert('No se encontró el pedido');
+      try {
+        const res=await fetch('/api/guardar-pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,index,pedido,info})});
+        const msg=await res.text();
+        alert(msg);
+      } catch(err) {
+        console.warn('No se pudo guardar en servidor /api/guardar-pedido:', err);
+        alert('Pedido guardado localmente. No se pudo enviar al servidor.');
+      }
+    }
 
-function irAMiCuenta() {
-  location.href = 'micuenta.html';
-}
+    async function cargarExcel() {
+      try {
+        const inputJson = document.getElementById('inputJson');
+        const inputExcel = document.getElementById('inputExcel');
+        const jsonFile = inputJson.files[0];
+        const excelFile = inputExcel.files[0];
 
-renderUsuarioMenu();
-actualizarContadorCarrito();
-cargarProductos();
-</script>
+        if (!jsonFile || !excelFile) {
+          mostrarError('Selecciona ambos archivos: productos.json y el archivo Excel.');
+          return;
+        }
+
+        const jsonText = await jsonFile.text();
+        let productosLocal = [];
+        try {
+          productosLocal = JSON.parse(jsonText);
+          if (!Array.isArray(productosLocal)) throw new Error('productos.json debe contener un array.');
+        } catch (error) {
+          mostrarError('Error leyendo productos.json: ' + error.message);
+          return;
+        }
+
+        const maxId = productosLocal.length > 0 ? Math.max(...productosLocal.map(p => p.id)) : 0;
+        const excelData = await excelFile.arrayBuffer();
+        const wb = XLSX.read(excelData, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { range: 2, defval: '' });
+
+        if (rows.length === 0) {
+          mostrarError('El Excel está vacío o no contiene datos después de las 2 primeras filas.');
+          return;
+        }
+
+        const updatedProductos = [...productosLocal];
+        const newProductos = [];
+        let currentId = maxId + 1;
+
+        for (const r of rows) {
+          let nombre = r['Producto'] || r['producto'] || '';
+          let precioStr = r['Nuevo precio'] || r['nuevo precio'] || '';
+
+          if (!nombre || !precioStr) continue;
+
+          precioStr = precioStr.toString().trim().replace(/\$/g, '').replace(/\s/g, '').replace(/,/g, '.').replace(/\.(?=\d{3})/g, '');
+
+          let precio = parseFloat(precioStr);
+          if (isNaN(precio) || precio < 0) continue;
+
+          const idxExist = updatedProductos.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+
+          if (idxExist !== -1) {
+            updatedProductos[idxExist].precio = precio;
+          } else {
+            newProductos.push({
+              id: currentId++,
+              nombre,
+              precio,
+              categoria: null,
+              stock: 0
+            });
+          }
+        }
+
+        const finalProductos = [...updatedProductos, ...newProductos];
+        const jsonString = JSON.stringify(finalProductos, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `productos_${Date.now()}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert(`Archivo productos.json generado con ${finalProductos.length} productos (${newProductos.length} nuevos).`);
+      } catch (error) {
+        mostrarError('Error procesando archivos: ' + error.message);
+      }
+    }
+
+    /* ------------------ Sección: Crear pedido desde archivo (previsualización + envío) ------------------ */
+    (function(){
+      const archivoInput = document.getElementById('pedidoArchivo');
+      const btnPrevisualizar = document.getElementById('btnPrevisualizarPedido');
+      const btnEnviarPedidoArchivo = document.getElementById('btnEnviarPedidoArchivo');
+      const previsualizacion = document.getElementById('previsualizacionPedido');
+
+      let pedidoTemporal = [];
+
+      btnPrevisualizar.addEventListener('click', () => {
+        if (!archivoInput.files[0]) { alert('Selecciona un archivo'); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split('\n').map(l=>l.trim()).filter(l=>l);
+          previsualizacion.innerHTML = '';
+          pedidoTemporal = [];
+
+          lines.forEach((linea) => {
+            const partes = linea.split(' ').filter(Boolean);
+            if (partes.length < 2) return;
+            const cantidad = parseInt(partes[0], 10);
+            if (Number.isNaN(cantidad) || cantidad <= 0) return;
+            const nombre = partes.slice(1).join(' ').trim();
+            const prod = productos.find(p => (p.nombre||'').toString().trim().toLowerCase() === nombre.toLowerCase());
+
+            const row = document.createElement('div');
+            row.style.padding = '6px';
+            row.style.marginBottom = '6px';
+            row.style.borderRadius = '6px';
+            row.style.color = '#111';
+
+            if (!prod) {
+              row.style.background = '#ffcccc';
+              row.textContent = `${cantidad} x ${nombre} — NO ENCONTRADO`;
+            } else if (!prod.stock || prod.stock <= 0) {
+              row.style.background = '#ffcccc';
+              row.textContent = `${cantidad} x ${prod.nombre} — SIN STOCK (0)`;
+              pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: 0 });
+            } else {
+              const cantidadFinal = Math.min(cantidad, prod.stock);
+              row.style.background = '#ccffcc';
+              row.textContent = `${cantidad} x ${prod.nombre} — se agregarán ${cantidadFinal} (stock actual: ${prod.stock})`;
+              pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidadFinal });
+            }
+
+            previsualizacion.appendChild(row);
+          });
+
+          if (pedidoTemporal.length === 0) {
+            const empty = document.createElement('div');
+            empty.textContent = 'No se encontraron productos válidos para agregar.';
+            previsualizacion.appendChild(empty);
+          }
+        };
+        reader.readAsText(archivoInput.files[0]);
+      });
+
+      btnEnviarPedidoArchivo.addEventListener('click', async () => {
+        if (pedidoTemporal.length === 0) return alert('Previsualiza el pedido primero y asegúrate de que haya productos para agregar.');
+
+        const pedidos = JSON.parse(localStorage.getItem('pedidos')||'{}');
+        const usuario = 'admin';
+        pedidos[usuario] = pedidos[usuario] || [];
+        pedidos[usuario].push(pedidoTemporal.map(it => ({ id: it.id, nombre: it.nombre, cantidad: it.cantidad })));
+        localStorage.setItem('pedidos', JSON.stringify(pedidos));
+
+        for (const item of pedidoTemporal) {
+          if (!item.cantidad || item.cantidad <= 0) continue;
+          const prod = productos.find(p => p.id === item.id);
+          if (!prod) continue;
+          prod.stock = (Number(prod.stock) || 0) - Number(item.cantidad);
+          if (prod.stock < 0) prod.stock = 0;
+          try {
+            const res = await fetch(`/api/productos/${prod.id}`, {
+              method:'PUT',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(prod)
+            });
+            if (!res.ok) console.warn('PUT failed for', prod.id, res.status);
+          } catch (err) {
+            console.warn('Error actualizando stock para', prod.id, err);
+          }
+        }
+
+        alert('Pedido creado y stock actualizado.');
+        pedidoTemporal = [];
+        previsualizacion.innerHTML = '';
+        await cargarProductos();
+        cargarUsuarios();
+      });
+    })();
+
+    /* ------------------ NUEVAS FUNCIONES: Actualizar stock desde Excel (cliente) ------------------ */
+    const inputStockExcel = document.getElementById('inputStockExcel');
+    const stockFileName = document.getElementById('stockFileName');
+    const stockPreview = document.getElementById('stockPreview');
+    const stockPreviewWrap = document.getElementById('stockPreviewWrap');
+    const btnConfirmStock = document.getElementById('btnConfirmStock');
+    const btnCancelStock = document.getElementById('btnCancelStock');
+    const stockResult = document.getElementById('stockResult');
+
+    let parsedStockMap = null; // { 'nombreLower': qty }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    inputStockExcel?.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      stockResult.innerHTML = '';
+      if (!file) {
+        stockFileName.textContent = '';
+        stockPreview.style.display = 'none';
+        btnConfirmStock.disabled = true;
+        parsedStockMap = null;
+        return;
+      }
+      stockFileName.textContent = file.name;
+      try {
+        parsedStockMap = await parseStockFile(file);
+        renderStockPreview(parsedStockMap);
+        btnConfirmStock.disabled = !parsedStockMap || Object.keys(parsedStockMap).length === 0;
+      } catch (err) {
+        console.error(err);
+        alert('Error procesando el archivo. Asegurate del formato (nombre, stock).');
+        parsedStockMap = null;
+        stockPreview.style.display = 'none';
+        btnConfirmStock.disabled = true;
+      }
+    });
+
+    btnCancelStock?.addEventListener('click', () => {
+      inputStockExcel.value = '';
+      stockFileName.textContent = '';
+      stockPreviewWrap.innerHTML = '';
+      stockPreview.style.display = 'none';
+      parsedStockMap = null;
+      btnConfirmStock.disabled = true;
+      stockResult.innerHTML = '';
+    });
+
+    btnConfirmStock?.addEventListener('click', confirmStockUpdate);
+
+    function parseStockFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = ev.target.result;
+            let workbook;
+            if (file.name.toLowerCase().endsWith('.csv')) {
+              const text = typeof data === 'string' ? data : new TextDecoder().decode(data);
+              workbook = XLSX.read(text, { type: 'string' });
+            } else {
+              const arr = new Uint8Array(data);
+              workbook = XLSX.read(arr, { type: 'array' });
+            }
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+
+            const map = {};
+            for (let r = 0; r < rows.length; r++) {
+              const row = rows[r];
+              if (!row || row.length === 0) continue;
+              const nameCell = row[0];
+              const qtyCell = row[1];
+
+              if (nameCell == null) continue;
+              const name = String(nameCell).trim();
+              if (!name) continue;
+
+              const qty = qtyCell != null && String(qtyCell).trim() !== '' ? parseInt(String(qtyCell).replace(/\s+/g, ''), 10) : NaN;
+              if (Number.isNaN(qty)) {
+                const lower0 = String(name).toLowerCase();
+                if (lower0.includes('nombre') || lower0.includes('producto') || lower0.includes('stock')) continue;
+                continue;
+              }
+
+              const key = name.toLowerCase();
+              if (!map[key]) map[key] = 0;
+              map[key] += qty;
+            }
+            resolve(map);
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file, 'UTF-8');
+        else reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function renderStockPreview(map) {
+      if (!map || Object.keys(map).length === 0) {
+        stockPreview.style.display = 'none';
+        stockPreviewWrap.innerHTML = '<p>No se encontraron filas válidas en el archivo.</p>';
+        return;
+      }
+      const rows = Object.entries(map).map(([name, qty]) => ({ name, qty }));
+      let html = '<table><thead><tr><th>Nombre (normalizado)</th><th>Stock a sumar</th></tr></thead><tbody>';
+      rows.forEach(r => {
+        html += `<tr><td>${escapeHtml(r.name)}</td><td>${r.qty}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      stockPreviewWrap.innerHTML = html;
+      stockPreview.style.display = 'block';
+    }
+
+    async function confirmStockUpdate() {
+      if (!parsedStockMap || Object.keys(parsedStockMap).length === 0) {
+        alert('No hay datos para procesar.');
+        return;
+      }
+      if (!confirm('¿Aplicar las sumas de stock al inventario? Esto actualizará productos en el backend.')) return;
+
+      btnConfirmStock.disabled = true;
+      btnConfirmStock.textContent = 'Procesando...';
+      stockResult.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/productos');
+        if (!res.ok) throw new Error('No se pudo obtener productos desde el backend.');
+        const prodList = await res.json();
+
+        const indexByName = {};
+        prodList.forEach(p => {
+          const key = (p.nombre || '').toString().trim().toLowerCase();
+          if (!indexByName[key]) indexByName[key] = [];
+          indexByName[key].push(p);
+        });
+
+        const notFound = [];
+        const updated = [];
+        const errors = [];
+
+        for (const [nameNorm, qtyToAdd] of Object.entries(parsedStockMap)) {
+          const key = nameNorm.toString().trim().toLowerCase();
+          const matches = indexByName[key];
+          if (!matches || matches.length === 0) {
+            notFound.push(nameNorm);
+            continue;
+          }
+
+          for (const prod of matches) {
+            try {
+              const currentStock = Number(prod.stock) || 0;
+              prod.stock = currentStock + Number(qtyToAdd);
+
+              const putRes = await fetch(`/api/productos/${prod.id}`, {
+                method: 'PUT',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(prod)
+              });
+
+              if (!putRes.ok) {
+                const txt = await putRes.text().catch(()=>null);
+                errors.push({ id: prod.id, nombre: prod.nombre, reason: txt || putRes.status });
+              } else {
+                updated.push({ id: prod.id, nombre: prod.nombre, added: qtyToAdd, newStock: prod.stock });
+              }
+            } catch (err) {
+              console.error('Error actualizando producto', prod, err);
+              errors.push({ id: prod.id, nombre: prod.nombre, reason: err.message || err.toString() });
+            }
+          }
+        }
+
+        let resultHtml = `<p><strong>Actualización finalizada.</strong></p>`;
+        resultHtml += `<p>Productos actualizados: ${updated.length}</p>`;
+        if (notFound.length > 0) resultHtml += `<p>No se encontraron coincidencias para: ${notFound.map(n=>escapeHtml(n)).join(', ')}</p>`;
+        if (errors.length > 0) resultHtml += `<p>Errores: ${errors.length}. Revisa la consola para más detalles.</p>`;
+
+        stockResult.innerHTML = resultHtml;
+        await cargarProductos();
+        alert('Proceso finalizado. Revisa el resumen en la sección.');
+      } catch (err) {
+        console.error(err);
+        alert('Error en el proceso: ' + (err.message || err));
+      } finally {
+        btnConfirmStock.disabled = false;
+        btnConfirmStock.textContent = 'Confirmar';
+      }
+    }
+
+    document.getElementById('btnCargarExcel').addEventListener('click', cargarExcel);
+    document.getElementById('formAgregar').addEventListener('submit', agregarProducto);
+    window.onload = () => { cargarProductos(); cargarUsuarios(); };
+
+  </script>
 </body>
 </html>
-
-
-
-
-
-
