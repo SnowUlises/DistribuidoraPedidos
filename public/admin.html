@@ -360,29 +360,17 @@
     // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
    async function cargarProductos() {
   try {
-    const res = await fetch('/productos.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('No se pudo cargar productos.json');
-    
+    // Usamos el JSON público que tenés en Netlify.
+    // Si preferís usar ruta relativa: '/productos.json' en vez de la URL absoluta.
+    const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    // ¡Asignar a la variable global, no crear const local!
     productos = await res.json();
-    if (!Array.isArray(productos)) {
-      throw new Error('El archivo productos.json no es un array válido');
-    }
-    mostrarProductos();
-  } catch (error) {
-    console.error('Error cargando productos:', error);
-    document.getElementById('listaAdmin').innerHTML = '<p>Error cargando productos.</p>';
-  }
-}
- catch (error) {
-    // fallback a localStorage o archivos (si tenés copia local)
-    console.error('Error cargando productos desde el backend:', error);
-    const local = JSON.parse(localStorage.getItem('productos') || 'null');
-    if (Array.isArray(local)) {
-      productos = local;
-      mostrarProductos();
-      return;
-    }
-    mostrarError('No fue posible cargar productos desde el backend ni desde cache local.');
+    paginaActual = 1;
+    cambiarCantidadPagina();
+  } catch (err) {
+    console.error('Error cargando productos:', err);
+    alert('Error cargando productos desde productos.json (ver consola).');
   }
 }
 
@@ -954,6 +942,7 @@ async function eliminarPedido(usuario, index) {
   </script>
 </body>
 </html>
+
 
 
 
