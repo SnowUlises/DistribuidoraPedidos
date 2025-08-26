@@ -6,9 +6,9 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0; 
-      background: #f4f6f8; 
-      color: #333; 
+      margin: 0;
+      background: #f4f6f8;
+      color: #333;
       padding: 2em;
     }
     header {
@@ -357,10 +357,36 @@
       guardarEstados();
     }
 
+    // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
     async function cargarProductos() {
       try {
-        const res = await fetch('http://localhost:3000/api/productos');
-        productos = await res.json();
+        let res;
+        try {
+          res = await fetch('/api/productos', {cache: 'no-store'});
+        } catch(err) {
+          console.warn('Error llamando /api/productos:', err);
+          res = null;
+        }
+
+        if (res && res.ok) {
+          productos = await res.json();
+        } else {
+          // fallback a productos.json (si desplegaste estático)
+          try {
+            const r2 = await fetch('/productos.json', {cache: 'no-store'});
+            if (r2.ok) {
+              productos = await r2.json();
+              console.info('Cargando productos desde /productos.json (fallback).');
+            } else {
+              productos = [];
+              mostrarError('No se pudo cargar /api/productos ni /productos.json');
+            }
+          } catch (err2) {
+            productos = [];
+            mostrarError('No se pudo cargar productos (revisa servidor o archivo productos.json).');
+            console.error(err2);
+          }
+        }
         mostrarProductos();
       } catch (error) { mostrarError('Error al cargar productos: ' + (error.message||error)); }
     }
@@ -402,11 +428,30 @@
         const stock = parseInt(document.getElementById('stock').value) || 0;
         const archivoImagen = document.getElementById('imagen-nuevo').files[0];
         if (!nombre||isNaN(precio)||precio<0) { mostrarError('Completa correctamente el nombre y el precio.'); return; }
-        const res = await fetch('http://localhost:3000/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
-        if(!res.ok){const err=await res.json(); mostrarError('Error al agregar producto: '+(err.error||res.statusText));return;}
-        const nuevo=await res.json();
-        if(archivoImagen){const formData=new FormData();formData.append('imagen',archivoImagen);
-          const resImg=await fetch(`http://localhost:3000/api/upload/${nuevo.id}`,{method:'POST',body:formData});if(!resImg.ok) alert('Error al subir la imagen');}
+
+        // Intentar POST a /api/productos
+        let nuevo = null;
+        try {
+          const res = await fetch('/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
+          if (!res.ok) {
+            const errBody = await res.text().catch(()=>null);
+            throw new Error(errBody || `HTTP ${res.status}`);
+          }
+          nuevo = await res.json();
+        } catch (err) {
+          console.warn('No se pudo crear producto en /api/productos:', err);
+          alert('No se pudo crear producto en el servidor. Si estás en modo estático, descarga el JSON y súbelo manualmente.');
+          return;
+        }
+
+        if(archivoImagen){
+          const formData=new FormData();
+          formData.append('imagen',archivoImagen);
+          try {
+            const resImg=await fetch(`/api/upload/${nuevo.id}`,{method:'POST',body:formData});
+            if(!resImg.ok) console.warn('Error al subir la imagen para id', nuevo.id);
+          } catch(e) { console.warn('Upload error', e); }
+        }
         document.getElementById('formAgregar').reset(); await cargarProductos();
       } catch(err){ console.error(err); mostrarError('Error inesperado al agregar producto'); }
     }
@@ -418,17 +463,45 @@
         const categoria=document.getElementById(`categoria-${i}`).value;
         const stock = parseInt(document.getElementById(`stock-${i}`).value) || 0;
         if(!nombre||isNaN(precio)||precio<0){alert('Completa correctamente el nombre y el precio para actualizar.');return;}
-        await fetch(`http://localhost:3000/api/productos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
+
+        try {
+          const res = await fetch(`/api/productos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,precio,categoria,stock})});
+          if (!res.ok) {
+            const txt = await res.text().catch(()=>null);
+            throw new Error(txt || `HTTP ${res.status}`);
+          }
+        } catch (err) {
+          console.warn('PUT /api/productos failed:', err);
+          alert('No se pudo actualizar en el servidor. Si estás en modo estático, actualiza el JSON manualmente.');
+          return;
+        }
+
         await cargarProductos();
       }catch(err){console.error(err);alert('Error inesperado al actualizar producto');}
     }
 
     async function eliminarProducto(id){ if(!confirm('¿Eliminar este producto?'))return;
-      try{ await fetch(`http://localhost:3000/api/productos/${id}`,{method:'DELETE'}); await cargarProductos(); }catch(err){console.error(err);alert('Error inesperado al eliminar producto');}
+      try{
+        const res = await fetch(`/api/productos/${id}`,{method:'DELETE'});
+        if (!res.ok) {
+          console.warn('DELETE /api/productos returned', res.status);
+          alert('No se pudo eliminar en el servidor. Si estás en modo estático, elimina manualmente del JSON.');
+          return;
+        }
+        await cargarProductos();
+      }catch(err){console.error(err);alert('Error inesperado al eliminar producto');}
     }
 
     async function borrarImagen(id){ if(!confirm('¿Borrar imagen de este producto?'))return;
-      try{ await fetch(`http://localhost:3000/api/upload/${id}`,{method:'DELETE'}); await cargarProductos(); }catch(err){console.error(err);alert('Error inesperado al borrar imagen');}
+      try{
+        const res = await fetch(`/api/upload/${id}`,{method:'DELETE'});
+        if (!res.ok) {
+          console.warn('DELETE /api/upload returned', res.status);
+          alert('No se pudo borrar la imagen en el servidor.');
+          return;
+        }
+        await cargarProductos();
+      }catch(err){console.error(err);alert('Error inesperado al borrar imagen');}
     }
 
     function cargarUsuarios(){
@@ -455,59 +528,41 @@
       });
     }
 
-    async function eliminarPedido(usuario, index) {
+async function eliminarPedido(usuario, index) {
   if (!confirm('¿Eliminar este pedido?')) return;
 
-  // Intentar borrar en servidor, pero no abortar si falla: hacemos fallback local siempre.
   try {
     const res = await fetch(`/api/eliminar-pedido/${encodeURIComponent(usuario)}/${encodeURIComponent(index)}`, {
       method: 'DELETE'
     });
     if (!res.ok) {
       console.warn('El servidor respondió con error al eliminar pedido:', res.status, await res.text().catch(()=>'')); 
-      // no retornamos: vamos a borrar localmente de todas formas (fallback)
     }
   } catch (err) {
     console.warn('Error al llamar al endpoint de eliminación (se ignorará y se borrará localmente):', err);
-    // seguimos para borrar localmente
   }
 
-  // Ahora borrar localmente y reindexar estadosPedidos
   const pedidos = JSON.parse(localStorage.getItem('pedidos') || '{}');
   if (!pedidos[usuario] || !Array.isArray(pedidos[usuario]) || pedidos[usuario].length <= index) {
     alert('Pedido no encontrado localmente.');
     return;
   }
 
-  // eliminar pedido
   pedidos[usuario].splice(index, 1);
   localStorage.setItem('pedidos', JSON.stringify(pedidos));
 
-  // reindexar estadosPedidos: mover claves usuario-i para i>index a i-1, y eliminar la clave exacta index
   const estados = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
   const nuevosEstados = {};
   Object.keys(estados).forEach(k => {
-    // buscamos claves que empiecen con "usuario-<num>"
     const m = k.match(new RegExp(`^${usuario}-(\\d+)$`));
-    if (!m) {
-      // clave de otro tipo -> conservar
-      nuevosEstados[k] = estados[k];
-      return;
-    }
+    if (!m) { nuevosEstados[k] = estados[k]; return; }
     const idx = parseInt(m[1], 10);
-    if (idx < index) {
-      // antes del eliminado -> conservar igual
-      nuevosEstados[k] = estados[k];
-    } else if (idx === index) {
-      // clave del pedido eliminado -> omitimos (borrada)
-    } else {
-      // idx > index -> mover a idx-1
-      nuevosEstados[`${usuario}-${idx-1}`] = estados[k];
-    }
+    if (idx < index) { nuevosEstados[k] = estados[k]; }
+    else if (idx === index) { /* omitido */ }
+    else { nuevosEstados[`${usuario}-${idx-1}`] = estados[k]; }
   });
   localStorage.setItem('estadosPedidos', JSON.stringify(nuevosEstados));
 
-  // refrescar UI
   cargarUsuarios();
   alert('Pedido eliminado correctamente (se actualizó también localmente).');
 }
@@ -519,8 +574,14 @@
       const pedido=pedidos[usuario]?.[index];
       const info=datosUsuarios[usuario]||{};
       if(!pedido) return alert('No se encontró el pedido');
-      const res=await fetch('/api/guardar-pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,index,pedido,info})});
-      const msg=await res.text(); alert(msg);
+      try {
+        const res=await fetch('/api/guardar-pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,index,pedido,info})});
+        const msg=await res.text();
+        alert(msg);
+      } catch(err) {
+        console.warn('No se pudo guardar en servidor /api/guardar-pedido:', err);
+        alert('Pedido guardado localmente. No se pudo enviar al servidor.');
+      }
     }
 
     async function cargarExcel() {
@@ -535,26 +596,20 @@
           return;
         }
 
-        // Leer productos.json
         const jsonText = await jsonFile.text();
-        let productos = [];
+        let productosLocal = [];
         try {
-          productos = JSON.parse(jsonText);
-          if (!Array.isArray(productos)) throw new Error('productos.json debe contener un array.');
+          productosLocal = JSON.parse(jsonText);
+          if (!Array.isArray(productosLocal)) throw new Error('productos.json debe contener un array.');
         } catch (error) {
           mostrarError('Error leyendo productos.json: ' + error.message);
           return;
         }
 
-        // Máximo ID actual
-        const maxId = productos.length > 0 ? Math.max(...productos.map(p => p.id)) : 0;
-
-        // Leer Excel
+        const maxId = productosLocal.length > 0 ? Math.max(...productosLocal.map(p => p.id)) : 0;
         const excelData = await excelFile.arrayBuffer();
         const wb = XLSX.read(excelData, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-
-        // Ignorar primeras 2 filas
         const rows = XLSX.utils.sheet_to_json(ws, { range: 2, defval: '' });
 
         if (rows.length === 0) {
@@ -562,7 +617,7 @@
           return;
         }
 
-        const updatedProductos = [...productos];
+        const updatedProductos = [...productosLocal];
         const newProductos = [];
         let currentId = maxId + 1;
 
@@ -577,7 +632,6 @@
           let precio = parseFloat(precioStr);
           if (isNaN(precio) || precio < 0) continue;
 
-          // Buscar producto existente (case insensitive)
           const idxExist = updatedProductos.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
 
           if (idxExist !== -1) {
@@ -588,14 +642,12 @@
               nombre,
               precio,
               categoria: null,
-              stock: 0 // stock inicial 0, se puede ajustar luego
+              stock: 0
             });
           }
         }
 
         const finalProductos = [...updatedProductos, ...newProductos];
-
-        // Descargar JSON
         const jsonString = JSON.stringify(finalProductos, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -650,7 +702,6 @@
             } else if (!prod.stock || prod.stock <= 0) {
               row.style.background = '#ffcccc';
               row.textContent = `${cantidad} x ${prod.nombre} — SIN STOCK (0)`;
-              // push with cantidad 0 to indicate present but not addable
               pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: 0 });
             } else {
               const cantidadFinal = Math.min(cantidad, prod.stock);
@@ -673,14 +724,13 @@
 
       btnEnviarPedidoArchivo.addEventListener('click', async () => {
         if (pedidoTemporal.length === 0) return alert('Previsualiza el pedido primero y asegúrate de que haya productos para agregar.');
-        // Guardar pedido en localStorage bajo 'admin'
+
         const pedidos = JSON.parse(localStorage.getItem('pedidos')||'{}');
         const usuario = 'admin';
         pedidos[usuario] = pedidos[usuario] || [];
         pedidos[usuario].push(pedidoTemporal.map(it => ({ id: it.id, nombre: it.nombre, cantidad: it.cantidad })));
         localStorage.setItem('pedidos', JSON.stringify(pedidos));
 
-        // Reducir stock en backend para los items con cantidad>0
         for (const item of pedidoTemporal) {
           if (!item.cantidad || item.cantidad <= 0) continue;
           const prod = productos.find(p => p.id === item.id);
@@ -688,20 +738,20 @@
           prod.stock = (Number(prod.stock) || 0) - Number(item.cantidad);
           if (prod.stock < 0) prod.stock = 0;
           try {
-            await fetch(`http://localhost:3000/api/productos/${prod.id}`, {
+            const res = await fetch(`/api/productos/${prod.id}`, {
               method:'PUT',
               headers:{'Content-Type':'application/json'},
               body: JSON.stringify(prod)
             });
+            if (!res.ok) console.warn('PUT failed for', prod.id, res.status);
           } catch (err) {
-            console.error('Error actualizando stock para', prod.id, err);
+            console.warn('Error actualizando stock para', prod.id, err);
           }
         }
 
         alert('Pedido creado y stock actualizado.');
         pedidoTemporal = [];
         previsualizacion.innerHTML = '';
-        // refrescar lista de productos en UI
         await cargarProductos();
         cargarUsuarios();
       });
@@ -718,7 +768,6 @@
 
     let parsedStockMap = null; // { 'nombreLower': qty }
 
-    // helper to escape HTML
     function escapeHtml(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
@@ -759,9 +808,6 @@
 
     btnConfirmStock?.addEventListener('click', confirmStockUpdate);
 
-    /**
-     * Parsea archivo Excel/CSV -> {nombreLower: qty}
-     */
     function parseStockFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -791,13 +837,10 @@
               const name = String(nameCell).trim();
               if (!name) continue;
 
-              // parse qty
               const qty = qtyCell != null && String(qtyCell).trim() !== '' ? parseInt(String(qtyCell).replace(/\s+/g, ''), 10) : NaN;
               if (Number.isNaN(qty)) {
                 const lower0 = String(name).toLowerCase();
-                // probable header row -> skip
                 if (lower0.includes('nombre') || lower0.includes('producto') || lower0.includes('stock')) continue;
-                // else skip this row as invalid qty
                 continue;
               }
 
@@ -832,9 +875,6 @@
       stockPreview.style.display = 'block';
     }
 
-    /**
-     * Confirmar: obtener productos del backend, buscar coincidencias por nombre y hacer PUT para actualizar stock.
-     */
     async function confirmStockUpdate() {
       if (!parsedStockMap || Object.keys(parsedStockMap).length === 0) {
         alert('No hay datos para procesar.');
@@ -847,7 +887,7 @@
       stockResult.innerHTML = '';
 
       try {
-        const res = await fetch('http://localhost:3000/api/productos');
+        const res = await fetch('/api/productos');
         if (!res.ok) throw new Error('No se pudo obtener productos desde el backend.');
         const prodList = await res.json();
 
@@ -875,7 +915,7 @@
               const currentStock = Number(prod.stock) || 0;
               prod.stock = currentStock + Number(qtyToAdd);
 
-              const putRes = await fetch(`http://localhost:3000/api/productos/${prod.id}`, {
+              const putRes = await fetch(`/api/productos/${prod.id}`, {
                 method: 'PUT',
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(prod)
@@ -900,10 +940,7 @@
         if (errors.length > 0) resultHtml += `<p>Errores: ${errors.length}. Revisa la consola para más detalles.</p>`;
 
         stockResult.innerHTML = resultHtml;
-
-        // refrescar productos en UI
         await cargarProductos();
-
         alert('Proceso finalizado. Revisa el resumen en la sección.');
       } catch (err) {
         console.error(err);
@@ -914,7 +951,6 @@
       }
     }
 
-    /* ------------------ helpers y eventos existentes ------------------ */
     document.getElementById('btnCargarExcel').addEventListener('click', cargarExcel);
     document.getElementById('formAgregar').addEventListener('submit', agregarProducto);
     window.onload = () => { cargarProductos(); cargarUsuarios(); };
