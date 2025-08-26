@@ -360,19 +360,16 @@
     // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
    async function cargarProductos() {
   try {
-    // preferimos la API del backend (archivo productos en raíz, fuera de public)
-    const candidate = ['/api/productos'];
-    let res = null;
-    for (const url of candidate) {
-      try {
-        res = await fetch(url, { cache: 'no-store' });
-        if (res && res.ok) break;
-      } catch (e) { res = null; }
-    }
-    if (!res || !res.ok) throw new Error('No se pudo contactar API');
+    const res = await fetch('../productos.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('No se pudo cargar productos.json');
     productos = await res.json();
     mostrarProductos();
   } catch (error) {
+    console.error('Error cargando productos:', error);
+    lista.innerHTML = '<p>Error cargando productos.</p>';
+  }
+}
+ catch (error) {
     // fallback a localStorage o archivos (si tenés copia local)
     console.error('Error cargando productos desde el backend:', error);
     const local = JSON.parse(localStorage.getItem('productos') || 'null');
@@ -953,5 +950,6 @@ async function eliminarPedido(usuario, index) {
   </script>
 </body>
 </html>
+
 
 
