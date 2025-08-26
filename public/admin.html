@@ -364,8 +364,7 @@ async function cargarProductos() {
     const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     productos = await res.json();
-    // mostrar productos en la interfaz de administración
-    mostrarProductos();
+    mostrarProductos(); // Renderiza la lista en el panel
   } catch (err) {
     console.error('Error cargando productos:', err);
     mostrarError('No se pudieron cargar los productos. Revisa la consola.');
@@ -941,6 +940,7 @@ async function eliminarPedido(usuario, index) {
   </script>
 </body>
 </html>
+
 
 
 
