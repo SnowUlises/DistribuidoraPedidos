@@ -360,13 +360,17 @@
     // Cargar productos: intenta API relativa /api/productos, si falla intenta productos.json (estático)
    async function cargarProductos() {
   try {
-    const res = await fetch('../productos.json', { cache: 'no-store' });
+    const res = await fetch('/productos.json', { cache: 'no-store' });
     if (!res.ok) throw new Error('No se pudo cargar productos.json');
+    
     productos = await res.json();
+    if (!Array.isArray(productos)) {
+      throw new Error('El archivo productos.json no es un array válido');
+    }
     mostrarProductos();
   } catch (error) {
     console.error('Error cargando productos:', error);
-    lista.innerHTML = '<p>Error cargando productos.</p>';
+    document.getElementById('listaAdmin').innerHTML = '<p>Error cargando productos.</p>';
   }
 }
  catch (error) {
@@ -950,6 +954,7 @@ async function eliminarPedido(usuario, index) {
   </script>
 </body>
 </html>
+
 
 
 
