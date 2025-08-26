@@ -370,7 +370,7 @@ function verCarrito() {
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
-  const res = await fetch('http://localhost:3000/api/productos');
+  const res = await fetch('productos.json');
   productos = await res.json();
   paginaActual = 1;
   cambiarCantidadPagina();
@@ -581,3 +581,4 @@ cargarProductos();
 </script>
 </body>
 </html>
+
