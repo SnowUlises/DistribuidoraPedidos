@@ -370,10 +370,19 @@ function verCarrito() {
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
-  const res = await fetch('/api/productos');
-  const productos = await res.json();
-  paginaActual = 1;
-  cambiarCantidadPagina();
+  try {
+    // Usamos el JSON público que tenés en Netlify.
+    // Si preferís usar ruta relativa: '/productos.json' en vez de la URL absoluta.
+    const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    // ¡Asignar a la variable global, no crear const local!
+    productos = await res.json();
+    paginaActual = 1;
+    cambiarCantidadPagina();
+  } catch (err) {
+    console.error('Error cargando productos:', err);
+    alert('Error cargando productos desde productos.json (ver consola).');
+  }
 }
 
 function filtrarCategoria(categoria, elemento) {
@@ -581,6 +590,7 @@ cargarProductos();
 </script>
 </body>
 </html>
+
 
 
 
