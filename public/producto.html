@@ -84,32 +84,47 @@
       elCard.classList.add('hidden');
     }
 
-    async function cargarProducto(pid){
-      // 1) intentar API por ID
-      let res = await tryFetchSequential(apiPaths(`/api/productos/${encodeURIComponent(pid)}`), {cache:'no-store'});
-      if (res) {
-        const p = await res.json();
-        if (p && (p.id==pid || p.id===String(pid))) return renderProducto(p);
-      }
+    async function cargarProducto() {
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) return mostrarError('Producto no especificado.');
 
-      // 2) API listado completo y buscar
-      res = await tryFetchSequential(apiPaths('/api/productos'), {cache:'no-store'});
-      if (res) {
-        const lista = await res.json();
-        const p = (lista || []).find(x => Number(x.id) === Number(pid));
+  // Intentar endpoint por ID (preferido)
+  const tries = [
+    `/api/productos/${encodeURIComponent(id)}`,
+    `../api/productos/${encodeURIComponent(id)}`,
+    `http://localhost:3000/api/productos/${encodeURIComponent(id)}`,
+    '/api/productos',      // si no hay por id, traer lista y buscar
+    '../api/productos',
+    '/productos.json',
+    '../productos.json',
+    'productos.json'
+  ];
+
+  for (const url of tries) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data) continue;
+      // Si es item individual:
+      if (data && (data.id == id || data.id === Number(id) || data.id === String(id))) return renderProducto(data);
+      // Si es lista: buscar
+      if (Array.isArray(data)) {
+        const p = data.find(x => Number(x.id) === Number(id) || String(x.id) === String(id));
         if (p) return renderProducto(p);
       }
-
-      // 3) Fallback a JSON estático en raíz (repo/public puede estar en subcarpeta)
-      res = await tryFetchSequential(['../productos.json','/productos.json','productos.json'], {cache:'no-store'});
-      if (res) {
-        const lista = await res.json();
-        const p = (lista || []).find(x => Number(x.id) === Number(pid));
+      // Si API devolvió {productos: [...]}
+      if (data.productos && Array.isArray(data.productos)) {
+        const p = data.productos.find(x => Number(x.id) === Number(id));
         if (p) return renderProducto(p);
       }
-
-      showError('Producto no encontrado o no disponible.');
+    } catch (err) {
+      // probar siguiente
     }
+  }
+
+  mostrarError('Producto no encontrado.');
+}
 
     function renderProducto(p){
       // nombre, precio, categoria, stock
@@ -172,3 +187,4 @@
   </script>
 </body>
 </html>
+
