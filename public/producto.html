@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Detalle del producto - Distribuidora Funaz </title>
+  <title>Detalle del producto - Distribuidora Funaz</title>
   <style>
     body { font-family:'Segoe UI',sans-serif; background:#f9f9f9; color:#333; margin:0; min-height:100vh; display:flex; flex-direction:column; }
     header { background:#4a90e2; color:#fff; padding:1em 2em; display:flex; align-items:center; gap:1em; position:relative; }
@@ -67,30 +67,26 @@
   <div id="mensajeAgregado"></div>
 
   <script>
-    // Mantener igual que tu código original, solo se integran mejoras:
     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
     let producto = null;
 
-    // Actualizar texto del botón carrito en header
     function actualizarContadorCarrito() {
       const total = carrito.reduce((acc, i) => acc + (i.cantidad || 0), 0);
-      const btn = document.getElementById('btnCarritoHeader');
-      if (btn) btn.textContent = `Carrito (${total})`;
+      document.getElementById('btnCarritoHeader').textContent = `Carrito (${total})`;
     }
 
     async function cargarProducto() {
       const id = new URLSearchParams(location.search).get('id');
       if (!id) return mostrarError('Producto no encontrado.');
+
       try {
-        // Carga el JSON que está *fuera* de public
-        const res = await fetch('../productos.json', { cache: 'no-store' });
-        if (!res.ok) throw new Error('No se pudo cargar el listado de productos');
+        const res = await fetch('productos.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('No se pudo cargar productos');
         const productos = await res.json();
         producto = productos.find(p => p.id == id);
         if (!producto) throw new Error('Producto no encontrado');
 
-        // si el carrito ya contiene este producto, no alteramos el stock original (stock representa disponible en tienda)
-        const stockCheck = producto.stock ? '<span class="checkmark checked"></span>' : '<span class="checkmark"></span>';
+        const stockCheck = producto.stock > 0 ? '<span class="checkmark checked"></span>' : '<span class="checkmark"></span>';
 
         document.getElementById('detalle').innerHTML = `
           <div class="imagen-container">
@@ -115,110 +111,90 @@
       }
     }
 
-    function mostrarError(msg){ 
+    function mostrarError(msg) {
       document.getElementById('detalle').innerHTML = `<p style="color:red;font-weight:bold;">${msg}</p>`;
     }
 
-    function agregarAlCarrito(){
+    function agregarAlCarrito() {
       const cantidadInput = document.getElementById('cantidad');
-      if(!cantidadInput) return;
       let cantidad = parseInt(cantidadInput.value);
       if (isNaN(cantidad) || cantidad < 1) return;
 
-      // No permitir agregar más de lo disponible
-      if (producto.stock === 0) return;
       if (cantidad > producto.stock) cantidad = producto.stock;
 
-      // sumar al carrito (solo información local; stock real se resta en confirmación de pedido)
       const existente = carrito.find(p => p.id === producto.id);
       if (existente) {
         existente.cantidad += cantidad;
       } else {
-        // guardamos solo campos necesarios para el carrito (evitar duplicar propiedades del producto)
         carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
       }
 
-      // Reducir stock mostrado en esta vista para reflejar la acción inmediata
       producto.stock -= cantidad;
       updateStockDisplay();
+      cantidadInput.max = producto.stock;
 
-      // actualizar max del input y deshabilitar si llega a 0
-      const cantidadEl = document.getElementById('cantidad');
-      if (cantidadEl) {
-        cantidadEl.max = producto.stock;
-        if (producto.stock <= 0) {
-          cantidadEl.disabled = true;
-          const btn = document.getElementById('btnAgregar');
-          if (btn) btn.disabled = true;
-        } else {
-          // ajustar valor si supera el nuevo stock
-          if (parseInt(cantidadEl.value) > producto.stock) cantidadEl.value = producto.stock;
-        }
+      if (producto.stock <= 0) {
+        cantidadInput.disabled = true;
+        document.getElementById('btnAgregar').disabled = true;
       }
 
-      // guardar y actualizar UI del carrito (igual que en index)
       localStorage.setItem('carrito', JSON.stringify(carrito));
       actualizarCarrito();
       actualizarContadorCarrito();
       mostrarMensaje(producto.nombre, cantidad);
     }
 
-    function updateStockDisplay(){
+    function updateStockDisplay() {
       const stockEl = document.getElementById('stockDisplay');
-      if(!stockEl) return;
       const check = producto.stock > 0 ? '<span class="checkmark checked"></span>' : '<span class="checkmark"></span>';
       stockEl.innerHTML = `${check} Stock: ${producto.stock > 0 ? producto.stock : 'Sin stock'}`;
     }
 
-    function mostrarMensaje(nombre,cantidad){
-      const msg=document.getElementById('mensajeAgregado');
+    function mostrarMensaje(nombre, cantidad) {
+      const msg = document.getElementById('mensajeAgregado');
       msg.innerHTML = `Se agregó:<br><span class="producto-nombre">${nombre} x${cantidad}</span>`;
-      msg.style.display='block';
+      msg.style.display = 'block';
       clearTimeout(msg.timeoutId);
-      msg.timeoutId=setTimeout(()=>{ msg.style.display='none'; },2000);
+      msg.timeoutId = setTimeout(() => msg.style.display = 'none', 2000);
     }
 
-    function toggleCarrito(){
-      const c=document.getElementById('carritoDesplegable');
+    function toggleCarrito() {
+      const c = document.getElementById('carritoDesplegable');
       c.style.display = c.style.display === 'block' ? 'none' : 'block';
       if (c.style.display === 'block') actualizarCarrito();
     }
 
-    function actualizarCarrito(){
-      const lista=document.getElementById('listaCarrito');
-      lista.innerHTML='';
-      // refrescar carrito desde localStorage por si cambió en otra pestaña
-      carrito = JSON.parse(localStorage.getItem('carrito')) || carrito;
-      if(carrito.length===0) return lista.innerHTML='<p>Carrito vacío.</p>';
-      carrito.forEach((item,idx)=>{
-        const div=document.createElement('div');
-        div.className='item-carrito';
+    function actualizarCarrito() {
+      const lista = document.getElementById('listaCarrito');
+      lista.innerHTML = '';
+      carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+      if (carrito.length === 0) return lista.innerHTML = '<p>Carrito vacío.</p>';
+
+      carrito.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'item-carrito';
         div.innerHTML = `<span>${item.nombre}</span><span class="cantidad">x${item.cantidad}</span><button onclick="removerDelCarrito(${idx})">X</button>`;
         lista.appendChild(div);
       });
     }
 
-    function removerDelCarrito(index){
-      carrito.splice(index,1);
-      localStorage.setItem('carrito',JSON.stringify(carrito));
+    function removerDelCarrito(index) {
+      carrito.splice(index, 1);
+      localStorage.setItem('carrito', JSON.stringify(carrito));
       actualizarCarrito();
       actualizarContadorCarrito();
     }
 
-    function verCarrito(){
-      // permite ir a la página de carrito (como en index)
-      location.href = 'carrito.html';
-    }
+    function verCarrito() { location.href = 'carrito.html'; }
 
-    function vaciarCarrito(){
-      if(!confirm('Vaciar todo el carrito?')) return;
+    function vaciarCarrito() {
+      if (!confirm('Vaciar todo el carrito?')) return;
       carrito = [];
       localStorage.setItem('carrito', JSON.stringify(carrito));
       actualizarCarrito();
       actualizarContadorCarrito();
     }
 
-    // sincronizar con cambios de localStorage desde otras pestañas
     window.addEventListener('storage', (e) => {
       if (e.key === 'carrito') {
         carrito = JSON.parse(e.newValue) || [];
@@ -227,7 +203,6 @@
       }
     });
 
-    // inicializar
     actualizarCarrito();
     actualizarContadorCarrito();
     cargarProducto();
