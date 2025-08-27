@@ -251,8 +251,10 @@ app.post('/api/guardar-pedidos', (req, res) => {
     // Añadimos la orden (si querés un id, lo agregamos aquí)
     pedidosArr.push(orden);
     fs.writeFileSync(pedidosFile, JSON.stringify(pedidosArr, null, 2));
+    await gitPushCambios();
 
-    return res.json({ ok: true, mensaje: 'Pedido guardado y stock actualizado', pedido: orden });
+    
+    res.status(200).send('Pedidos guardados');
   } catch (err) {
     console.error('Error guardando pedido:', err);
     return res.status(500).json({ error: 'Error interno al guardar pedido' });
@@ -265,6 +267,7 @@ app.post('/api/guardar-pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
