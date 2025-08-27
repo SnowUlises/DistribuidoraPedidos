@@ -81,10 +81,10 @@ app.get('/api/pedidos/:id/pdf', async (req, res) => {
       return res.status(500).json({ error: 'No se pudo subir el PDF' });
     }
 
-    const { data: publicUrlData } = supabase
-      .storage
-      .from('pedidos-pdf')
-      .getPublicUrl(pdfFileName);
+    const { data } = supabase
+  .storage
+  .from('pedidos-pdf')
+  .getPublicUrl(`pedido_${returnedId}.pdf`)
 
     return res.json({ ok: true, pdf: publicUrlData?.publicUrl });
   } catch (err) {
@@ -275,5 +275,6 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
