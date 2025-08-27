@@ -327,6 +327,41 @@ app.delete('/api/eliminar-pedido/:usuario/:index', async (req, res) => {
     return res.status(500).send('Error interno al eliminar pedido');
   }
 });
+/* ========================
+     OBTENER PEDIDOS
+======================== */
+app.get('/api/pedidos', (req, res) => {
+  try {
+    const pedidosFile = path.join(PEDIDOS_PATH, 'pedidos.json');
+    if (!fs.existsSync(pedidosFile)) {
+      return res.json({});
+    }
+
+    const raw = fs.readFileSync(pedidosFile, 'utf8') || '[]';
+    let arr = [];
+    try { arr = JSON.parse(raw); } catch { arr = []; }
+
+    // Transformar array -> objeto por usuario
+    const map = {};
+    for (const orden of arr) {
+      const u = orden.user || 'invitado';
+      if (!map[u]) map[u] = [];
+
+      const items = (orden.items || []).map(it => ({
+        id: it.id,
+        nombre: it.nombre,
+        cantidad: it.cantidad,
+        precio: it.precio_unitario ?? 0
+      }));
+      map[u].push(items);
+    }
+
+    res.json(map);
+  } catch (err) {
+    console.error('Error GET /api/pedidos:', err);
+    res.status(500).json({});
+  }
+});
 
 
 /* ========================
@@ -334,6 +369,7 @@ app.delete('/api/eliminar-pedido/:usuario/:index', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
