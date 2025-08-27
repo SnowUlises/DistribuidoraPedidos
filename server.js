@@ -4,7 +4,7 @@ const path = require('path');
 const multer = require('multer');
 const sqlite3 = require('sqlite3').verbose();
 const PDFDocument = require('pdfkit');
-
+const fs = require('fs');
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -181,3 +181,4 @@ app.delete('/api/eliminar-pedido/:id', (req,res)=>{
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
+
