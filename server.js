@@ -41,8 +41,8 @@ function guardarProductos() {
 const axios = require('axios');
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // crea un token en GitHub con repo scope
-const REPO_OWNER = 'TU_USUARIO';
-const REPO_NAME = 'TU_REPO';
+const REPO_OWNER = 'SnowUlises';
+const REPO_NAME = 'DistribuidoraFunaz';
 const BRANCH = 'main';
 
 async function gitPushCambios(nombreArchivo) {
@@ -219,6 +219,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
