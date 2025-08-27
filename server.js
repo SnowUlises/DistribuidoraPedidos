@@ -71,7 +71,11 @@ async function gitPushCambios(nombreArchivo) {
       },
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
-  }};
+  } catch (err) {
+    console.error(`Error subiendo ${nombreArchivo}:`, err.response?.data || err.message);
+  }
+}
+
 
 
 // Uso:
@@ -213,6 +217,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
