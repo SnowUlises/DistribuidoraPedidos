@@ -195,27 +195,29 @@ btnConfirmar.addEventListener('click', async () => {
   const productosClon = productos.map(p => ({...p}));
 
   for (const item of carrito) {
-    const producto = productosClon.find(p => p.id == item.id);
-    if (!producto) continue;
+  const producto = productosClon.find(p => p.id == item.id);
+  if (!producto) continue;
 
-    if (typeof producto.stock === 'number') {
-      if (producto.stock === 0) {
-        sinStock.push(producto.nombre);
-        continue;
-      }
-      if (item.cantidad > producto.stock) {
-        sinStock.push(producto.nombre + ` (solo ${producto.stock} disponibles)`);
-        item.cantidad = producto.stock;
-      }
-      producto.stock = Math.max(0, producto.stock - item.cantidad);
+  if (typeof producto.stock === 'number') {
+    if (producto.stock === 0) {
+      sinStock.push(producto.nombre);
+      continue;
     }
-    nuevosCarrito.push({
-  nuevosCarrito.push({
-  ...item,
-  precio: Number(producto.precio) * 1.10  // ✅ Tomamos precio real y le sumamos 10%
-});
-});
+    if (item.cantidad > producto.stock) {
+      sinStock.push(`${producto.nombre} (solo ${producto.stock} disponibles)`);
+      item.cantidad = producto.stock;
+    }
+    producto.stock = Math.max(0, producto.stock - item.cantidad);
   }
+
+  // ✅ Precio ya con +10%
+  const precioConRecargo = Number(producto.precio) * 1.10;
+
+  nuevosCarrito.push({
+    ...item,
+    precio: precioConRecargo
+  });
+}
 
   if (sinStock.length > 0) {
     sinStockAviso.textContent = `Ajustado: falta stock para: ${sinStock.join(', ')}`;
@@ -279,6 +281,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
