@@ -48,6 +48,54 @@ app.get('/api/pedidos', async (req, res) => {
   }
 });
 
+app.get('/api/pedidos/:id/pdf', async (req, res) => {
+  try {
+    const pedidoId = req.params.id;
+
+    // 🔹 Buscar el pedido en Supabase
+    const { data: pedido, error: pedidoErr } = await supabase
+      .from('pedidos')
+      .select('*')
+      .eq('id', pedidoId)
+      .single();
+
+    if (pedidoErr || !pedido) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
+    // 📄 Generar PDF
+    const pdfBuffer = await generarPDF(pedido);
+
+    // ☁️ Subir PDF a Supabase Storage
+    const pdfFileName = `pedido_${pedidoId}.pdf`;
+    const { error: uploadErr } = await supabase.storage
+      .from('pedidos-pdf')
+      .upload(pdfFileName, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+
+    if (uploadErr) {
+      console.error('❌ Error subiendo PDF:', uploadErr);
+      return res.status(500).json({ error: 'No se pudo subir el PDF' });
+    }
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('pedidos-pdf')
+      .getPublicUrl(pdfFileName);
+
+    return res.json({ ok: true, pdf: publicUrlData?.publicUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+
 /* -----------------------------
  📦 GUARDAR PEDIDOS
 ----------------------------- */
@@ -121,6 +169,55 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   }
 });
 
+async function generarPDF(pedido) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    const chunks = [];
+    doc.on('data', c => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    // Encabezado
+    doc.fontSize(18).text(`Pedido #${pedido.id}`, { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12)
+      .text(`Cliente: ${pedido.user || ''}`)
+      .text(`Fecha: ${new Date(pedido.fecha).toLocaleString('es-AR')}`);
+    doc.moveDown();
+
+    // Tabla simple
+    doc.font('Helvetica-Bold');
+    doc.text('Producto', 40, doc.y)
+       .text('Cant.', 300, undefined, { width: 50, align: 'right' })
+       .text('P.U.', 360, undefined, { width: 80, align: 'right' })
+       .text('Subtotal', 450, undefined, { width: 100, align: 'right' });
+    doc.moveDown(0.5);
+    doc.font('Helvetica');
+
+    const items = Array.isArray(pedido.items) ? pedido.items : [];
+    items.forEach(it => {
+      const cant = Number(it.cantidad ?? 0);
+      const pu   = Number(it.precio_unitario ?? it.precio ?? 0);
+      const sub  = cant * pu;
+
+      doc.text(it.nombre ?? '', 40, doc.y)
+         .text(String(cant), 300, undefined, { width: 50, align: 'right' })
+         .text(pu.toFixed(2), 360, undefined, { width: 80, align: 'right' })
+         .text(sub.toFixed(2), 450, undefined, { width: 100, align: 'right' });
+    });
+
+    // Total
+    const totalCalc = items.reduce((a, it) =>
+      a + Number(it.cantidad ?? 0) * Number(it.precio_unitario ?? it.precio ?? 0), 0);
+    const total = Number(pedido.total ?? totalCalc);
+
+    doc.moveDown();
+    doc.font('Helvetica-Bold').text(`Total: $ ${total.toFixed(2)}`, { align: 'right' });
+
+    doc.end();
+  });
+}
+
 /* -----------------------------
  ❌ ELIMINAR PEDIDO
 ----------------------------- */
@@ -177,3 +274,4 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
