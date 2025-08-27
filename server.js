@@ -184,7 +184,8 @@ app.post('/api/guardar-pedidos', (req, res) => {
     pedidosArr.push(orden);
     fs.writeFileSync(PEDIDOS_FILE, JSON.stringify(pedidosArr, null, 2));
 
-    gitPushCambios(); // push productos + pedidos
+    gitPushCambios('productos.json');
+    gitPushCambios('pedidos.json'); 
 
     res.status(200).json({ ok: true, mensaje: 'Pedido guardado correctamente' });
   } catch (err) {
@@ -218,5 +219,6 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
