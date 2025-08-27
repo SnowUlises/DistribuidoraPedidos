@@ -40,13 +40,40 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 /* ========================
    FUNCIÓN PARA GENERAR PDF
 ======================== */
-function generarPDF(pedido) {
-  return new Promise((resolve, reject) => {
-    const pdfFile = path.join(PDF_PATH, `pedido_${pedido.id}.pdf`);
-    const doc = new PDFDocument({ margin: 50 });
-    const stream = fs.createWriteStream(pdfFile);
-    doc.pipe(stream);
+async function generarPDF(pedido) {
+  const PDFDocument = (await import('pdfkit')).default;
+  const doc = new PDFDocument({ margin: 50 });
 
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', async () => {
+      try {
+        const pdfBuffer = Buffer.concat(chunks);
+        const fileName = `pedido_${pedido.id}.pdf`;
+
+        // Subir a Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('pedidos-pdf')
+          .upload(fileName, pdfBuffer, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Obtener URL pública
+        const { data: publicURL } = supabase.storage
+          .from('pedidos-pdf')
+          .getPublicUrl(fileName);
+
+        resolve(publicURL.publicUrl);
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    // Contenido del PDF
     doc.fontSize(20).text("Distribuidora Funaz", { align: 'center' });
     doc.moveDown();
     doc.fontSize(16).text(`Pedido #${pedido.id}`);
@@ -65,10 +92,9 @@ function generarPDF(pedido) {
     doc.fontSize(14).text(`TOTAL: $${pedido.total.toFixed(2)}`, { align: 'right' });
 
     doc.end();
-    stream.on('finish', () => resolve(`/pedidos-pdf/pedido_${pedido.id}.pdf`));
-    stream.on('error', reject);
   });
 }
+
 
 /* ========================
         PRODUCTOS
@@ -246,3 +272,4 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
