@@ -3,7 +3,6 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const { Low, JSONFile } = require('lowdb');
 
 const app = express();
 app.use(cors());
@@ -19,15 +18,6 @@ const dbFile = path.join(__dirname, 'data/db.json');
 const adapter = new JSONFile(dbFile);
 const { Low, JSONFile } = require('lowdb');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// archivo JSON
-const file = path.join(__dirname, 'data', 'db.json');
-const adapter = new JSONFile(file);
-const db = new Low(adapter);
 
 // función para cargar DB
 async function cargarDB() {
@@ -159,4 +149,5 @@ app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
+
 
