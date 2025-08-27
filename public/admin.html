@@ -551,26 +551,22 @@ async function cargarUsuarios() {
   if (!listaUsuarios) return;
   listaUsuarios.innerHTML = '';
 
-  usuarios.forEach(userObj => {
-    const userName = userObj.user;
-    const info = datosUsuarios[userName] || {};
-    const userPedidos = pedidos[userName] || [];
-    const userDiv = document.createElement('details');
-    userDiv.className = 'user-details';
-
-    let pedidosHTML = '';
-    if (userPedidos.length === 0) {
-      pedidosHTML = '<p style="color:#777;font-style:italic;">No tiene pedidos.</p>';
-    } else {
-      pedidosHTML = '<ul style="padding-left:20px;">';
-      userPedidos.forEach((pedido, index) => {
-  // soporta pedido como array (items) o como objeto { items, id, total }
+  userPedidos.forEach((pedido, index) => {
   const items = Array.isArray(pedido) ? pedido : (pedido.items || []);
-  const pedidoId = pedido.id ?? index; // si no hay id usamos index
+  const pedidoId = pedido.id ?? index;
   const key = `${userName}-${index}`;
   const estado = estadosPedidos[key] || {};
 
-  pedidosHTML += `<li>Pedido #${index+1} (id: ${pedidoId}):<ul>`;
+  // 🔥 Calcular total
+  const total = items.reduce((sum, p) => {
+    const precio = p.precio_unitario ?? p.precio ?? 0;
+    return sum + precio * (p.cantidad ?? 1);
+  }, 0);
+
+  pedidosHTML += `<li>Pedido #${index+1} (id: ${pedidoId}) 
+    - <b>Total: $${total.toFixed(2)}</b>
+    <ul>`;
+
   pedidosHTML += items.map(p => {
     const precio = (p.precio_unitario ?? p.precio ?? 0);
     const precioStr = (typeof precio === 'number' && precio.toFixed) ? precio.toFixed(2) : precio;
@@ -778,6 +774,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
