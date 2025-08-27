@@ -553,7 +553,7 @@ async function cargarUsuarios() {
   usuarios.forEach((userObj) => {
     const userName = userObj.user;
     const info = datosUsuarios[userName] || {};
-    const userPedidos = pedidos[userName] || [];
+    const userPedidos = (pedidos[userName] || []).slice().reverse();
 
     const userDiv = document.createElement('details');
     userDiv.className = 'user-details';
@@ -779,6 +779,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
