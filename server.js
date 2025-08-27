@@ -261,12 +261,80 @@ app.post('/api/guardar-pedidos', (req, res) => {
   }
 });
 
+// DELETE /api/eliminar-pedido/:usuario/:index
+app.delete('/api/eliminar-pedido/:usuario/:index', async (req, res) => {
+  const { usuario, index } = req.params;
+  const idx = Number(index);
+
+  // 1) borrar el PDF (si existe)
+  try {
+    const pdfPath = path.join(PEDIDOS_PATH, `${usuario}-${index}.pdf`);
+    if (fs.existsSync(pdfPath)) {
+      fs.unlinkSync(pdfPath);
+    }
+  } catch (err) {
+    console.error('Error borrando PDF (se continua):', err);
+  }
+
+  // 2) actualizar pedidos/pedidos.json (buscamos la N-ésima orden del usuario)
+  try {
+    const pedidosFile = path.join(PEDIDOS_PATH, 'pedidos.json');
+    if (!fs.existsSync(pedidosFile)) {
+      return res.status(404).send('No existe archivo de pedidos en servidor.');
+    }
+
+    const raw = fs.readFileSync(pedidosFile, 'utf8') || '[]';
+    let pedidosArr;
+    try { pedidosArr = JSON.parse(raw); } catch (e) { pedidosArr = []; }
+
+    if (!Array.isArray(pedidosArr) || pedidosArr.length === 0) {
+      return res.status(404).send('No hay pedidos registrados.');
+    }
+
+    // encontrar la posición global (en el array) de la idx-ésima orden de este usuario
+    let foundPos = -1;
+    let count = 0;
+    for (let i = 0; i < pedidosArr.length; i++) {
+      if ((pedidosArr[i].user || '') === usuario) {
+        if (count === idx) { foundPos = i; break; }
+        count++;
+      }
+    }
+
+    if (foundPos === -1) {
+      return res.status(404).send('Pedido no encontrado para ese usuario/index.');
+    }
+
+    // quitar la orden del arreglo
+    const removed = pedidosArr.splice(foundPos, 1);
+
+    // escribir archivo actualizado
+    fs.writeFileSync(pedidosFile, JSON.stringify(pedidosArr, null, 2));
+
+    // 3) intentar push a Github (no hacemos fallar la respuesta si falla el push)
+    try {
+      if (typeof gitPushCambios === 'function') {
+        await gitPushCambios();
+      }
+    } catch (e) {
+      console.error('Aviso: fallo al pushear cambios tras eliminar pedido:', e);
+      // seguimos, porque ya actualizamos el archivo localmente
+    }
+
+    return res.send({ ok: true, mensaje: 'Pedido eliminado y registro actualizado', eliminado: removed[0] || null });
+  } catch (err) {
+    console.error('Error eliminando pedido en servidor:', err);
+    return res.status(500).send('Error interno al eliminar pedido');
+  }
+});
+
 
 /* ========================
           SERVIDOR
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
