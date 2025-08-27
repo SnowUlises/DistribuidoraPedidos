@@ -2,10 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
-const sqlite3 = require('sqlite3').verbose();
-const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -14,75 +14,61 @@ app.use('/imagenes', express.static(path.join(__dirname, 'public', 'imagenes')))
 const IMG_PATH = path.join(__dirname, 'public', 'imagenes');
 if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 
-// SQLite
-const db = new sqlite3.Database('./tienda.db');
+// MongoDB
+mongoose.connect('TU_MONGODB_URI', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(()=>console.log('MongoDB conectado'))
+  .catch(err=>console.error(err));
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS productos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT,
-    precio REAL,
-    categoria TEXT,
-    stock INTEGER,
-    imagen TEXT
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS pedidos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user TEXT,
-    fecha TEXT,
-    items TEXT, -- JSON string
-    total REAL
-  )`);
+// Schemas
+const productoSchema = new mongoose.Schema({
+  nombre: String,
+  precio: Number,
+  categoria: String,
+  stock: Number,
+  imagen: String
 });
+const pedidoSchema = new mongoose.Schema({
+  user: { type: String, default: 'invitado' },
+  fecha: { type: Date, default: Date.now },
+  items: Array,
+  total: Number
+});
+
+const Producto = mongoose.model('Producto', productoSchema);
+const Pedido = mongoose.model('Pedido', pedidoSchema);
 
 /* ========================
       RUTAS PRODUCTOS
 ======================== */
-app.get('/api/productos', (req, res) => {
-  db.all('SELECT * FROM productos', (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+app.get('/api/productos', async (req, res) => {
+  const productos = await Producto.find();
+  res.json(productos);
 });
 
-app.get('/api/productos/:id', (req, res) => {
-  db.get('SELECT * FROM productos WHERE id=?', [req.params.id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json(row);
-  });
+app.get('/api/productos/:id', async (req, res) => {
+  const producto = await Producto.findById(req.params.id);
+  if(!producto) return res.status(404).json({error:'Producto no encontrado'});
+  res.json(producto);
 });
 
-app.post('/api/productos', (req, res) => {
+app.post('/api/productos', async (req, res) => {
   const { nombre, precio, categoria, stock } = req.body;
-  db.run(
-    'INSERT INTO productos (nombre, precio, categoria, stock, imagen) VALUES (?, ?, ?, ?, ?)',
-    [nombre, precio, categoria, stock, `/imagenes/${Date.now()}.png`],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-      db.get('SELECT * FROM productos WHERE id=?', [this.lastID], (err,row)=>res.json(row));
-    }
-  );
+  const prod = new Producto({ nombre, precio, categoria, stock, imagen: `/imagenes/${Date.now()}.png` });
+  await prod.save();
+  res.json(prod);
 });
 
-app.put('/api/productos/:id', (req, res) => {
-  const { nombre, precio, categoria, stock, imagen } = req.body;
-  db.run(
-    'UPDATE productos SET nombre=?, precio=?, categoria=?, stock=?, imagen=? WHERE id=?',
-    [nombre, precio, categoria, stock, imagen, req.params.id],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-      db.get('SELECT * FROM productos WHERE id=?', [req.params.id], (err,row)=>res.json(row));
-    }
-  );
+app.put('/api/productos/:id', async (req, res) => {
+  const prod = await Producto.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if(!prod) return res.status(404).json({error:'Producto no encontrado'});
+  res.json(prod);
 });
 
-app.delete('/api/productos/:id', (req, res) => {
-  db.run('DELETE FROM productos WHERE id=?', [req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(204).end();
-  });
+app.delete('/api/productos/:id', async (req, res) => {
+  await Producto.findByIdAndDelete(req.params.id);
+  res.status(204).end();
 });
 
 /* ========================
@@ -101,79 +87,55 @@ app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
 /* ========================
      PEDIDOS
 ======================== */
-app.post('/api/guardar-pedidos', (req, res) => {
+app.post('/api/guardar-pedidos', async (req, res) => {
   const pedidoItems = req.body.pedido;
   const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
   if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
     return res.status(400).json({ error: 'Pedido inválido' });
 
-  db.serialize(() => {
-    let total = 0;
-    const items = [];
-    const updateStock = [];
+  let total = 0;
+  const items = [];
 
-    const placeholders = pedidoItems.map(it => '?').join(',');
-    db.all(`SELECT * FROM productos WHERE id IN (${placeholders})`, pedidoItems.map(it=>it.id), (err, rows) => {
-      if (err) return res.status(500).json({ error: err.message });
-      for (const it of pedidoItems) {
-        const prod = rows.find(r=>r.id==it.id);
-        if (!prod) continue;
-        const cantidadFinal = Math.min(it.cantidad, prod.stock);
-        total += cantidadFinal * prod.precio;
-        items.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: prod.precio });
-        updateStock.push({ id: prod.id, stock: prod.stock - cantidadFinal });
-      }
+  for(const it of pedidoItems){
+    const prod = await Producto.findById(it.id);
+    if(!prod) continue;
+    const cantidadFinal = Math.min(it.cantidad, prod.stock);
+    total += cantidadFinal * prod.precio;
+    items.push({ id: prod._id, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: prod.precio });
+    prod.stock -= cantidadFinal;
+    await prod.save();
+  }
 
-      const fecha = new Date().toISOString();
-      db.run(
-        'INSERT INTO pedidos (user, fecha, items, total) VALUES (?, ?, ?, ?)',
-        [usuarioPedido, fecha, JSON.stringify(items), total],
-        function(err) {
-          if (err) return res.status(500).json({ error: err.message });
-
-          // actualizar stock
-          const stmt = db.prepare('UPDATE productos SET stock=? WHERE id=?');
-          updateStock.forEach(u => stmt.run(u.stock, u.id));
-          stmt.finalize();
-
-          res.json({ ok: true, mensaje: 'Pedido guardado', id: this.lastID });
-        }
-      );
-    });
-  });
+  const pedido = new Pedido({ user: usuarioPedido, items, total });
+  await pedido.save();
+  res.json({ ok: true, mensaje: 'Pedido guardado', id: pedido._id });
 });
 
-app.get('/api/pedidos', (req,res)=>{
-  db.all('SELECT * FROM pedidos', (err, rows)=>{
-    if(err) return res.status(500).json({error: err.message});
-    const map = {};
-    rows.forEach(r=>{
-      const u = r.user || 'invitado';
-      map[u] = map[u]||[];
-      map[u].push({ id:r.id, fecha:r.fecha, items: JSON.parse(r.items), total:r.total });
-    });
-    res.json(map);
+app.get('/api/pedidos', async (req,res)=>{
+  const pedidos = await Pedido.find();
+  const map = {};
+  pedidos.forEach(r=>{
+    const u = r.user || 'invitado';
+    map[u] = map[u]||[];
+    map[u].push({ id:r._id, fecha:r.fecha, items: r.items, total:r.total });
   });
+  res.json(map);
 });
 
-app.delete('/api/eliminar-pedido/:id', (req,res)=>{
-  const id = req.params.id;
-  db.get('SELECT * FROM pedidos WHERE id=?',[id],(err,row)=>{
-    if(err) return res.status(500).json({error: err.message});
-    if(!row) return res.status(404).json({error:'Pedido no encontrado'});
+app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
+  const pedido = await Pedido.findById(req.params.id);
+  if(!pedido) return res.status(404).json({error:'Pedido no encontrado'});
 
-    const items = JSON.parse(row.items);
-    // restaurar stock
-    const stmt = db.prepare('UPDATE productos SET stock=stock+? WHERE id=?');
-    items.forEach(it=>stmt.run(it.cantidad,it.id));
-    stmt.finalize();
+  for(const it of pedido.items){
+    const prod = await Producto.findById(it.id);
+    if(prod){
+      prod.stock += it.cantidad;
+      await prod.save();
+    }
+  }
 
-    // borrar pedido
-    db.run('DELETE FROM pedidos WHERE id=?',[id], err=>{
-      if(err) return res.status(500).json({error:err.message});
-      res.json({ok:true, mensaje:'Pedido eliminado y stock restaurado'});
-    });
-  });
+  await Pedido.findByIdAndDelete(req.params.id);
+  res.json({ok:true, mensaje:'Pedido eliminado y stock restaurado'});
 });
 
 /* ========================
@@ -181,4 +143,3 @@ app.delete('/api/eliminar-pedido/:id', (req,res)=>{
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
-
