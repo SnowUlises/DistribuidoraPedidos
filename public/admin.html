@@ -591,7 +591,16 @@ async function cargarUsuarios() {
   });
 }
 
-
+async function cargarPedidos() {
+  try {
+    const res = await fetch(`${apiBase}/pedidos`);
+    if (!res.ok) return console.warn('No se pudieron cargar pedidos', res.status);
+    const data = await res.json();
+    localStorage.setItem('pedidos', JSON.stringify(data));
+  } catch (err) {
+    console.error('Error cargando pedidos:', err);
+  }
+}
   // Eliminar pedido (intenta servidor y luego borra local)
   async function eliminarPedido(usuario, index) {
   if (!confirm('¿Eliminar este pedido?')) return;
@@ -754,6 +763,7 @@ async function cargarUsuarios() {
 </script>
 </body>
 </html>
+
 
 
 
