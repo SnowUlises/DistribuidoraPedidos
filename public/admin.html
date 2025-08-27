@@ -637,7 +637,8 @@ async function cargarUsuarios() {
           localStorage.setItem('estadosPedidos', JSON.stringify(estadosPedidos));
         } catch (err) {
           if (statusSpan) statusSpan.textContent = '❌ Error';
-          mostrarErrorGuardar(err);
+          console.error(err);
+          alert('Error al guardar el pedido.');
         }
       });
     });
@@ -849,6 +850,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
