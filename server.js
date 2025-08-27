@@ -30,42 +30,65 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
   console.error("❌ Debes definir SUPABASE_URL y SUPABASE_KEY en las variables de entorno");
   process.exit(1);
 }
-// Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 /* ========================
         PRODUCTOS
 ======================== */
 app.get('/api/productos', async (req, res) => {
-  const { data, error } = await supabase.from('productos').select('*');
-  if (error) return res.status(500).json({ error });
-  res.json(data);
+  try {
+    const { data, error } = await supabase.from('productos').select('*');
+    if (error) { console.error(error); return res.status(500).json({ error }); }
+    res.json(data);
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 app.get('/api/productos/:id', async (req, res) => {
-  const { data, error } = await supabase.from('productos').select('*').eq('id', req.params.id).single();
-  if (error) return res.status(404).json({ error: 'Producto no encontrado' });
-  res.json(data);
+  try {
+    const id = Number(req.params.id);
+    const { data, error } = await supabase.from('productos').select('*').eq('id', id).single();
+    if (error) { console.error(error); return res.status(404).json({ error: 'Producto no encontrado' }); }
+    res.json(data);
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 app.post('/api/productos', async (req, res) => {
-  const { nombre, precio, categoria, stock } = req.body;
-  const id = Date.now().toString();
-  const { data, error } = await supabase.from('productos').insert([{ id, nombre, precio, categoria, stock, imagen: `/imagenes/${id}.png` }]);
-  if (error) return res.status(500).json({ error });
-  res.json(data[0]);
+  try {
+    const { nombre, precio, categoria, stock } = req.body;
+    const id = Date.now(); // numeric
+    const payload = { id, nombre, precio, categoria, stock, imagen: `/imagenes/${id}.png` };
+    const { data, error } = await supabase.from('productos').insert([payload]);
+    if (error) { console.error(error); return res.status(500).json({ error }); }
+    res.json(data[0]);
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 app.put('/api/productos/:id', async (req, res) => {
-  const { data, error } = await supabase.from('productos').update(req.body).eq('id', req.params.id);
-  if (error) return res.status(404).json({ error: 'Producto no encontrado' });
-  res.json(data[0]);
+  try {
+    const id = Number(req.params.id);
+    const { data, error } = await supabase.from('productos').update(req.body).eq('id', id);
+    if (error) { console.error(error); return res.status(404).json({ error: 'Producto no encontrado' }); }
+    res.json(data[0]);
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 app.delete('/api/productos/:id', async (req, res) => {
-  const { error } = await supabase.from('productos').delete().eq('id', req.params.id);
-  if (error) return res.status(500).json({ error });
-  res.status(204).end();
+  try {
+    const id = Number(req.params.id);
+    const { error } = await supabase.from('productos').delete().eq('id', id);
+    if (error) { console.error(error); return res.status(500).json({ error }); }
+    res.status(204).end();
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
@@ -77,55 +100,94 @@ app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
         PEDIDOS
 ======================== */
 app.post('/api/guardar-pedidos', async (req, res) => {
-  const pedidoItems = req.body.pedido;
-  const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
-  if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
-    return res.status(400).json({ error: 'Pedido inválido' });
+  try {
+    const pedidoItems = req.body.pedido;
+    const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
 
-  let total = 0;
-  const items = [];
+    if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
+      return res.status(400).json({ error: 'Pedido inválido' });
 
-  for (const it of pedidoItems) {
-    const { data: prod, error } = await supabase.from('productos').select('*').eq('id', Number(it.id)).single();
-    if (!prod) continue;
-    const cantidadFinal = Math.min(it.cantidad, prod.stock);
-    const subtotal = cantidadFinal * it.precio_unitario; // usar precio del carrito
-    total += subtotal;
-    items.push({ id: it.id, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: it.precio_unitario, subtotal });
-    await supabase.from('productos').update({ stock: prod.stock - cantidadFinal }).eq('id', it.id);
+    let total = 0;
+    const items = [];
+
+    for (const it of pedidoItems) {
+      const prodId = Number(it.id);
+      const { data: prod, error: prodError } = await supabase.from('productos').select('*').eq('id', prodId).single();
+      if (prodError) { console.warn('Producto no encontrado o error:', prodError); continue; }
+      if (!prod) continue;
+
+      const cantidadFinal = Math.min(Number(it.cantidad) || 0, Number(prod.stock) || 0);
+      if (cantidadFinal <= 0) continue;
+
+      const precioUnitario = Number(it.precio_unitario ?? prod.precio) || 0;
+      const subtotal = cantidadFinal * precioUnitario;
+      total += subtotal;
+
+      items.push({
+        id: prodId,
+        nombre: prod.nombre,
+        cantidad: cantidadFinal,
+        precio_unitario: precioUnitario,
+        subtotal
+      });
+
+      const newStock = (Number(prod.stock) || 0) - cantidadFinal;
+      const { error: updErr } = await supabase.from('productos').update({ stock: newStock }).eq('id', prodId);
+      if (updErr) console.error('Error actualizando stock:', updErr);
+    }
+
+    if (items.length === 0) return res.status(400).json({ error: 'No hay items válidos para el pedido' });
+
+    const id = Date.now(); // numeric id
+    // enviar items como JSON (supabase acepta objetos JS para json/jsonb)
+    const payload = { id, user: usuarioPedido, fecha: new Date().toISOString(), items, total };
+    const { data, error } = await supabase.from('pedidos').insert([payload]);
+    if (error) { console.error(error); return res.status(500).json({ error }); }
+
+    res.json({ ok: true, mensaje: 'Pedido guardado', id: data[0].id });
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
   }
-
-  const id = Date.now().toString();
-  const { data, error } = await supabase.from('pedidos').insert([{ id, user: usuarioPedido, fecha: new Date(), items, total }]);
-  if (error) return res.status(500).json({ error });
-  res.json({ ok: true, mensaje: 'Pedido guardado', id: data[0].id });
 });
 
-
 app.get('/api/pedidos', async (req, res) => {
-  const { data, error } = await supabase.from('pedidos').select('*');
-  if (error) return res.status(500).json({ error });
-  const map = {};
-  data.forEach(r => {
-    const u = r.user || 'invitado';
-    map[u] = map[u] || [];
-    map[u].push(r);
-  });
-  res.json(map);
+  try {
+    const { data, error } = await supabase.from('pedidos').select('*');
+    if (error) { console.error(error); return res.status(500).json({ error }); }
+    const map = {};
+    data.forEach(r => {
+      const u = r.user || 'invitado';
+      map[u] = map[u] || [];
+      map[u].push(r);
+    });
+    res.json(map);
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 app.delete('/api/eliminar-pedido/:id', async (req, res) => {
-  const { data: pedido, error: pedidoError } = await supabase.from('pedidos').select('*').eq('id', req.params.id).single();
-  if (pedidoError) return res.status(404).json({ error: 'Pedido no encontrado' });
+  try {
+    const id = Number(req.params.id);
+    const { data: pedido, error: pedidoError } = await supabase.from('pedidos').select('*').eq('id', id).single();
+    if (pedidoError) { console.error(pedidoError); return res.status(404).json({ error: 'Pedido no encontrado' }); }
 
-  for (const it of pedido.items) {
-    const { data: prod } = await supabase.from('productos').select('*').eq('id', it.id).single();
-    if (prod) await supabase.from('productos').update({ stock: prod.stock + it.cantidad }).eq('id', it.id);
+    // restaurar stock
+    for (const it of pedido.items || []) {
+      const prodId = Number(it.id);
+      const { data: prod, error: prodErr } = await supabase.from('productos').select('*').eq('id', prodId).single();
+      if (prodErr || !prod) { if (prodErr) console.warn(prodErr); continue; }
+      const newStock = (Number(prod.stock) || 0) + (Number(it.cantidad) || 0);
+      const { error: updErr } = await supabase.from('productos').update({ stock: newStock }).eq('id', prodId);
+      if (updErr) console.error('Error restaurando stock:', updErr);
+    }
+
+    const { error: deleteError } = await supabase.from('pedidos').delete().eq('id', id);
+    if (deleteError) { console.error(deleteError); return res.status(500).json({ error: deleteError }); }
+    res.json({ ok: true, mensaje: 'Pedido eliminado y stock restaurado' });
+  } catch (err) {
+    console.error(err); res.status(500).json({ error: 'Error interno' });
   }
-
-  const { error: deleteError } = await supabase.from('pedidos').delete().eq('id', req.params.id);
-  if (deleteError) return res.status(500).json({ error: deleteError });
-  res.json({ ok: true, mensaje: 'Pedido eliminado y stock restaurado' });
 });
 
 /* ========================
@@ -133,7 +195,3 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
-
-
-
-
