@@ -11,6 +11,22 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/imagenes', express.static(path.join(__dirname, 'public', 'imagenes')));
 
+(async () => {
+  const allPedidos = await pedidos.get();
+  if (Object.keys(allPedidos).length === 0) {
+    const dataPath = path.join(__dirname, 'pedidos.json');
+    if (fs.existsSync(dataPath)) {
+      const json = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+      for (const item of json) {
+        const id = item.id || Date.now().toString();
+        await pedidos.set(id, item);
+      }
+      console.log('Pedidos cargados desde pedidos.json');
+    }
+  }
+})();
+
+
 const IMG_PATH = path.join(__dirname, 'public', 'imagenes');
 if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 
@@ -127,3 +143,4 @@ app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
+
