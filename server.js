@@ -89,8 +89,9 @@ app.post('/api/guardar-pedidos', async (req, res) => {
     const { data: prod, error } = await supabase.from('productos').select('*').eq('id', it.id).single();
     if (!prod) continue;
     const cantidadFinal = Math.min(it.cantidad, prod.stock);
-    total += cantidadFinal * prod.precio;
-    items.push({ id: it.id, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: prod.precio });
+    const subtotal = cantidadFinal * it.precio_unitario; // usar precio del carrito
+    total += subtotal;
+    items.push({ id: it.id, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: it.precio_unitario, subtotal });
     await supabase.from('productos').update({ stock: prod.stock - cantidadFinal }).eq('id', it.id);
   }
 
@@ -99,6 +100,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   if (error) return res.status(500).json({ error });
   res.json({ ok: true, mensaje: 'Pedido guardado', id: data[0].id });
 });
+
 
 app.get('/api/pedidos', async (req, res) => {
   const { data, error } = await supabase.from('pedidos').select('*');
@@ -131,5 +133,6 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
