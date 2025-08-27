@@ -6,7 +6,11 @@ const path = require('path');
 const multer = require('multer');
 const PDFDocument = require('pdfkit');
 
-app.use(cors());
+app.use(cors({
+  origin: ["https://distribudirafunazpedidos.netlify.app"], // tu dominio de Netlify
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -198,4 +202,5 @@ app.post('/api/guardar-pedido', (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
