@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
@@ -13,18 +12,45 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// 🔥 Conecta a Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// 📂 Ruta para guardar PDFs (si hicieras cache local)
 const PDF_PATH = path.join(process.cwd(), 'public', 'pedidos-pdf');
 if (!fs.existsSync(PDF_PATH)) fs.mkdirSync(PDF_PATH, { recursive: true });
 
-/**
- * -----------------------------
- * 📦 GUARDAR PEDIDOS
- * -----------------------------
- */
+/* -----------------------------
+ 📦 LISTAR PRODUCTOS
+----------------------------- */
+app.get('/api/productos', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('productos').select('*');
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('❌ Error cargando productos:', err);
+    res.status(500).json({ error: 'No se pudieron cargar productos' });
+  }
+});
+
+/* -----------------------------
+ 📦 LISTAR PEDIDOS
+----------------------------- */
+app.get('/api/pedidos', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('*')
+      .order('fecha', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('❌ Error cargando pedidos:', err);
+    res.status(500).json({ error: 'No se pudieron cargar pedidos' });
+  }
+});
+
+/* -----------------------------
+ 📦 GUARDAR PEDIDOS
+----------------------------- */
 app.post('/api/guardar-pedidos', async (req, res) => {
   try {
     const pedidoItems = req.body.pedido;
@@ -36,7 +62,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
     const items = [];
 
     for (const it of pedidoItems) {
-      const prodId = it.id; // 🔥 Mantener string
+      const prodId = it.id;
       const { data: prod, error: prodError } = await supabase
         .from('productos')
         .select('*')
@@ -44,7 +70,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
         .single();
 
       if (prodError) {
-        console.warn('⚠️ Producto no encontrado o error:', prodError);
+        console.warn('⚠️ Producto no encontrado:', prodError);
         continue;
       }
       if (!prod) continue;
@@ -74,7 +100,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 
     if (items.length === 0) return res.status(400).json({ error: 'No hay items válidos para el pedido' });
 
-    const id = Date.now().toString(); // 🔥 Usar string para IDs
+    const id = Date.now().toString();
     const payload = { id, user: usuarioPedido, fecha: new Date().toISOString(), items, total };
 
     console.log('💾 Guardando pedido:', payload);
@@ -86,8 +112,6 @@ app.post('/api/guardar-pedidos', async (req, res) => {
     }
 
     const returnedId = data?.id ?? id;
-
-    // ⚠️ Simulamos PDF, pero realmente debería generarse
     const pdfUrl = `https://supabase.storage/pedidos-pdf/pedido_${returnedId}.pdf`;
 
     res.json({ ok: true, mensaje: 'Pedido guardado', id: returnedId, pdf: pdfUrl });
@@ -97,14 +121,12 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   }
 });
 
-/**
- * -----------------------------
- * ❌ ELIMINAR PEDIDO
- * -----------------------------
- */
+/* -----------------------------
+ ❌ ELIMINAR PEDIDO
+----------------------------- */
 app.delete('/api/eliminar-pedido/:id', async (req, res) => {
   try {
-    const id = req.params.id; // 🔥 No convertir a Number
+    const id = req.params.id;
     console.log(`🗑️ Intentando eliminar pedido ID: ${id}`);
 
     const { data: pedido, error: pedidoError } = await supabase
@@ -120,7 +142,6 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
       return res.status(404).json({ error: 'Pedido no encontrado' });
     }
 
-    // 🔄 Restaurar stock
     for (const it of pedido.items || []) {
       const prodId = it.id;
       console.log(`🔄 Restaurando stock para producto ${prodId} (+${it.cantidad})`);
@@ -137,16 +158,14 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
       }
     }
 
-    // ❌ Borrar pedido de DB
     await supabase.from('pedidos').delete().eq('id', id);
 
-    // 🗑️ Intentar borrar PDF en Supabase Storage
     const { error: delErr } = await supabase.storage
       .from('pedidos-pdf')
       .remove([`pedido_${id}.pdf`]);
 
     if (delErr) console.warn('⚠️ Error borrando PDF:', delErr);
-    else console.log(`🗑️ PDF pedido_${id}.pdf eliminado de Supabase Storage`);
+    else console.log(`🗑️ PDF pedido_${id}.pdf eliminado`);
 
     res.json({ ok: true, mensaje: 'Pedido eliminado y stock restaurado', pedidoId: id });
   } catch (err) {
