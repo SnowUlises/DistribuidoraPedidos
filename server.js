@@ -1,8 +1,13 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const multer = require('multer');
-const fs = require('fs');
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import multer from 'multer';
+import fs from 'fs';
+import { Low, JSONFile } from 'lowdb';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -13,66 +18,68 @@ app.use('/imagenes', express.static(path.join(__dirname, 'public', 'imagenes')))
 const IMG_PATH = path.join(__dirname, 'public', 'imagenes');
 if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 
-// DB setup
-const dbFile = path.join(__dirname, 'data/db.json');
-const adapter = new JSONFile(dbFile);
-const { Low, JSONFile } = require('lowdb');
+// --- DB setup ---
+const productosAdapter = new JSONFile(path.join(__dirname, 'productos.json'));
+const productosDb = new Low(productosAdapter);
+await productosDb.read();
+productosDb.data ||= { productos: {} };
 
+const pedidosAdapter = new JSONFile(path.join(__dirname, 'pedidos.json'));
+const pedidosDb = new Low(pedidosAdapter);
+await pedidosDb.read();
+pedidosDb.data ||= { pedidos: {} };
 
-// función para cargar DB
-async function cargarDB() {
-  await db.read();
-  db.data ||= { productos: [], pedidos: [] };
-}
-cargarDB();
-
-// vigilar cambios manuales en db.json
-fs.watch(file, async (eventType) => {
-  if (eventType === 'change') {
-    console.log('db.json cambió, recargando...');
-    await cargarDB();
-  }
+// Vigilar cambios manuales
+fs.watch(path.join(__dirname, 'productos.json'), async () => {
+  await productosDb.read();
+  productosDb.data ||= { productos: {} };
+  console.log('productos.json recargado');
+});
+fs.watch(path.join(__dirname, 'pedidos.json'), async () => {
+  await pedidosDb.read();
+  pedidosDb.data ||= { pedidos: {} };
+  console.log('pedidos.json recargado');
 });
 
 /* ========================
       RUTAS PRODUCTOS
 ======================== */
 app.get('/api/productos', async (req, res) => {
-  await db.read();
-  res.json(Object.values(db.data.productos));
+  await productosDb.read();
+  res.json(Object.values(productosDb.data.productos));
 });
 
 app.get('/api/productos/:id', async (req, res) => {
-  await db.read();
-  const prod = db.data.productos[req.params.id];
+  await productosDb.read();
+  const prod = productosDb.data.productos[req.params.id];
   if(!prod) return res.status(404).json({error:'Producto no encontrado'});
   res.json(prod);
 });
 
 app.post('/api/productos', async (req, res) => {
-  await db.read();
+  await productosDb.read();
   const { nombre, precio, categoria, stock } = req.body;
   const id = Date.now().toString();
   const prod = { id, nombre, precio, categoria, stock, imagen: `/imagenes/${id}.png` };
-  db.data.productos[id] = prod;
-  await db.write();
+  productosDb.data.productos[id] = prod;
+  await productosDb.write();
   res.json(prod);
 });
 
 app.put('/api/productos/:id', async (req, res) => {
-  await db.read();
-  const prod = db.data.productos[req.params.id];
+  await productosDb.read();
+  const prod = productosDb.data.productos[req.params.id];
   if(!prod) return res.status(404).json({error:'Producto no encontrado'});
   const actualizado = { ...prod, ...req.body };
-  db.data.productos[req.params.id] = actualizado;
-  await db.write();
+  productosDb.data.productos[req.params.id] = actualizado;
+  await productosDb.write();
   res.json(actualizado);
 });
 
 app.delete('/api/productos/:id', async (req, res) => {
-  await db.read();
-  delete db.data.productos[req.params.id];
-  await db.write();
+  await productosDb.read();
+  delete productosDb.data.productos[req.params.id];
+  await productosDb.write();
   res.status(204).end();
 });
 
@@ -93,9 +100,10 @@ app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
           PEDIDOS
 ======================== */
 app.post('/api/guardar-pedidos', async (req, res) => {
-  await db.read();
+  await productosDb.read();
+  await pedidosDb.read();
   const pedidoItems = req.body.pedido;
-  const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
+  const usuarioPedido = req.body.user || 'invitado';
   if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
     return res.status(400).json({ error: 'Pedido inválido' });
 
@@ -103,7 +111,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   const items = [];
 
   for(const it of pedidoItems){
-    const prod = db.data.productos[it.id];
+    const prod = productosDb.data.productos[it.id];
     if(!prod) continue;
     const cantidadFinal = Math.min(it.cantidad, prod.stock);
     total += cantidadFinal * prod.precio;
@@ -112,15 +120,16 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   }
 
   const id = Date.now().toString();
-  db.data.pedidos[id] = { id, user: usuarioPedido, fecha: new Date(), items, total };
-  await db.write();
+  pedidosDb.data.pedidos[id] = { id, user: usuarioPedido, fecha: new Date(), items, total };
+  await productosDb.write();
+  await pedidosDb.write();
   res.json({ ok: true, mensaje: 'Pedido guardado', id });
 });
 
 app.get('/api/pedidos', async (req,res)=>{
-  await db.read();
+  await pedidosDb.read();
   const map = {};
-  Object.values(db.data.pedidos).forEach(r=>{
+  Object.values(pedidosDb.data.pedidos).forEach(r=>{
     const u = r.user || 'invitado';
     map[u] = map[u]||[];
     map[u].push(r);
@@ -129,18 +138,18 @@ app.get('/api/pedidos', async (req,res)=>{
 });
 
 app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
-  await db.read();
-  const pedido = db.data.pedidos[req.params.id];
+  await productosDb.read();
+  await pedidosDb.read();
+  const pedido = pedidosDb.data.pedidos[req.params.id];
   if(!pedido) return res.status(404).json({error:'Pedido no encontrado'});
 
   for(const it of pedido.items){
-    const prod = db.data.productos[it.id];
-    if(prod){
-      prod.stock += it.cantidad;
-    }
+    const prod = productosDb.data.productos[it.id];
+    if(prod) prod.stock += it.cantidad;
   }
-  delete db.data.pedidos[req.params.id];
-  await db.write();
+  delete pedidosDb.data.pedidos[req.params.id];
+  await productosDb.write();
+  await pedidosDb.write();
   res.json({ok:true, mensaje:'Pedido eliminado y stock restaurado'});
 });
 
@@ -149,5 +158,3 @@ app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
-
-
