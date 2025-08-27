@@ -533,70 +533,75 @@ async function cargarUsuarios() {
   const usuarios = JSON.parse(localStorage.getItem('users') || '[]');
   const datosUsuarios = JSON.parse(localStorage.getItem('userData') || '{}');
 
-  // Intentamos obtener pedidos desde el servidor (fuente de verdad)
+  // Intentar traer pedidos desde servidor
   let pedidosServer = {};
   try {
     const r = await fetch(`${apiBase}/pedidos`, { cache: 'no-store' });
     if (r.ok) pedidosServer = await r.json();
-    else console.warn('GET /api/pedidos devuelve', r.status);
   } catch (e) {
     console.warn('No se pudo obtener pedidos del servidor:', e);
   }
 
-  // fallback a localStorage si servidor no responde
+  // Fallback: localStorage
   const pedidosLocal = JSON.parse(localStorage.getItem('pedidos') || '{}');
-  const pedidos = (Object.keys(pedidosServer).length ? pedidosServer : pedidosLocal);
+  const pedidos = Object.keys(pedidosServer).length ? pedidosServer : pedidosLocal;
 
   const listaUsuarios = document.getElementById('listaUsuarios');
   if (!listaUsuarios) return;
   listaUsuarios.innerHTML = '';
 
-  userPedidos.forEach((pedido, index) => {
-  const items = Array.isArray(pedido) ? pedido : (pedido.items || []);
-  const pedidoId = pedido.id ?? index;
-  const key = `${userName}-${index}`;
-  const estado = estadosPedidos[key] || {};
+  usuarios.forEach((userObj) => {
+    const userName = userObj.user;
+    const info = datosUsuarios[userName] || {};
+    const userPedidos = pedidos[userName] || [];
 
-  // 🔥 Calcular total
-  const total = items.reduce((sum, p) => {
-    const precio = p.precio_unitario ?? p.precio ?? 0;
-    return sum + precio * (p.cantidad ?? 1);
-  }, 0);
+    const userDiv = document.createElement('details');
+    userDiv.className = 'user-details';
 
-  pedidosHTML += `<li>Pedido #${index+1} (id: ${pedidoId}) 
-    - <b>Total: $${total.toFixed(2)}</b>
-    <ul>`;
+    let pedidosHTML = '<ul>';
+    userPedidos.forEach((pedido, index) => {
+      const items = Array.isArray(pedido) ? pedido : (pedido.items || []);
+      const pedidoId = pedido.id ?? index;
+      const key = `${userName}-${index}`;
+      const estado = estadosPedidos[key] || {};
 
-  pedidosHTML += items.map(p => {
-    const precio = (p.precio_unitario ?? p.precio ?? 0);
-    const precioStr = (typeof precio === 'number' && precio.toFixed) ? precio.toFixed(2) : precio;
-    return `<li>${p.nombre} x${p.cantidad} - $${precioStr}</li>`;
-  }).join('');
-  pedidosHTML += `</ul>
-    <button onclick="eliminarPedido(${pedidoId})">Eliminar pedido</button>
-    <button onclick="descargarPedido(${pedidoId})">Guardar pedido</button>
-    <div class='status-container'>
-      <label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index}, this)">Guardado</label>
-      <label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index}, this)">Recibido</label>
-    </div>
-  </li>`;
-});
+      const total = items.reduce((sum, p) => {
+        const precio = p.precio_unitario ?? p.precio ?? 0;
+        return sum + precio * (p.cantidad ?? 1);
+      }, 0);
 
-      pedidosHTML += '</ul>';
-    }
+      pedidosHTML += `<li>Pedido #${index + 1} (id: ${pedidoId}) 
+        - <b>Total: $${total.toFixed(2)}</b>
+        <ul>`;
+      pedidosHTML += items.map(p => {
+        const precio = (p.precio_unitario ?? p.precio ?? 0);
+        const precioStr = (typeof precio === 'number' && precio.toFixed) ? precio.toFixed(2) : precio;
+        return `<li>${p.nombre} x${p.cantidad} - $${precioStr}</li>`;
+      }).join('');
+      pedidosHTML += `</ul>
+        <button onclick="eliminarPedido(${pedidoId})">Eliminar pedido</button>
+        <button onclick="descargarPedido(${pedidoId})">Guardar pedido</button>
+        <div class='status-container'>
+          <label><input type='checkbox' ${estado.guardado ? 'checked' : ''} onchange="toggleGuardado('${userName}',${index}, this)">Guardado</label>
+          <label><input type='checkbox' ${estado.recibido ? 'checked' : ''} onchange="toggleRecibido('${userName}',${index}, this)">Recibido</label>
+        </div>
+      </li>`;
+    });
+    pedidosHTML += '</ul>';
 
     userDiv.innerHTML = `<summary>${userName}</summary>
       <div class='usuario-item'>
         <div class='usuario-info'><b>Contraseña:</b> ${userObj.pass}</div>
-        <div class='usuario-info'><b>Nombre:</b> ${info.nombre||'No definido'}</div>
-        <div class='usuario-info'><b>Apellido:</b> ${info.apellido||'No definido'}</div>
-        <div class='usuario-info'><b>Email:</b> ${info.email||'No definido'}</div>
-        <div class='usuario-info'><b>Teléfono:</b> ${info.telefono||'No definido'}</div>
+        <div class='usuario-info'><b>Nombre:</b> ${info.nombre || 'No definido'}</div>
+        <div class='usuario-info'><b>Apellido:</b> ${info.apellido || 'No definido'}</div>
+        <div class='usuario-info'><b>Email:</b> ${info.email || 'No definido'}</div>
+        <div class='usuario-info'><b>Teléfono:</b> ${info.telefono || 'No definido'}</div>
         <details><summary>Pedidos</summary>${pedidosHTML}</details>
       </div>`;
     listaUsuarios.appendChild(userDiv);
   });
 }
+
 
 async function cargarPedidos() {
   try {
@@ -774,6 +779,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
