@@ -644,6 +644,11 @@ async function cargarUsuarios() {
   });
 }
 
+function mostrarErrorGuardar(err) {
+  console.error('No se pudo guardar el pedido:', err);
+  // Mensaje corto al usuario; adapte a tu sistema de notificaciones
+  alert('Error al guardar el pedido. Revisa la consola para más detalles.');
+}
 /* ---------------------------
   Función para guardar/obtener PDF desde backend
    - Intenta obtener directamente un PDF vía GET a /pedidos/:id/pdf
@@ -898,6 +903,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
