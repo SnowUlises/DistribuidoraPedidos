@@ -101,7 +101,6 @@ app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
 ======================== */
 app.post('/api/guardar-pedidos', async (req, res) => {
   try {
-    console.log('>> guardar-pedidos body:', JSON.stringify(req.body).slice(0,10000));
     const pedidoItems = req.body.pedido;
     const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
     if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
@@ -138,24 +137,25 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 
     if (items.length === 0) return res.status(400).json({ error: 'No hay items válidos para el pedido' });
 
-    const id = Date.now(); // numeric
+    const id = Date.now(); // numeric id
     const payload = { id, user: usuarioPedido, fecha: new Date().toISOString(), items, total };
-    console.log('>> guardar-pedidos payload:', JSON.stringify(payload));
 
-    const { data, error } = await supabase.from('pedidos').insert([payload]);
+    // importante: .select() para que supabase devuelva la fila insertada
+    const { data, error } = await supabase.from('pedidos').insert([payload]).select().single();
     if (error) {
       console.error('Supabase insert error:', error);
-      // devolver error crudo para depuración (temporal)
       return res.status(500).json({ error });
     }
 
-    res.json({ ok: true, mensaje: 'Pedido guardado', id: data[0].id });
+    // data puede ser el objeto insertado; si por alguna razón es null, devolvemos el id generado
+    const returnedId = (data && (data.id ?? data[0]?.id)) ?? id;
+    res.json({ ok: true, mensaje: 'Pedido guardado', id: returnedId });
   } catch (err) {
     console.error('Exception en guardar-pedidos:', err);
-    // devolver detalle para depuración (temporal)
     res.status(500).json({ error: err.message || err });
   }
 });
+
 
 
 app.get('/api/pedidos', async (req, res) => {
@@ -203,4 +203,5 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
