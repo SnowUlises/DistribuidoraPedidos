@@ -9,6 +9,7 @@ const PDFDocument = require('pdfkit');
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); // ✅ más seguro
+app.use('/imagenes', express.static('imagenes'));
 
 const DATA_PATH = path.join(__dirname, 'productos.json');
 const PEDIDOS_PATH = path.join(__dirname, 'pedidos');
@@ -202,4 +203,5 @@ app.post('/api/guardar-pedidos', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
