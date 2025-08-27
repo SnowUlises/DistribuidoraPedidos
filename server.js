@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
+
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -24,6 +25,12 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Supabase
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+  console.error("❌ Debes definir SUPABASE_URL y SUPABASE_KEY en las variables de entorno");
+  process.exit(1);
+}
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 // Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
@@ -125,3 +132,4 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
