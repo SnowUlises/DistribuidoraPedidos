@@ -182,7 +182,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
       const cantidadFinal = Math.min(Number(it.cantidad) || 0, Number(prod.stock) || 0);
       if (cantidadFinal <= 0) continue;
 
-      const precioUnitario = Number(it.precio_unitario ?? prod.precio) || 0;
+      const precioUnitario = Number(it.precio ?? it.precio_unitario ?? prod.precio) || 0;
       const subtotal = cantidadFinal * precioUnitario;
       total += subtotal;
 
@@ -272,4 +272,5 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
