@@ -38,16 +38,52 @@ function guardarProductos() {
 }
 
 // Git push
-async function gitPushCambios() {
+const axios = require('axios');
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // crea un token en GitHub con repo scope
+const REPO_OWNER = 'TU_USUARIO';
+const REPO_NAME = 'TU_REPO';
+const BRANCH = 'main';
+
+async function gitPushCambios(rutaArchivo, contenido, commitMensaje) {
   try {
-    await git.add([DATA_FILE, PEDIDOS_FILE]);
-    await git.commit(`Actualización ${new Date().toLocaleString()}`);
-    await git.push('origin', 'main'); // cambia si tu rama no es main
-    console.log('Cambios enviados a GitHub 🚀');
+    const pathEnRepo = rutaArchivo.split('/').pop(); // solo el nombre del archivo
+    // 1) Obtener SHA si el archivo ya existe
+    let sha = null;
+    try {
+      const getRes = await axios.get(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${pathEnRepo}`,
+        { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+      );
+      sha = getRes.data.sha;
+    } catch (err) {
+      // si no existe, seguimos sin SHA
+    }
+
+    // 2) Subir archivo
+    await axios.put(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${pathEnRepo}`,
+      {
+        message: commitMensaje,
+        content: Buffer.from(contenido).toString('base64'),
+        branch: BRANCH,
+        sha
+      },
+      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+    );
+
+    console.log(`${pathEnRepo} subido a GitHub ✅`);
   } catch (err) {
-    console.error('Error al hacer git push:', err);
+    console.error(`Error subiendo ${rutaArchivo} a GitHub:`, err.response?.data || err.message);
   }
 }
+
+// Uso:
+async function pushProductosYPedidos() {
+  await githubPushArchivo('./productos.json', fs.readFileSync('./productos.json', 'utf8'), 'Actualizar productos.json');
+  await githubPushArchivo('./pedidos.json', fs.readFileSync('./pedidos.json', 'utf8'), 'Actualizar pedidos.json');
+}
+
 
 /* ========================
       RUTAS PRODUCTOS
@@ -180,3 +216,4 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
