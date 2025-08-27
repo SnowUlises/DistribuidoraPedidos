@@ -238,19 +238,15 @@ app.post('/api/guardar-pedidos', (req, res) => {
     // Guardar el pedido en un archivo de pedidos (array acumulado)
     const PEDIDOS_FILE = './pedidos.json';
     let pedidosArr = [];
-    if (fs.existsSync(pedidosFile)) {
-      try {
-        const raw = fs.readFileSync(pedidosFile, 'utf8');
-        pedidosArr = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(pedidosArr)) pedidosArr = [];
-      } catch (e) {
-        pedidosArr = [];
-      }
-    }
+    if (fs.existsSync(PEDIDOS_FILE)) {
+  const raw = fs.readFileSync(PEDIDOS_FILE, 'utf8');
+  pedidosArr = raw ? JSON.parse(raw) : [];
+  }
+
 
     // Añadimos la orden (si querés un id, lo agregamos aquí)
     pedidosArr.push(orden);
-    fs.writeFileSync(pedidosFile, JSON.stringify(pedidosArr, null, 2));
+    fs.writeFileSync(PEDIDOS_FILE, JSON.stringify(pedidosArr, null, 2));
     gitPushCambios();
 
     
@@ -369,6 +365,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
