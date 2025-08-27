@@ -377,7 +377,7 @@ document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
   try {
-    const res = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json');
+    const res = await fetch('/productos');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     productos = await res.json();
     cambiarCantidadPagina(); // Aquí sí existe y controla el paginado
@@ -441,7 +441,7 @@ function renderProductos() {
     const div = document.createElement('div');
     div.className = 'producto';
     div.innerHTML = `
-      <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
+      <img src="./imagenes/${p.id}.png"> alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
       <h3>${p.nombre}</h3>
       <div>$${(p.precio * 1.10).toFixed(2)}</div>
       <div class="stock ${p.stock ? 'con-stock' : 'sin-stock'}"> ${p.stock ? `En stock: ${p.stock}` : 'Sin stock'} </div>
@@ -609,4 +609,5 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
+
 
