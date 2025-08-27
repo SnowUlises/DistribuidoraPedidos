@@ -21,6 +21,10 @@ if (!fs.existsSync(PEDIDOS_PATH)) {
 let productos = [];
 let nextId = 1;
 
+app.get('/productos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'productos.json'));
+});
+
 if (fs.existsSync(DATA_PATH)) {
   productos = JSON.parse(fs.readFileSync(DATA_PATH));
   if (productos.length > 0) {
@@ -198,3 +202,4 @@ app.post('/api/guardar-pedidos', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
