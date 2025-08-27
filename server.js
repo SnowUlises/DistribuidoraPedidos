@@ -3,9 +3,9 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const { Database } = require('instantdb'); // ya instalado
-const app = express();
+const { Low, JSONFile } = require('lowdb');
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -14,35 +14,25 @@ app.use('/imagenes', express.static(path.join(__dirname, 'public', 'imagenes')))
 const IMG_PATH = path.join(__dirname, 'public', 'imagenes');
 if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 
-// InstantDB
-const db = new Database({ dir: './data' });
+// DB setup
+const dbFile = path.join(__dirname, 'data/db.json');
+const adapter = new JSONFile(dbFile);
+const db = new Low(adapter);
 
-// === Cargar productos iniciales desde JSON si no hay nada ===
+// Inicializar DB si está vacía
 (async () => {
-  const prods = await db.get('productos') || {};
-  if (Object.keys(prods).length === 0) {
-    const dataPath = path.join(__dirname, 'productos.json');
-    if (fs.existsSync(dataPath)) {
-      const json = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      for (const item of json) {
-        const id = item.id || Date.now().toString();
-        await db.set(`productos/${id}`, item);
-      }
-      console.log('Productos cargados desde productos.json');
-    }
+  await db.read();
+  db.data ||= { productos: {}, pedidos: {} };
+  // cargar productos.json si DB vacía
+  if(Object.keys(db.data.productos).length === 0){
+    const prods = JSON.parse(fs.readFileSync('./data/productos.json'));
+    prods.forEach(p => db.data.productos[p.id] = p);
+    await db.write();
   }
-
-  const ped = await db.get('pedidos') || {};
-  if (Object.keys(ped).length === 0) {
-    const dataPath = path.join(__dirname, 'pedidos.json');
-    if (fs.existsSync(dataPath)) {
-      const json = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      for (const item of json) {
-        const id = item.id || Date.now().toString();
-        await db.set(`pedidos/${id}`, item);
-      }
-      console.log('Pedidos cargados desde pedidos.json');
-    }
+  if(Object.keys(db.data.pedidos).length === 0){
+    const ped = JSON.parse(fs.readFileSync('./data/pedidos.json'));
+    ped.forEach(p => db.data.pedidos[p.id] = p);
+    await db.write();
   }
 })();
 
@@ -50,34 +40,41 @@ const db = new Database({ dir: './data' });
       RUTAS PRODUCTOS
 ======================== */
 app.get('/api/productos', async (req, res) => {
-  const prods = await db.get('productos') || {};
-  res.json(Object.entries(prods).map(([id, p]) => ({ id, ...p })));
+  await db.read();
+  res.json(Object.values(db.data.productos));
 });
 
 app.get('/api/productos/:id', async (req, res) => {
-  const prod = await db.get(`productos/${req.params.id}`);
-  if (!prod) return res.status(404).json({ error: 'Producto no encontrado' });
+  await db.read();
+  const prod = db.data.productos[req.params.id];
+  if(!prod) return res.status(404).json({error:'Producto no encontrado'});
   res.json(prod);
 });
 
 app.post('/api/productos', async (req, res) => {
+  await db.read();
   const { nombre, precio, categoria, stock } = req.body;
   const id = Date.now().toString();
-  const prod = { nombre, precio, categoria, stock, imagen: `/imagenes/${id}.png` };
-  await db.set(`productos/${id}`, prod);
-  res.json({ id, ...prod });
+  const prod = { id, nombre, precio, categoria, stock, imagen: `/imagenes/${id}.png` };
+  db.data.productos[id] = prod;
+  await db.write();
+  res.json(prod);
 });
 
 app.put('/api/productos/:id', async (req, res) => {
-  const prod = await db.get(`productos/${req.params.id}`);
-  if (!prod) return res.status(404).json({ error: 'Producto no encontrado' });
+  await db.read();
+  const prod = db.data.productos[req.params.id];
+  if(!prod) return res.status(404).json({error:'Producto no encontrado'});
   const actualizado = { ...prod, ...req.body };
-  await db.set(`productos/${req.params.id}`, actualizado);
+  db.data.productos[req.params.id] = actualizado;
+  await db.write();
   res.json(actualizado);
 });
 
 app.delete('/api/productos/:id', async (req, res) => {
-  await db.delete(`productos/${req.params.id}`);
+  await db.read();
+  delete db.data.productos[req.params.id];
+  await db.write();
   res.status(204).end();
 });
 
@@ -98,6 +95,7 @@ app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
           PEDIDOS
 ======================== */
 app.post('/api/guardar-pedidos', async (req, res) => {
+  await db.read();
   const pedidoItems = req.body.pedido;
   const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
   if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
@@ -106,51 +104,50 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   let total = 0;
   const items = [];
 
-  for (const it of pedidoItems) {
-    const prod = await db.get(`productos/${it.id}`);
-    if (!prod) continue;
+  for(const it of pedidoItems){
+    const prod = db.data.productos[it.id];
+    if(!prod) continue;
     const cantidadFinal = Math.min(it.cantidad, prod.stock);
     total += cantidadFinal * prod.precio;
     items.push({ id: it.id, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: prod.precio });
     prod.stock -= cantidadFinal;
-    await db.set(`productos/${it.id}`, prod);
   }
 
   const id = Date.now().toString();
-  const pedido = { user: usuarioPedido, fecha: new Date(), items, total };
-  await db.set(`pedidos/${id}`, pedido);
+  db.data.pedidos[id] = { id, user: usuarioPedido, fecha: new Date(), items, total };
+  await db.write();
   res.json({ ok: true, mensaje: 'Pedido guardado', id });
 });
 
-app.get('/api/pedidos', async (req, res) => {
-  const all = await db.get('pedidos') || {};
+app.get('/api/pedidos', async (req,res)=>{
+  await db.read();
   const map = {};
-  for (const [id, r] of Object.entries(all)) {
+  Object.values(db.data.pedidos).forEach(r=>{
     const u = r.user || 'invitado';
-    map[u] = map[u] || [];
-    map[u].push({ id, fecha: r.fecha, items: r.items, total: r.total });
-  }
+    map[u] = map[u]||[];
+    map[u].push(r);
+  });
   res.json(map);
 });
 
-app.delete('/api/eliminar-pedido/:id', async (req, res) => {
-  const pedido = await db.get(`pedidos/${req.params.id}`);
-  if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
+  await db.read();
+  const pedido = db.data.pedidos[req.params.id];
+  if(!pedido) return res.status(404).json({error:'Pedido no encontrado'});
 
-  for (const it of pedido.items) {
-    const prod = await db.get(`productos/${it.id}`);
-    if (prod) {
+  for(const it of pedido.items){
+    const prod = db.data.productos[it.id];
+    if(prod){
       prod.stock += it.cantidad;
-      await db.set(`productos/${it.id}`, prod);
     }
   }
-
-  await db.delete(`pedidos/${req.params.id}`);
-  res.json({ ok: true, mensaje: 'Pedido eliminado y stock restaurado' });
+  delete db.data.pedidos[req.params.id];
+  await db.write();
+  res.json({ok:true, mensaje:'Pedido eliminado y stock restaurado'});
 });
 
 /* ========================
           SERVIDOR
 ======================== */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
