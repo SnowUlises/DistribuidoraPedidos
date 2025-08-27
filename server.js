@@ -17,7 +17,6 @@ const PEDIDOS_PATH = path.join(__dirname, 'pedidos');
 const IMG_PATH = path.join(__dirname, 'public', 'imagenes');
 
 // Crear carpetas si no existen
-if (!fs.existsSync(PEDIDOS_PATH)) fs.mkdirSync(PEDIDOS_PATH);
 if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 
 // Cargar productos
@@ -124,7 +123,7 @@ app.post('/api/guardar-pedido', (req, res) => {
   const { usuario, index, pedido, info } = req.body;
   if (!usuario || !Array.isArray(pedido)) return res.status(400).send('Datos inválidos');
 
-  const filePath = path.join(PEDIDOS_PATH, `${usuario}-${index}.pdf`);
+  const filePath = path.join(__dirname, `${usuario}-${index}.pdf`);
   const doc = new PDFDocument({ size: [220, 600], margins: { top: 10, bottom: 10, left: 10, right: 10 } });
 
   const stream = fs.createWriteStream(filePath);
@@ -369,6 +368,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
