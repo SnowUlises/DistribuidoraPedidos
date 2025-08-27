@@ -2,6 +2,7 @@
   "name": "tienda-backend",
   "version": "1.0.0",
   "description": "Backend para la tienda",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
