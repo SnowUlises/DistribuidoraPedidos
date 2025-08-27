@@ -1,7 +1,7 @@
 {
   "name": "tienda-backend",
   "version": "1.0.0",
-  "description": "Backend para la tienda",
+  "description": "Backend para la tienda con Supabase",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -11,13 +11,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "lowdb": "^6.0.1",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^5.1.0",
     "multer": "^2.0.1",
     "pdfkit": "^0.15.0",
-    "simple-git": "^3.28.0"
+    "simple-git": "^3.28.0",
+    "@supabase/supabase-js": "^2.34.0"
   },
   "engines": {
     "node": "18.x"
