@@ -644,88 +644,34 @@ async function cargarUsuarios() {
   });
 }
 
-function mostrarErrorGuardar(err) {
-  console.error('No se pudo guardar el pedido:', err);
-  // Mensaje corto al usuario; adapte a tu sistema de notificaciones
-  alert('Error al guardar el pedido. Revisa la consola para más detalles.');
-}
+
 /* ---------------------------
   Función para guardar/obtener PDF desde backend
    - Intenta obtener directamente un PDF vía GET a /pedidos/:id/pdf
    - Si falla (404/405) intenta un POST fallback a /pedidos/:id/guardar
    - Ajusta los endpoints si tu backend usa otro path.
    --------------------------- */
-async function guardarPedido(pedidoId, username, index) {
-  // nombre de archivo por defecto
-  const safeFilename = `pedido_${pedidoId || `${username}-${index}`}.pdf`;
-
-  // 1) Intento GET directo al endpoint que devuelva el PDF
+async function guardarPedido(pedidoId) {
   try {
-    const urlGet = `${apiBase}/pedidos/${encodeURIComponent(pedidoId)}/pdf`;
-    const r = await fetch(urlGet, { method: 'GET', cache: 'no-store' });
-    if (r.ok) {
-      const contentType = r.headers.get('Content-Type') || '';
-      // si viene un PDF, lo descargamos
-      if (contentType.includes('application/pdf') || contentType.includes('application/octet-stream')) {
-        const blob = await r.blob();
-        descargarBlob(blob, safeFilename);
-        return;
-      }
-      // si no es pdf, pero OK, tratar como json con url
-      try {
-        const data = await r.json();
-        if (data && data.url) {
-          window.open(data.url, '_blank');
-          return;
-        }
-      } catch (e) {
-        // no es JSON -> seguir a fallback
-      }
-    } else if (r.status === 404 || r.status === 405) {
-      // procede a fallback
-    } else {
-      // si retorna otro error, igual intentamos fallback
-      console.warn('GET /pdf devolvió:', r.status);
-    }
-  } catch (err) {
-    console.warn('Error al intentar GET /pdf:', err);
-    // sigue a fallback
-  }
+    const r = await fetch(`${apiBase}/pedidos/${pedidoId}/pdf`);
+    if (!r.ok) throw new Error(`Error ${r.status}`);
 
-  // 2) Fallback: POST para pedir al backend que genere/guarde el PDF
-  try {
-    const urlPost = `${apiBase}/pedidos/${encodeURIComponent(pedidoId)}/guardar`;
-    const r2 = await fetch(urlPost, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pedidoId })
-    });
-    if (r2.ok) {
-      // backend puede devolver un blob o una URL en JSON
-      const ct = r2.headers.get('Content-Type') || '';
-      if (ct.includes('application/pdf') || ct.includes('application/octet-stream')) {
-        const blob = await r2.blob();
-        descargarBlob(blob, safeFilename);
-        return;
-      } else {
-        const data = await r2.json().catch(()=>null);
-        if (data && data.url) {
-          // abrir en nueva pestaña
-          window.open(data.url, '_blank');
-          return;
-        } else {
-          // éxito genérico
-          return;
-        }
-      }
-    } else {
-      throw new Error(`Error del servidor: ${r2.status}`);
-    }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+
+    // Descargar el PDF
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pedido_${pedidoId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   } catch (err) {
-    throw err;
+    console.error('Error al guardar pedido:', err);
+    alert('No se pudo guardar el pedido.');
   }
 }
-
 
 async function cargarPedidos() {
   try {
@@ -903,6 +849,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
