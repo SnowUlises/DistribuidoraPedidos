@@ -6,15 +6,11 @@ const path = require('path');
 const multer = require('multer');
 const PDFDocument = require('pdfkit');
 
-app.use(cors({
-  origin: ["https://distribudirafunazpedidos.netlify.app"], // tu dominio de Netlify
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public'))); // ✅ más seguro
 
-const DATA_PATH = './productos.json';
+const DATA_PATH = path.join(__dirname, 'productos.json');
 const PEDIDOS_PATH = path.join(__dirname, 'pedidos');
 
 // Crear carpeta pedidos si no existe
@@ -35,6 +31,27 @@ if (fs.existsSync(DATA_PATH)) {
 function guardar() {
   fs.writeFileSync(DATA_PATH, JSON.stringify(productos, null, 2));
 }
+
+
+
+app.delete('/api/eliminar-pedido/:usuario/:index', (req, res) => {
+  const { usuario, index } = req.params;
+  const filePath = path.join(PEDIDOS_PATH, `${usuario}-${index}.pdf`);
+
+  if (fs.existsSync(filePath)) {
+    fs.unlink(filePath, err => {
+      if (err) {
+        console.error('Error eliminando pedido:', err);
+        return res.status(500).send('Error eliminando el pedido');
+      }
+      res.send('Pedido eliminado');
+    });
+  } else {
+    res.status(404).send('Pedido no encontrado');
+  }
+});
+
+
 
 // Rutas productos (sin cambios)
 app.get('/api/productos', (req, res) => {
@@ -100,64 +117,24 @@ app.delete('/api/upload/:id', (req, res) => {
   }
 });
 
-
-
-
 // Guardar pedido como PDF
 app.post('/api/guardar-pedido', (req, res) => {
   const { usuario, index, pedido, info } = req.body;
   if (!usuario || !Array.isArray(pedido)) return res.status(400).send('Datos inválidos');
 
-  // === 1. Descontar stock ===
-  let errorStock = false;
-  pedido.forEach(item => {
-    const producto = productos.find(p => p.id === item.id);
-    if (!producto) {
-      errorStock = true;
-      return;
-    }
-    if (producto.stock !== undefined) {
-      if (producto.stock < item.cantidad) {
-        errorStock = true;
-      } else {
-        producto.stock -= item.cantidad;
-      }
-    }
-  });
-
-  if (errorStock) return res.status(400).send('Stock insuficiente');
-  guardar(); // Guardar cambios en productos.json
-
-  // === 2. Guardar pedido en JSON ===
-  const pedidosJsonPath = path.join(PEDIDOS_PATH, 'pedidos.json');
-  let pedidosGuardados = [];
-  if (fs.existsSync(pedidosJsonPath)) {
-    pedidosGuardados = JSON.parse(fs.readFileSync(pedidosJsonPath));
-  }
-
-  const nuevoPedido = {
-    usuario,
-    index,
-    info,
-    pedido,
-    fecha: new Date().toISOString()
-  };
-
-  pedidosGuardados.push(nuevoPedido);
-  fs.writeFileSync(pedidosJsonPath, JSON.stringify(pedidosGuardados, null, 2));
-
-  // === 3. Generar PDF (igual que antes) ===
   const filePath = path.join(PEDIDOS_PATH, `${usuario}-${index}.pdf`);
   const doc = new PDFDocument({ size: [220, 600], margins: { top: 10, bottom: 10, left: 10, right: 10 } });
+
   const stream = fs.createWriteStream(filePath);
   doc.pipe(stream);
 
+  // Logo centrado arriba
   const logoPath = path.join(__dirname, 'public', 'logo.png');
-  if (fs.existsSync(logoPath)) {
-    doc.image(logoPath, 60, 10, { width: 100 });
-  }
+  doc.image(logoPath, 60, 10, { width: 100 });
+
   doc.moveDown(7);
 
+  // Info cliente
   doc.font('Courier').fontSize(9);
   doc.text(`Usuario: ${usuario}`);
   doc.text(`Nombre: ${info?.nombre || ''} ${info?.apellido || ''}`);
@@ -165,20 +142,25 @@ app.post('/api/guardar-pedido', (req, res) => {
   doc.text(`Email: ${info?.email || ''}`);
 
   doc.moveDown();
+
+  // Fecha y hora
   const fecha = new Date();
   doc.text(`Fecha: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`, { align: 'center' });
 
   doc.moveDown(0.5);
+  // Línea horizontal
   doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
 
   doc.moveDown(0.5);
   doc.fontSize(10).text('PEDIDO', { underline: true, align: 'center' });
   doc.moveDown(0.5);
 
+  // Lista de productos
   let total = 0;
   pedido.forEach(p => {
     const subtotal = p.cantidad * p.precio;
     total += subtotal;
+    // Cantidad x nombre .... precio
     doc.text(`${p.cantidad} x ${p.nombre}`, { continued: true });
     doc.text(` $${subtotal.toFixed(2)}`, { align: 'right' });
   });
@@ -186,21 +168,33 @@ app.post('/api/guardar-pedido', (req, res) => {
   doc.moveDown(0.5);
   doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
 
+  // Total en grande y centrado
   doc.moveDown(0.5);
   doc.fontSize(14).text(`TOTAL: $${total.toFixed(2)}`, { align: 'center', bold: true });
+
+  doc.moveDown(2);
+
   doc.end();
 
-  stream.on('finish', () => res.send('Pedido guardado (JSON + PDF) y stock actualizado'));
+  stream.on('finish', () => res.send('Pedido guardado en PDF'));
   stream.on('error', err => {
     console.error(err);
     res.status(500).send('Error al guardar PDF');
   });
 });
 
+app.post('/api/guardar-pedidos', (req, res) => {
+  const { pedido } = req.body;
+  if (!pedido) return res.status(400).send('Pedido inválido');
+
+  const rutaPedidos = path.join(__dirname, 'pedidos', 'pedido.json');
+
+  fs.writeFile(rutaPedidos, JSON.stringify(pedido, null, 2), err => {
+    if (err) return res.status(500).send('Error al guardar pedido');
+    res.send('Pedido guardado con éxito');
+  });
+});
 
 
-
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
-
-
