@@ -197,7 +197,6 @@ btnConfirmar.addEventListener('click', async () => {
     const producto = productosClon.find(p => p.id === item.id);
     if (!producto) continue;
 
-    // interpretamos stock: aceptamos boolean, number, or undefined
     if (typeof producto.stock === 'number') {
       if (producto.stock === 0) {
         sinStock.push(producto.nombre);
@@ -207,7 +206,6 @@ btnConfirmar.addEventListener('click', async () => {
         sinStock.push(producto.nombre + ` (solo ${producto.stock} disponibles)`);
         item.cantidad = producto.stock;
       }
-      // restamos del clon (para descargar luego)
       producto.stock = Math.max(0, producto.stock - item.cantidad);
     }
     nuevosCarrito.push({...item});
@@ -223,6 +221,46 @@ btnConfirmar.addEventListener('click', async () => {
     btnConfirmar.textContent = 'Sí, enviar';
     return;
   }
+
+  const pedido = {
+    user: usuario.user,
+    fecha: new Date().toISOString(),
+    items: nuevosCarrito.map(item => {
+      const prod = productos.find(p => p.id === item.id) || {};
+      const unit = Number(prod.precio || 0) * 1.10;
+      return { id: item.id, nombre: prod.nombre || '', cantidad: item.cantidad, precio_unitario: unit };
+    }),
+    total: nuevosCarrito.reduce((s, it) => {
+      const prod = productos.find(p => p.id === it.id) || {};
+      return s + (Number(prod.precio || 0) * 1.10 * it.cantidad);
+    }, 0)
+  };
+
+  try {
+    // 🔹 Intentamos modo API
+    const res = await fetch(`${apiBase}/pedidos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pedido)
+    });
+
+    if (!res.ok) throw new Error('Error al enviar pedido');
+
+    alert('¡Pedido enviado con éxito!');
+    carrito = [];
+    guardarCarrito();
+    ocultarFormulario();
+    renderizarCarrito();
+
+  } catch (err) {
+    console.error(err);
+    alert('No se pudo enviar el pedido (modo API). Podrías implementarle descarga local aquí.');
+  } finally {
+    btnConfirmar.disabled = false;
+    btnConfirmar.textContent = 'Sí, enviar';
+  }
+});
+
 
   // construir objeto pedido (precio unitario final = precio * 1.10)
   const pedido = {
@@ -255,6 +293,7 @@ function formatMoney(n) {
 </script>
 </body>
 </html>
+
 
 
 
