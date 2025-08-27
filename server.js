@@ -123,8 +123,7 @@ app.get('/api/productos/:id', async (req, res) => {
 app.post('/api/productos', async (req, res) => {
   try {
     const { nombre, precio, categoria, stock } = req.body;
-    const id = Date.now(); // numeric
-    const payload = { id, nombre, precio, categoria, stock, imagen: `/imagenes/${id}.png` };
+    const payload = { user: usuarioPedido, fecha: new Date().toISOString(), items, total };
     const { data, error } = await supabase.from('productos').insert([payload]);
     if (error) { console.error(error); return res.status(500).json({ error }); }
     res.json(data[0]);
@@ -175,8 +174,15 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 
     for (const it of pedidoItems) {
       const prodId = Number(it.id);
-      const { data: prod, error: prodError } = await supabase.from('productos').select('*').eq('id', prodId).single();
-      if (prodError) { console.warn('Producto no encontrado o error:', prodError); continue; }
+      const { data: prod, error: prodError } = await supabase
+        .from('productos')
+        .select('*')
+        .eq('id', prodId)
+        .single();
+      if (prodError) { 
+        console.warn('Producto no encontrado o error:', prodError); 
+        continue; 
+      }
       if (!prod) continue;
 
       const cantidadFinal = Math.min(Number(it.cantidad) || 0, Number(prod.stock) || 0);
@@ -194,26 +200,42 @@ app.post('/api/guardar-pedidos', async (req, res) => {
         subtotal
       });
 
+      // Actualizar stock
       const newStock = (Number(prod.stock) || 0) - cantidadFinal;
-      const { error: updErr } = await supabase.from('productos').update({ stock: newStock }).eq('id', prodId);
+      const { error: updErr } = await supabase
+        .from('productos')
+        .update({ stock: newStock })
+        .eq('id', prodId);
       if (updErr) console.error('Error actualizando stock:', updErr);
     }
 
-    if (items.length === 0) return res.status(400).json({ error: 'No hay items válidos para el pedido' });
+    if (items.length === 0) 
+      return res.status(400).json({ error: 'No hay items válidos para el pedido' });
 
-    const id = Date.now();
-    const payload = { id, user: usuarioPedido, fecha: new Date().toISOString(), items, total };
+    // 🔥 Sacamos el id manual. Lo generará Supabase
+    const payload = { 
+      user: usuarioPedido, 
+      fecha: new Date().toISOString(), 
+      items, 
+      total 
+    };
 
-    const { data, error } = await supabase.from('pedidos').insert([payload]).select().single();
+    const { data, error } = await supabase
+      .from('pedidos')
+      .insert([payload])
+      .select()
+      .single();
+
     if (error) {
       console.error('Supabase insert error:', error);
       return res.status(500).json({ error });
     }
 
-    const returnedId = (data && (data.id ?? data[0]?.id)) ?? id;
+    // 🔥 Ahora el ID lo obtenemos directo de Supabase
+    const returnedId = data.id;
 
     // Generar PDF
-    const pdfUrl = await generarPDF(payload);
+    const pdfUrl = await generarPDF({ ...payload, id: returnedId });
 
     res.json({ ok: true, mensaje: 'Pedido guardado', id: returnedId, pdf: pdfUrl });
   } catch (err) {
@@ -221,6 +243,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
     res.status(500).json({ error: err.message || err });
   }
 });
+
 
 app.get('/api/pedidos', async (req, res) => {
   try {
@@ -272,5 +295,6 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
