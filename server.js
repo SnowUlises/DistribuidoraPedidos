@@ -13,7 +13,7 @@ app.use('/imagenes', express.static(path.join(__dirname, 'public', 'imagenes')))
 
 // Rutas de archivos
 const DATA_PATH = path.join(__dirname, 'productos.json');
-const PEDIDOS_PATH = path.join(__dirname, 'pedidos');
+const PEDIDOS_PATH = path.join(__dirname, 'pedidos.json');
 const IMG_PATH = path.join(__dirname, 'public', 'imagenes');
 
 // Crear carpetas si no existen
@@ -171,6 +171,7 @@ const git = simpleGit();
 async function gitPushCambios() {
   try {
     await git.add('./productos.json');
+    await git.add('./pedidos.json');
     await git.commit(`Actualización de stock ${new Date().toLocaleString()}`);
     await git.push('origin', 'main'); // cambia 'main' si tu rama es distinta
     console.log('Cambios enviados a GitHub 🚀');
@@ -235,7 +236,7 @@ app.post('/api/guardar-pedidos', (req, res) => {
     guardar(); // esto hace writeFileSync a DATA_PATH
 
     // Guardar el pedido en un archivo de pedidos (array acumulado)
-    const PEDIDOS_FILE = path.join(__dirname, 'pedidos.json');
+    const PEDIDOS_FILE = './pedidos.json';
     let pedidosArr = [];
     if (fs.existsSync(pedidosFile)) {
       try {
@@ -368,6 +369,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
