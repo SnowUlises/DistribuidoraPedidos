@@ -64,7 +64,7 @@ app.post('/api/productos', (req, res) => {
     precio, 
     categoria, 
     stock, 
-    imagen: `/imagenes/${idActual}.jpg` 
+    imagen: `/imagenes/${idActual}.png` 
   };
   productos.push(nuevo);
   guardar();
@@ -86,7 +86,7 @@ app.delete('/api/productos/:id', (req, res) => {
   const index = productos.findIndex(p => p.id === id);
   if (index === -1) return res.status(404).json({ error: 'No existe' });
 
-  const rutaImg = path.join(IMG_PATH, `${id}.jpg`);
+  const rutaImg = path.join(IMG_PATH, `${id}.png`);
   if (fs.existsSync(rutaImg)) fs.unlinkSync(rutaImg);
 
   productos = productos.filter(p => p.id !== id);
@@ -99,7 +99,7 @@ app.delete('/api/productos/:id', (req, res) => {
 ======================== */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, IMG_PATH),
-  filename: (req, file, cb) => cb(null, `${req.params.id}.jpg`)
+  filename: (req, file, cb) => cb(null, `${req.params.id}.png`)
 });
 const upload = multer({ storage });
 
@@ -109,7 +109,7 @@ app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
 });
 
 app.delete('/api/upload/:id', (req, res) => {
-  const rutaImg = path.join(IMG_PATH, `${req.params.id}.jpg`);
+  const rutaImg = path.join(IMG_PATH, `${req.params.id}.png`);
   if (fs.existsSync(rutaImg)) {
     fs.unlinkSync(rutaImg);
     return res.status(204).end();
@@ -186,3 +186,4 @@ app.post('/api/guardar-pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
