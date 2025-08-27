@@ -236,7 +236,7 @@ app.post('/api/guardar-pedidos', (req, res) => {
     guardar(); // esto hace writeFileSync a DATA_PATH
 
     // Guardar el pedido en un archivo de pedidos (array acumulado)
-    const pedidosFile = path.join(PEDIDOS_PATH, 'pedidos.json');
+    const PEDIDOS_FILE = path.join(__dirname, 'pedidos.json');
     let pedidosArr = [];
     if (fs.existsSync(pedidosFile)) {
       try {
@@ -369,6 +369,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
