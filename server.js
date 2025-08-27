@@ -166,7 +166,19 @@ app.post('/api/guardar-pedido', (req, res) => {
     res.status(500).send('Error al guardar PDF');
   });
 });
+const simpleGit = require('simple-git');
+const git = simpleGit();
 
+async function gitPushCambios() {
+  try {
+    await git.add('./productos.json');
+    await git.commit(`Actualización de stock ${new Date().toLocaleString()}`);
+    await git.push('origin', 'main'); // cambia 'main' si tu rama es distinta
+    console.log('Cambios enviados a GitHub 🚀');
+  } catch (err) {
+    console.error('Error al hacer git push:', err);
+  }
+}
 /* ========================
      GUARDAR PEDIDOS JSON
 ======================== */
@@ -253,5 +265,6 @@ app.post('/api/guardar-pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
