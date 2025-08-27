@@ -55,11 +55,7 @@
   </footer>
 
 <script>
-/*
-  Comportamiento:
-  - Si hay API en /api/productos, se usa MODO API (PUT para stock y POST para pedidos).
-  - Si no hay API, se usa MODO ESTÁTICO: genera archivos descargables con productos actualizados y pedido.
-*/
+/* Carrito corregido */
 let productos = [];
 let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 const usuario = { user: localStorage.getItem('loggedUser') || 'invitado' };
@@ -73,15 +69,12 @@ const btnConfirmar = document.getElementById('confirmarEnvio');
 const postActions = document.getElementById('postActions');
 const sinStockAviso = document.getElementById('sinStockAviso');
 
-
-// Detecta si existe endpoint API /api/productos (tiempo límite 2s)
 const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-
-  
 async function cargarProductos() {
   try {
     const r = await fetch(`${apiBase}/productos`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     productos = await r.json();
     renderizarCarrito();
   } catch (err) {
@@ -108,15 +101,16 @@ function renderizarCarrito() {
   btnMostrarFormulario.style.display = 'block';
 
   carrito.forEach((item, i) => {
-    const p = productos.find(prod => prod.id === item.id);
+    // comparación tolerante a tipo (string/number)
+    const p = productos.find(prod => prod.id == item.id);
     if (!p) return;
 
     const div = document.createElement('div');
     div.className = 'producto-carrito';
-    const precioPublico = (p.precio * 1.10);
+    const precioPublico = (Number(p.precio || 0) * 1.10);
 
     div.innerHTML = `
-      <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.src='imagenes/placeholder.png'"/>
+      <img src="/imagenes/${p.id}.png" alt="${(p.nombre||'').replace(/"/g,'')}" onerror="this.onerror=null; this.src='/imagenes/placeholder.png'"/>
       <div class="producto-info">
         <p><strong>${p.nombre}</strong></p>
         <p>Precio unitario: ${formatMoney(precioPublico)}</p>
@@ -124,33 +118,41 @@ function renderizarCarrito() {
       </div>
       <div class="controles-cantidad">
         <button class="btn-aumentar" title="Aumentar cantidad">+</button>
-        <span>${item.cantidad}</span>
+        <span class="cantidad-display">${item.cantidad}</span>
         <button class="btn-reducir" title="Reducir cantidad">-</button>
         <button class="btn-eliminar" title="Eliminar producto" style="background:#d9534f;">X</button>
       </div>
     `;
 
     // handlers
-    div.querySelector('.btn-aumentar').addEventListener('click', () => {
-      // si hay stock como número, respeta el límite
-      const prod = productos.find(pr=>pr.id === item.id);
+    const btnAumentar = div.querySelector('.btn-aumentar');
+    const btnReducir = div.querySelector('.btn-reducir');
+    const btnEliminar = div.querySelector('.btn-eliminar');
+    const cantidadDisplay = div.querySelector('.cantidad-display');
+
+    btnAumentar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const prod = productos.find(pr => pr.id == item.id);
       if (typeof prod?.stock === 'number' && item.cantidad + 1 > prod.stock) {
         alert(`No hay más stock disponible (${prod.stock}).`);
         return;
       }
       carrito[i].cantidad++;
       guardarCarrito();
+      cantidadDisplay.textContent = carrito[i].cantidad;
       renderizarCarrito();
     });
 
-    div.querySelector('.btn-reducir').addEventListener('click', () => {
+    btnReducir.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (carrito[i].cantidad > 1) carrito[i].cantidad--;
       else carrito.splice(i, 1);
       guardarCarrito();
       renderizarCarrito();
     });
 
-    div.querySelector('.btn-eliminar').addEventListener('click', () => {
+    btnEliminar.addEventListener('click', (e) => {
+      e.stopPropagation();
       carrito.splice(i, 1);
       guardarCarrito();
       renderizarCarrito();
@@ -163,8 +165,8 @@ function renderizarCarrito() {
 // Modal formulario
 function mostrarFormulario() {
   const total = carrito.reduce((acc, item) => {
-    const p = productos.find(prod => prod.id === item.id);
-    const precioPublico = p ? p.precio * 1.10 : 0;
+    const p = productos.find(prod => prod.id == item.id);
+    const precioPublico = p ? Number(p.precio || 0) * 1.10 : 0;
     return acc + (precioPublico * item.cantidad);
   }, 0);
   totalPedido.textContent = 'Total: ' + formatMoney(total);
@@ -190,11 +192,10 @@ btnConfirmar.addEventListener('click', async () => {
   const nuevosCarrito = [];
   const sinStock = [];
 
-  // clonamos productos para modo estático
   const productosClon = productos.map(p => ({...p}));
 
   for (const item of carrito) {
-    const producto = productosClon.find(p => p.id === item.id);
+    const producto = productosClon.find(p => p.id == item.id);
     if (!producto) continue;
 
     if (typeof producto.stock === 'number') {
@@ -222,77 +223,54 @@ btnConfirmar.addEventListener('click', async () => {
     return;
   }
 
-  const pedido = {
-    user: usuario.user,
-    fecha: new Date().toISOString(),
-    items: nuevosCarrito.map(item => {
-      const prod = productos.find(p => p.id === item.id) || {};
-      const unit = Number(prod.precio || 0) * 1.10;
-      return { id: item.id, nombre: prod.nombre || '', cantidad: item.cantidad, precio_unitario: unit };
-    }),
-    total: nuevosCarrito.reduce((s, it) => {
-      const prod = productos.find(p => p.id === it.id) || {};
-      return s + (Number(prod.precio || 0) * 1.10 * it.cantidad);
-    }, 0)
-  };
-
+  // enviar al servidor: endpoint que existe en tu server.js
   try {
-    // 🔹 Intentamos modo API
-    const res = await fetch(`${apiBase}/pedidos`, {
+    const res = await fetch(`${apiBase}/guardar-pedidos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pedido)
+      body: JSON.stringify({ pedido: nuevosCarrito })
     });
 
-    if (!res.ok) throw new Error('Error al enviar pedido');
+    if (!res.ok) {
+      const txt = await res.text().catch(()=>null);
+      throw new Error(txt || `HTTP ${res.status}`);
+    }
 
-    alert('¡Pedido enviado con éxito!');
+    alert('Pedido enviado y stock actualizado en el servidor.');
     carrito = [];
     guardarCarrito();
     ocultarFormulario();
     renderizarCarrito();
-
   } catch (err) {
-    console.error(err);
-    alert('No se pudo enviar el pedido (modo API). Podrías implementarle descarga local aquí.');
+    console.error('Error enviando pedido:', err);
+    alert('No se pudo enviar el pedido al servidor. Revisa la consola.');
   } finally {
     btnConfirmar.disabled = false;
     btnConfirmar.textContent = 'Sí, enviar';
   }
 });
 
-
-  // construir objeto pedido (precio unitario final = precio * 1.10)
-  const pedido = {
-    user: usuario.user,
-    fecha: new Date().toISOString(),
-    items: nuevosCarrito.map(item => {
-      const prod = productos.find(p => p.id === item.id) || {};
-      const unit = Number(prod.precio || 0) * 1.10;
-      return { id: item.id, nombre: prod.nombre || '', cantidad: item.cantidad, precio_unitario: unit };
-    }),
-    total: nuevosCarrito.reduce((s, it) => {
-      const prod = productos.find(p => p.id === it.id) || {};
-      return s + (Number(prod.precio || 0) * 1.10 * it.cantidad);
-    }, 0)
-  };
-
-
-
-
-// helpers
+// helper
 function formatMoney(n) {
   try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
   catch(e){ return '$' + Number(n).toFixed(2); }
 }
 
-// iniciar: detect API -> cargar productos
+// iniciar
 (async function init(){
   await cargarProductos();
+  // actualizar contador del header si existe botón
+  const btnCarrito = document.getElementById('btnCarrito');
+  if (btnCarrito) {
+    const total = carrito.reduce((s,i) => s + i.cantidad, 0);
+    btnCarrito.textContent = `Carrito (${total})`;
+  }
 })();
 </script>
+
 </body>
 </html>
+
 
 
 
