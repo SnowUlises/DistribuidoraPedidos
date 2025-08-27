@@ -209,7 +209,10 @@ btnConfirmar.addEventListener('click', async () => {
       }
       producto.stock = Math.max(0, producto.stock - item.cantidad);
     }
-    nuevosCarrito.push({...item});
+    nuevosCarrito.push({
+  ...item,
+  precio: (item.precio * 1.10) // 🔥 Precio con +10%
+});
   }
 
   if (sinStock.length > 0) {
@@ -274,6 +277,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
