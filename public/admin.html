@@ -564,17 +564,28 @@ async function cargarUsuarios() {
     } else {
       pedidosHTML = '<ul style="padding-left:20px;">';
       userPedidos.forEach((pedido, index) => {
-        const key = `${userName}-${index}`;
-        const estado = estadosPedidos[key] || {};
-        pedidosHTML += `<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${(p.precio || 0).toFixed ? p.precio.toFixed(2) : (p.precio||0)}</li>`).join('')}</ul>
-          <button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button>
-          <button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button>
-          <div class='status-container'>
-            <label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index}, this)">Guardado</label>
-            <label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index}, this)">Recibido</label>
-          </div>
-        </li>`;
-      });
+  // soporta pedido como array (items) o como objeto { items, id, total }
+  const items = Array.isArray(pedido) ? pedido : (pedido.items || []);
+  const pedidoId = pedido.id ?? index; // si no hay id usamos index
+  const key = `${userName}-${index}`;
+  const estado = estadosPedidos[key] || {};
+
+  pedidosHTML += `<li>Pedido #${index+1} (id: ${pedidoId}):<ul>`;
+  pedidosHTML += items.map(p => {
+    const precio = (p.precio_unitario ?? p.precio ?? 0);
+    const precioStr = (typeof precio === 'number' && precio.toFixed) ? precio.toFixed(2) : precio;
+    return `<li>${p.nombre} x${p.cantidad} - $${precioStr}</li>`;
+  }).join('');
+  pedidosHTML += `</ul>
+    <button onclick="eliminarPedido(${pedidoId})">Eliminar pedido</button>
+    <button onclick="descargarPedido(${pedidoId})">Guardar pedido</button>
+    <div class='status-container'>
+      <label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index}, this)">Guardado</label>
+      <label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index}, this)">Recibido</label>
+    </div>
+  </li>`;
+});
+
       pedidosHTML += '</ul>';
     }
 
@@ -602,26 +613,30 @@ async function cargarPedidos() {
   }
 }
   // Eliminar pedido (intenta servidor y luego borra local)
-  async function eliminarPedido(usuario, index) {
+  // Eliminar pedido por ID (usa el endpoint del server.js)
+async function eliminarPedido(pedidoId) {
   if (!confirm('¿Eliminar este pedido?')) return;
 
   try {
-    const res = await fetch(`${apiBase}/eliminar-pedido/${encodeURIComponent(usuario)}/${encodeURIComponent(index)}`, { method: 'DELETE' });
+    const res = await fetch(`${apiBase}/eliminar-pedido/${encodeURIComponent(pedidoId)}`, { method: 'DELETE' });
     if (!res.ok) {
       console.warn('Error del servidor al eliminar pedido:', res.status, await res.text().catch(()=>''));
+      alert('No se pudo eliminar el pedido en el servidor.');
       return;
     }
   } catch (err) {
     console.warn('Error al llamar al endpoint de eliminación:', err);
+    alert('Error de red al eliminar pedido');
     return;
   }
 
-  // Actualizar todo desde el backend
-  await cargarPedidos();  // función que recarga pedidos desde API
-  await cargarProductos(); 
+  // recargar vista
+  await cargarPedidos();
+  await cargarProductos();
   cargarUsuarios();
   alert('Pedido eliminado correctamente.');
 }
+
 
 
   // Descargar (generar PDF en servidor) pedido
@@ -763,6 +778,7 @@ async function cargarPedidos() {
 </script>
 </body>
 </html>
+
 
 
 
