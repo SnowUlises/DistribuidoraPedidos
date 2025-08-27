@@ -53,43 +53,48 @@ app.get('/api/pedidos/:id/pdf', async (req, res) => {
   try {
     const pedidoId = req.params.id;
 
-    // 🔹 Buscar el pedido en Supabase
     const { data: pedido, error: pedidoErr } = await supabase
       .from('pedidos')
       .select('*')
       .eq('id', pedidoId)
       .single();
+    if (pedidoErr || !pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
 
-    if (pedidoErr || !pedido) {
-      return res.status(404).json({ error: 'Pedido no encontrado' });
-    }
-
-    // 📄 Generar PDF
+    // Generar PDF
     const pdfBuffer = await generarPDF(pedido);
 
-    // ☁️ Subir PDF a Supabase Storage
+    // Subir a Storage
     const pdfFileName = `pedido_${pedidoId}.pdf`;
     const { error: uploadErr } = await supabase.storage
       .from('pedidos-pdf')
       .upload(pdfFileName, pdfBuffer, {
         contentType: 'application/pdf',
-        upsert: true
+        upsert: true,
       });
+    if (uploadErr) return res.status(500).json({ error: 'No se pudo subir el PDF' });
 
-    if (uploadErr) {
-      console.error('❌ Error subiendo PDF:', uploadErr);
-      return res.status(500).json({ error: 'No se pudo subir el PDF' });
+    // Intentar URL pública (si el bucket es público)
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('pedidos-pdf')
+      .getPublicUrl(pdfFileName);
+
+    let url = publicUrlData?.publicUrl;
+
+    // Si el bucket es privado, generar URL firmada (1 hora)
+    if (!url) {
+      const { data: signed, error: signedErr } = await supabase
+        .storage
+        .from('pedidos-pdf')
+        .createSignedUrl(pdfFileName, 60 * 60);
+      if (signedErr) return res.status(500).json({ error: 'No se pudo obtener URL del PDF' });
+      url = signed.signedUrl;
     }
 
-    const { data } = supabase
-  .storage
-  .from('pedidos-pdf')
-  .getPublicUrl(`pedido_${pedidoId}.pdf`)
-
-    return res.json({ ok: true, pdf: publicUrlData?.publicUrl });
+    return res.json({ ok: true, pdf: url });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error('❌ PDF error:', err);
+    res.status(500).json({ error: err.message || 'Error generando PDF' });
   }
 });
 
@@ -104,6 +109,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   try {
     const pedidoItems = req.body.pedido;
     const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
+
     if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
       return res.status(400).json({ error: 'Pedido inválido' });
 
@@ -147,34 +153,49 @@ app.post('/api/guardar-pedidos', async (req, res) => {
       if (updErr) console.error('❌ Error actualizando stock:', updErr);
     }
 
-    if (items.length === 0) return res.status(400).json({ error: 'No hay items válidos para el pedido' });
+    if (items.length === 0)
+      return res.status(400).json({ error: 'No hay items válidos para el pedido' });
 
     const id = Date.now().toString();
     const payload = { id, user: usuarioPedido, fecha: new Date().toISOString(), items, total };
 
     console.log('💾 Guardando pedido:', payload);
 
-    const { data, error } = await supabase.from('pedidos').insert([payload]).select().single();
+    const { data, error } = await supabase
+      .from('pedidos')
+      .insert([payload])
+      .select()
+      .single();
+
     if (error) {
       console.error('❌ Supabase insert error:', error);
       return res.status(500).json({ error });
     }
 
     const returnedId = data?.id ?? id;
-    const pdfUrl = `https://supabase.storage/pedidos-pdf/pedido_${returnedId}.pdf`;
 
-    res.json({ ok: true, mensaje: 'Pedido guardado', id: returnedId, pdf: pdfUrl });
+    // 🔹 RESPUESTA SIMPLE: nada de PDFs aquí
+    res.json({
+      ok: true,
+      mensaje: 'Pedido guardado',
+      id: returnedId,
+      endpoint_pdf: `/api/pedidos/${returnedId}/pdf` // opcional
+    });
   } catch (err) {
     console.error('❌ Exception en guardar-pedidos:', err);
     res.status(500).json({ error: err.message || err });
   }
 });
 
+
 async function generarPDF(pedido) {
   return new Promise((resolve, reject) => {
+    const items = Array.isArray(pedido.items) ? pedido.items : [];
+    const altura = Math.max(260, 160 + items.length * 28); // alto dinámico para el ticket
+
     const doc = new PDFDocument({
-      size: [220, 600],
-      margins: { top: 10, bottom: 10, left: 10, right: 10 }
+      size: [220, altura],
+      margins: { top: 10, bottom: 10, left: 10, right: 10 },
     });
 
     const chunks = [];
@@ -182,14 +203,12 @@ async function generarPDF(pedido) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // --- Logo ---
-    const logoPath = path.join(__dirname, 'public', 'logo.png');
-    if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, 60, 10, { width: 100 });
-    }
+    // Logo (usar CWD en ESM)
+    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+    if (fs.existsSync(logoPath)) doc.image(logoPath, 60, 10, { width: 100 });
     doc.moveDown(6);
 
-    // --- Encabezado ---
+    // Encabezado
     doc.font('Courier').fontSize(9);
     doc.text(`Dirección: Calle Colon 1740 Norte`);
     doc.text(`Factura N°: ${pedido.id || ''}`);
@@ -197,23 +216,17 @@ async function generarPDF(pedido) {
     doc.text(`Consultas: 2645156933`);
     doc.moveDown(0.5);
 
-    // Fecha
     const fecha = new Date(pedido.fecha || Date.now());
-    doc.text(
-      `Fecha: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`,
-      { align: 'center' }
-    );
+    doc.text(`Fecha: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`, { align: 'center' });
     doc.moveDown(0.5);
     doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
     doc.moveDown(0.5);
 
-    // Título
     doc.fontSize(10).text('PEDIDO', { underline: true, align: 'center' });
     doc.moveDown(0.5);
 
-    // --- Productos ---
+    // Ítems
     let total = 0;
-    const items = Array.isArray(pedido.items) ? pedido.items : [];
     items.forEach(item => {
       const cant = Number(item.cantidad) || 0;
       const precio = Number(item.precio_unitario ?? item.precio) || 0;
@@ -221,22 +234,17 @@ async function generarPDF(pedido) {
       total += subtotal;
 
       doc.fontSize(9).font('Helvetica-Bold').text(`${item.nombre || ''}`);
-
       doc.font('Courier').fontSize(9);
       doc.text(`${cant} x $${precio.toFixed(2)}`, { continued: true });
       doc.text(` $${subtotal.toFixed(2)}`, { align: 'right' });
-
       doc.moveDown(0.3);
     });
 
-    // Línea
+    // Total
     doc.moveDown(0.5);
     doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
     doc.moveDown(0.5);
-
-    // Total
-    doc.fontSize(14).font('Helvetica-Bold');
-    doc.text(`TOTAL: $${total.toFixed(2)}`, { align: 'center' });
+    doc.fontSize(14).font('Helvetica-Bold').text(`TOTAL: $${total.toFixed(2)}`, { align: 'center' });
 
     doc.moveDown(2);
     doc.end();
@@ -299,6 +307,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
