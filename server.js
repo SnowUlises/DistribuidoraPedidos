@@ -45,10 +45,12 @@ const REPO_OWNER = 'TU_USUARIO';
 const REPO_NAME = 'TU_REPO';
 const BRANCH = 'main';
 
-async function gitPushCambios(rutaArchivo, contenido, commitMensaje) {
+async function gitPushCambios(nombreArchivo) {
   try {
-    const pathEnRepo = rutaArchivo.split('/').pop(); // solo el nombre del archivo
-    // 1) Obtener SHA si el archivo ya existe
+    const contenido = fs.readFileSync(nombreArchivo, 'utf8');
+    const pathEnRepo = nombreArchivo;
+
+    // Obtener SHA si el archivo ya existe
     let sha = null;
     try {
       const getRes = await axios.get(
@@ -57,14 +59,14 @@ async function gitPushCambios(rutaArchivo, contenido, commitMensaje) {
       );
       sha = getRes.data.sha;
     } catch (err) {
-      // si no existe, seguimos sin SHA
+      // Si no existe, seguimos sin SHA
     }
 
-    // 2) Subir archivo
+    // Subir archivo
     await axios.put(
       `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${pathEnRepo}`,
       {
-        message: commitMensaje,
+        message: `Actualización de ${nombreArchivo} ${new Date().toLocaleString()}`,
         content: Buffer.from(contenido).toString('base64'),
         branch: BRANCH,
         sha
@@ -72,9 +74,9 @@ async function gitPushCambios(rutaArchivo, contenido, commitMensaje) {
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
 
-    console.log(`${pathEnRepo} subido a GitHub ✅`);
+    console.log(`${nombreArchivo} subido a GitHub ✅`);
   } catch (err) {
-    console.error(`Error subiendo ${rutaArchivo} a GitHub:`, err.response?.data || err.message);
+    console.error(`Error subiendo ${nombreArchivo} a GitHub:`, err.response?.data || err.message);
   }
 }
 
@@ -216,4 +218,5 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
