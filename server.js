@@ -170,20 +170,88 @@ app.post('/api/guardar-pedido', (req, res) => {
 /* ========================
      GUARDAR PEDIDOS JSON
 ======================== */
+// Reemplaza tu handler viejo por este (colócalo en server.js)
 app.post('/api/guardar-pedidos', (req, res) => {
-  const { pedido } = req.body;
-  if (!pedido) return res.status(400).send('Pedido inválido');
+  try {
+    const pedidoItems = req.body.pedido;
+    const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
 
-  const rutaPedidos = path.join(PEDIDOS_PATH, 'pedido.json');
-  fs.writeFile(rutaPedidos, JSON.stringify(pedido, null, 2), err => {
-    if (err) return res.status(500).send('Error al guardar pedido');
-    res.send('Pedido guardado con éxito');
-  });
+    if (!Array.isArray(pedidoItems) || pedidoItems.length === 0) {
+      return res.status(400).json({ error: 'Pedido inválido' });
+    }
+
+    // Clonamos productos en memoria para procesar y calcular totales
+    const orden = {
+      user: usuarioPedido,
+      fecha: new Date().toISOString(),
+      items: [],
+      total: 0
+    };
+
+    // Procesar cada ítem: reducir stock en productos (persistiremos después)
+    for (const it of pedidoItems) {
+      const id = Number(it.id);
+      const cantidadSolicitada = Number(it.cantidad) || 0;
+      if (!id || cantidadSolicitada <= 0) continue;
+
+      const producto = productos.find(p => Number(p.id) === id);
+      if (!producto) {
+        // si no existe el producto lo omitimos (podrías registrar en "skipped")
+        continue;
+      }
+
+      const stockActual = Number(producto.stock) || 0;
+      const cantidadFinal = Math.min(cantidadSolicitada, stockActual);
+
+      // restamos stock en el producto guardado en memoria
+      producto.stock = Math.max(0, stockActual - cantidadFinal);
+
+      const precioUnitario = Number(producto.precio || 0);
+      const subtotal = precioUnitario * cantidadFinal;
+
+      orden.items.push({
+        id: producto.id,
+        nombre: producto.nombre,
+        cantidad: cantidadFinal,
+        precio_unitario: precioUnitario,
+        subtotal: subtotal
+      });
+
+      orden.total += subtotal;
+    }
+
+    // Guardar cambios en productos.json usando tu función guardar()
+    guardar(); // esto hace writeFileSync a DATA_PATH
+
+    // Guardar el pedido en un archivo de pedidos (array acumulado)
+    const pedidosFile = path.join(PEDIDOS_PATH, 'pedidos.json');
+    let pedidosArr = [];
+    if (fs.existsSync(pedidosFile)) {
+      try {
+        const raw = fs.readFileSync(pedidosFile, 'utf8');
+        pedidosArr = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(pedidosArr)) pedidosArr = [];
+      } catch (e) {
+        pedidosArr = [];
+      }
+    }
+
+    // Añadimos la orden (si querés un id, lo agregamos aquí)
+    pedidosArr.push(orden);
+    fs.writeFileSync(pedidosFile, JSON.stringify(pedidosArr, null, 2));
+
+    return res.json({ ok: true, mensaje: 'Pedido guardado y stock actualizado', pedido: orden });
+  } catch (err) {
+    console.error('Error guardando pedido:', err);
+    return res.status(500).json({ error: 'Error interno al guardar pedido' });
+  }
 });
+
 
 /* ========================
           SERVIDOR
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
