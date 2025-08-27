@@ -49,23 +49,28 @@ async function gitPushCambios(nombreArchivo) {
   try {
     const contenido = fs.readFileSync(nombreArchivo, 'utf8');
     const pathEnRepo = nombreArchivo;
+    let sha;
+
+    try {
+      const res = await axios.get(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${pathEnRepo}`,
+        { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
+      );
+      sha = res.data.sha;
+    } catch (err) {
+      if (err.response?.status !== 404) throw err; // otros errores
+    }
 
     await axios.put(
       `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${pathEnRepo}`,
-      {
+      { 
         message: `Actualización de ${nombreArchivo} ${new Date().toLocaleString()}`,
         content: Buffer.from(contenido).toString('base64'),
-        branch: BRANCH
-        // SHA eliminado
+        branch: BRANCH,
+        ...(sha && { sha }) // solo agrega sha si existe
       },
       { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
     );
-
-    console.log(`${nombreArchivo} subido a GitHub ✅`);
-  } catch (err) {
-    console.error(`Error subiendo ${nombreArchivo} a GitHub:`, err.response?.data || err.message);
-  }
-}
 
 
 // Uso:
@@ -207,6 +212,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
