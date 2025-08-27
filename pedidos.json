@@ -1,2 +1,16 @@
 [
+  {
+    "user": "admin",
+    "fecha": "2025-08-27T04:11:08.523Z",
+    "items": [
+      {
+        "id": 1,
+        "nombre": "TOALLAS FEMENINAS DONCELLA POCKET",
+        "cantidad": 1,
+        "precio_unitario": 488.99,
+        "subtotal": 488.99
+      }
+    ],
+    "total": 488.99
+  }
 ]
