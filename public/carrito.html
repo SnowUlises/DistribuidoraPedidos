@@ -210,8 +210,10 @@ btnConfirmar.addEventListener('click', async () => {
       producto.stock = Math.max(0, producto.stock - item.cantidad);
     }
     nuevosCarrito.push({
+  nuevosCarrito.push({
   ...item,
-  precio: (item.precio * 1.10) // 🔥 Precio con +10%
+  precio: Number(producto.precio) * 1.10  // ✅ Tomamos precio real y le sumamos 10%
+});
 });
   }
 
@@ -277,6 +279,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
