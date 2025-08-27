@@ -82,8 +82,8 @@ async function gitPushCambios(nombreArchivo) {
 
 // Uso:
 async function pushProductosYPedidos() {
-  await githubPushArchivo('./productos.json', fs.readFileSync('./productos.json', 'utf8'), 'Actualizar productos.json');
-  await githubPushArchivo('./pedidos.json', fs.readFileSync('./pedidos.json', 'utf8'), 'Actualizar pedidos.json');
+  await gitPushCambios('productos.json')
+  await gitPushCambios('pedidos.json')
 }
 
 
@@ -219,6 +219,7 @@ app.get('/api/pedidos', (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
