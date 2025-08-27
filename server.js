@@ -84,7 +84,7 @@ app.get('/api/pedidos/:id/pdf', async (req, res) => {
     const { data } = supabase
   .storage
   .from('pedidos-pdf')
-  .getPublicUrl(`pedido_${returnedId}.pdf`)
+  .getPublicUrl(`pedido_${pedidoId}.pdf`)
 
     return res.json({ ok: true, pdf: publicUrlData?.publicUrl });
   } catch (err) {
@@ -172,49 +172,73 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 
 async function generarPDF(pedido) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    const doc = new PDFDocument({
+      size: [220, 600],
+      margins: { top: 10, bottom: 10, left: 10, right: 10 }
+    });
+
     const chunks = [];
     doc.on('data', c => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Encabezado
-    doc.fontSize(18).text(`Pedido #${pedido.id}`, { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12)
-      .text(`Cliente: ${pedido.user || ''}`)
-      .text(`Fecha: ${new Date(pedido.fecha).toLocaleString('es-AR')}`);
-    doc.moveDown();
+    // --- Logo ---
+    const logoPath = path.join(__dirname, 'public', 'logo.png');
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 60, 10, { width: 100 });
+    }
+    doc.moveDown(6);
 
-    // Tabla simple
-    doc.font('Helvetica-Bold');
-    doc.text('Producto', 40, doc.y)
-       .text('Cant.', 300, undefined, { width: 50, align: 'right' })
-       .text('P.U.', 360, undefined, { width: 80, align: 'right' })
-       .text('Subtotal', 450, undefined, { width: 100, align: 'right' });
+    // --- Encabezado ---
+    doc.font('Courier').fontSize(9);
+    doc.text(`Dirección: Calle Colon 1740 Norte`);
+    doc.text(`Factura N°: ${pedido.id || ''}`);
+    doc.text(`Pedidos: 2645583761`);
+    doc.text(`Consultas: 2645156933`);
     doc.moveDown(0.5);
-    doc.font('Helvetica');
 
+    // Fecha
+    const fecha = new Date(pedido.fecha || Date.now());
+    doc.text(
+      `Fecha: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`,
+      { align: 'center' }
+    );
+    doc.moveDown(0.5);
+    doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
+    doc.moveDown(0.5);
+
+    // Título
+    doc.fontSize(10).text('PEDIDO', { underline: true, align: 'center' });
+    doc.moveDown(0.5);
+
+    // --- Productos ---
+    let total = 0;
     const items = Array.isArray(pedido.items) ? pedido.items : [];
-    items.forEach(it => {
-      const cant = Number(it.cantidad ?? 0);
-      const pu   = Number(it.precio_unitario ?? it.precio ?? 0);
-      const sub  = cant * pu;
+    items.forEach(item => {
+      const cant = Number(item.cantidad) || 0;
+      const precio = Number(item.precio_unitario ?? item.precio) || 0;
+      const subtotal = cant * precio;
+      total += subtotal;
 
-      doc.text(it.nombre ?? '', 40, doc.y)
-         .text(String(cant), 300, undefined, { width: 50, align: 'right' })
-         .text(pu.toFixed(2), 360, undefined, { width: 80, align: 'right' })
-         .text(sub.toFixed(2), 450, undefined, { width: 100, align: 'right' });
+      doc.fontSize(9).font('Helvetica-Bold').text(`${item.nombre || ''}`);
+
+      doc.font('Courier').fontSize(9);
+      doc.text(`${cant} x $${precio.toFixed(2)}`, { continued: true });
+      doc.text(` $${subtotal.toFixed(2)}`, { align: 'right' });
+
+      doc.moveDown(0.3);
     });
 
+    // Línea
+    doc.moveDown(0.5);
+    doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
+    doc.moveDown(0.5);
+
     // Total
-    const totalCalc = items.reduce((a, it) =>
-      a + Number(it.cantidad ?? 0) * Number(it.precio_unitario ?? it.precio ?? 0), 0);
-    const total = Number(pedido.total ?? totalCalc);
+    doc.fontSize(14).font('Helvetica-Bold');
+    doc.text(`TOTAL: $${total.toFixed(2)}`, { align: 'center' });
 
-    doc.moveDown();
-    doc.font('Helvetica-Bold').text(`Total: $ ${total.toFixed(2)}`, { align: 'right' });
-
+    doc.moveDown(2);
     doc.end();
   });
 }
@@ -275,6 +299,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
