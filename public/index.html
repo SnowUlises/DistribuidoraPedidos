@@ -377,13 +377,13 @@ document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
 
 async function cargarProductos() {
   try {
-    const res = await fetch('/productos');
+    const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     productos = await res.json();
-    cambiarCantidadPagina(); // Aquí sí existe y controla el paginado
+    cambiarCantidadPagina();
   } catch (err) {
     console.error('Error cargando productos:', err);
-    mostrarError('No se pudieron cargar los productos. Revisa la consola.');
+    alert('No se pudieron cargar los productos. Revisa la consola.');
   }
 }
 
@@ -609,6 +609,7 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
+
 
 
 
