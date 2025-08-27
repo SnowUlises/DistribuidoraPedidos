@@ -226,10 +226,14 @@ btnConfirmar.addEventListener('click', async () => {
   // enviar al servidor: endpoint que existe en tu server.js
   try {
     const res = await fetch(`${apiBase}/guardar-pedidos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pedido: nuevosCarrito })
-    });
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ 
+    pedido: nuevosCarrito,
+    user: usuario.user   // 👈 acá mandamos el usuario
+  })
+});
+
 
     if (!res.ok) {
       const txt = await res.text().catch(()=>null);
