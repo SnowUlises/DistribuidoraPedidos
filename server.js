@@ -212,11 +212,49 @@ app.get('/api/pedidos', (req, res) => {
   }
 });
 
+app.delete('/api/eliminar-pedido/:usuario/:index', async (req, res) => {
+  try {
+    const usuario = req.params.usuario;
+    const index = Number(req.params.index);
+
+    if (!fs.existsSync(PEDIDOS_FILE)) return res.status(404).json({ error: 'No hay pedidos' });
+    const pedidosArr = JSON.parse(fs.readFileSync(PEDIDOS_FILE, 'utf8') || '[]');
+
+    const pedidoUsuario = pedidosArr.filter(p => p.user === usuario);
+    if (!pedidoUsuario[index]) return res.status(404).json({ error: 'Pedido no encontrado' });
+
+    // Restaurar stock
+    for (const it of pedidoUsuario[index].items) {
+      const prod = productos.find(p => p.id === it.id);
+      if (prod) prod.stock = (prod.stock || 0) + it.cantidad;
+    }
+
+    // Eliminar pedido
+    pedidosArr.splice(pedidosArr.indexOf(pedidoUsuario[index]), 1);
+
+    fs.writeFileSync(PEDIDOS_FILE, JSON.stringify(pedidosArr, null, 2));
+    guardarProductos();
+
+    // Push a GitHub
+    await gitPushCambios('productos.json');
+    await gitPushCambios('pedidos.json');
+
+    res.json({ ok: true, mensaje: 'Pedido eliminado y stock restaurado' });
+  } catch (err) {
+    console.error('Error eliminando pedido:', err);
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+
+
+
 /* ========================
           SERVIDOR
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
