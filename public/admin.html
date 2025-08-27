@@ -626,7 +626,9 @@ async function cargarUsuarios() {
       else { nuevosEstados[`${usuario}-${idx-1}`] = estados[k]; }
     });
     localStorage.setItem('estadosPedidos', JSON.stringify(nuevosEstados));
-    
+
+    await gitPushCambios('pedidos.json');
+    await gitPushCambios('productos.json'); 
     cargarUsuarios();
     alert('Pedido eliminado correctamente (se actualizó también localmente).');
   }
@@ -746,7 +748,7 @@ async function cargarUsuarios() {
       alert('Pedido creado y stock actualizado.');
       pedidoTemporal = [];
       previsualizacion.innerHTML = '';
-      await gitPushCambios();
+      await gitPushCambios('productos.json');
       await cargarProductos();
       cargarUsuarios();
     });
@@ -770,6 +772,7 @@ async function cargarUsuarios() {
 </script>
 </body>
 </html>
+
 
 
 
