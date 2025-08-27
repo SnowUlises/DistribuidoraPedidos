@@ -17,24 +17,32 @@ if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 // DB setup
 const dbFile = path.join(__dirname, 'data/db.json');
 const adapter = new JSONFile(dbFile);
+const { Low, JSONFile } = require('lowdb');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// archivo JSON
+const file = path.join(__dirname, 'data', 'db.json');
+const adapter = new JSONFile(file);
 const db = new Low(adapter);
 
-// Inicializar DB si está vacía
-(async () => {
+// función para cargar DB
+async function cargarDB() {
   await db.read();
-  db.data ||= { productos: {}, pedidos: {} };
-  // cargar productos.json si DB vacía
-  if(Object.keys(db.data.productos).length === 0){
-    const prods = JSON.parse(fs.readFileSync('./data/productos.json'));
-    prods.forEach(p => db.data.productos[p.id] = p);
-    await db.write();
+  db.data ||= { productos: [], pedidos: [] };
+}
+cargarDB();
+
+// vigilar cambios manuales en db.json
+fs.watch(file, async (eventType) => {
+  if (eventType === 'change') {
+    console.log('db.json cambió, recargando...');
+    await cargarDB();
   }
-  if(Object.keys(db.data.pedidos).length === 0){
-    const ped = JSON.parse(fs.readFileSync('./data/pedidos.json'));
-    ped.forEach(p => db.data.pedidos[p.id] = p);
-    await db.write();
-  }
-})();
+});
 
 /* ========================
       RUTAS PRODUCTOS
@@ -151,3 +159,4 @@ app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
+
