@@ -86,7 +86,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   const items = [];
 
   for (const it of pedidoItems) {
-    const { data: prod, error } = await supabase.from('productos').select('*').eq('id', it.id).single();
+    const { data: prod, error } = await supabase.from('productos').select('*').eq('id', Number(it.id)).single();
     if (!prod) continue;
     const cantidadFinal = Math.min(it.cantidad, prod.stock);
     const subtotal = cantidadFinal * it.precio_unitario; // usar precio del carrito
@@ -133,6 +133,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
