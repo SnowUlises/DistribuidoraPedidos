@@ -1,11 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const sqlite3 = require('sqlite3').verbose();
 const PDFDocument = require('pdfkit');
-const simpleGit = require('simple-git');
-const git = simpleGit();
 
 const app = express();
 app.use(cors());
@@ -13,113 +11,78 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/imagenes', express.static(path.join(__dirname, 'public', 'imagenes')));
 
-const DATA_FILE = path.join(__dirname, 'productos.json');
-const PEDIDOS_FILE = path.join(__dirname, 'pedidos.json');
 const IMG_PATH = path.join(__dirname, 'public', 'imagenes');
-
-// Crear carpeta de imágenes si no existe
 if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 
-// Cargar productos
-let productos = [];
-let nextId = 1;
-if (fs.existsSync(DATA_FILE)) {
-  productos = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  if (productos.length > 0) nextId = Math.max(...productos.map(p => p.id)) + 1;
-}
+// SQLite
+const db = new sqlite3.Database('./tienda.db');
 
-// Guardar productos en JSON
-function guardarProductos() {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(productos, null, 2));
-  } catch (err) {
-    console.error("Error al guardar productos:", err);
-  }
-}
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS productos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT,
+    precio REAL,
+    categoria TEXT,
+    stock INTEGER,
+    imagen TEXT
+  )`);
 
-// Git push
-const axios = require('axios');
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // crea un token en GitHub con repo scope
-const REPO_OWNER = 'SnowUlises';
-const REPO_NAME = 'DistribuidoraFunaz';
-const BRANCH = 'main';
-
-async function gitPushCambios(nombreArchivo) {
-  try {
-    const contenido = fs.readFileSync(nombreArchivo, 'utf8');
-    const pathEnRepo = nombreArchivo;
-    let sha;
-
-    try {
-      const res = await axios.get(
-        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${pathEnRepo}`,
-        { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
-      );
-      sha = res.data.sha;
-    } catch (err) {
-      if (err.response?.status !== 404) throw err; // otros errores
-    }
-
-    await axios.put(
-      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${pathEnRepo}`,
-      { 
-        message: `Actualización de ${nombreArchivo} ${new Date().toLocaleString()}`,
-        content: Buffer.from(contenido).toString('base64'),
-        branch: BRANCH,
-        ...(sha && { sha }) // solo agrega sha si existe
-      },
-      { headers: { Authorization: `token ${GITHUB_TOKEN}` } }
-    );
-  } catch (err) {
-    console.error(`Error subiendo ${nombreArchivo}:`, err.response?.data || err.message);
-  }
-}
-
-
-
-// Uso:
-async function pushProductosYPedidos() {
-  await gitPushCambios('productos.json')
-  await gitPushCambios('pedidos.json')
-}
-
+  db.run(`CREATE TABLE IF NOT EXISTS pedidos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user TEXT,
+    fecha TEXT,
+    items TEXT, -- JSON string
+    total REAL
+  )`);
+});
 
 /* ========================
       RUTAS PRODUCTOS
 ======================== */
-app.get('/api/productos', (req, res) => res.json(productos));
+app.get('/api/productos', (req, res) => {
+  db.all('SELECT * FROM productos', (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
 
 app.get('/api/productos/:id', (req, res) => {
-  const producto = productos.find(p => p.id === Number(req.params.id));
-  if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
-  res.json(producto);
+  db.get('SELECT * FROM productos WHERE id=?', [req.params.id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Producto no encontrado' });
+    res.json(row);
+  });
 });
 
 app.post('/api/productos', (req, res) => {
   const { nombre, precio, categoria, stock } = req.body;
-  if (!nombre || precio == null) return res.status(400).json({ error: 'Datos incompletos' });
-  const nuevo = { id: nextId++, nombre, precio, categoria, stock, imagen: `/imagenes/${nextId-1}.png` };
-  productos.push(nuevo);
-  guardarProductos();
-  res.status(201).json(nuevo);
+  db.run(
+    'INSERT INTO productos (nombre, precio, categoria, stock, imagen) VALUES (?, ?, ?, ?, ?)',
+    [nombre, precio, categoria, stock, `/imagenes/${Date.now()}.png`],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      db.get('SELECT * FROM productos WHERE id=?', [this.lastID], (err,row)=>res.json(row));
+    }
+  );
 });
 
 app.put('/api/productos/:id', (req, res) => {
-  const index = productos.findIndex(p => p.id === Number(req.params.id));
-  if (index === -1) return res.status(404).json({ error: 'No existe' });
-  productos[index] = { ...productos[index], ...req.body };
-  guardarProductos();
-  res.json(productos[index]);
+  const { nombre, precio, categoria, stock, imagen } = req.body;
+  db.run(
+    'UPDATE productos SET nombre=?, precio=?, categoria=?, stock=?, imagen=? WHERE id=?',
+    [nombre, precio, categoria, stock, imagen, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      db.get('SELECT * FROM productos WHERE id=?', [req.params.id], (err,row)=>res.json(row));
+    }
+  );
 });
 
 app.delete('/api/productos/:id', (req, res) => {
-  const id = Number(req.params.id);
-  productos = productos.filter(p => p.id !== id);
-  const rutaImg = path.join(IMG_PATH, `${id}.png`);
-  if (fs.existsSync(rutaImg)) fs.unlinkSync(rutaImg);
-  guardarProductos();
-  res.status(204).end();
+  db.run('DELETE FROM productos WHERE id=?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(204).end();
+  });
 });
 
 /* ========================
@@ -134,134 +97,87 @@ app.post('/api/upload/:id', upload.single('imagen'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
   res.json({ mensaje: 'Imagen subida' });
 });
-app.delete('/api/upload/:id', (req, res) => {
-  const rutaImg = path.join(IMG_PATH, `${req.params.id}.png`);
-  if (fs.existsSync(rutaImg)) fs.unlinkSync(rutaImg);
-  res.status(204).end();
-});
 
 /* ========================
-     GUARDAR PEDIDOS
+     PEDIDOS
 ======================== */
-app.post('/api/guardar-pedidos', async (req, res) => {
-  try {
-    const pedidoItems = req.body.pedido;
-    const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
+app.post('/api/guardar-pedidos', (req, res) => {
+  const pedidoItems = req.body.pedido;
+  const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
+  if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
+    return res.status(400).json({ error: 'Pedido inválido' });
 
-    if (!Array.isArray(pedidoItems) || pedidoItems.length === 0) {
-      return res.status(400).json({ error: 'Pedido inválido' });
-    }
+  db.serialize(() => {
+    let total = 0;
+    const items = [];
+    const updateStock = [];
 
-    const orden = { user: usuarioPedido, fecha: new Date().toISOString(), items: [], total: 0 };
+    const placeholders = pedidoItems.map(it => '?').join(',');
+    db.all(`SELECT * FROM productos WHERE id IN (${placeholders})`, pedidoItems.map(it=>it.id), (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      for (const it of pedidoItems) {
+        const prod = rows.find(r=>r.id==it.id);
+        if (!prod) continue;
+        const cantidadFinal = Math.min(it.cantidad, prod.stock);
+        total += cantidadFinal * prod.precio;
+        items.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: prod.precio });
+        updateStock.push({ id: prod.id, stock: prod.stock - cantidadFinal });
+      }
 
-    for (const it of pedidoItems) {
-      const id = Number(it.id);
-      const cantidad = Number(it.cantidad) || 0;
-      if (!id || cantidad <= 0) continue;
+      const fecha = new Date().toISOString();
+      db.run(
+        'INSERT INTO pedidos (user, fecha, items, total) VALUES (?, ?, ?, ?)',
+        [usuarioPedido, fecha, JSON.stringify(items), total],
+        function(err) {
+          if (err) return res.status(500).json({ error: err.message });
 
-      const producto = productos.find(p => p.id === id);
-      if (!producto) continue;
+          // actualizar stock
+          const stmt = db.prepare('UPDATE productos SET stock=? WHERE id=?');
+          updateStock.forEach(u => stmt.run(u.stock, u.id));
+          stmt.finalize();
 
-      const cantidadFinal = Math.min(cantidad, producto.stock || 0);
-      producto.stock = Math.max(0, (producto.stock || 0) - cantidadFinal);
-
-      const precioUnitario = Number(producto.precio || 0);
-      const subtotal = precioUnitario * cantidadFinal;
-
-      orden.items.push({ id, nombre: producto.nombre, cantidad: cantidadFinal, precio_unitario: precioUnitario, subtotal });
-      orden.total += subtotal;
-    }
-
-    guardarProductos(); // actualizar stock
-    let pedidosArr = [];
-    if (fs.existsSync(PEDIDOS_FILE)) {
-      const raw = fs.readFileSync(PEDIDOS_FILE, 'utf8');
-      pedidosArr = raw ? JSON.parse(raw) : [];
-    }
-
-    pedidosArr.push(orden);
-    fs.writeFileSync(PEDIDOS_FILE, JSON.stringify(pedidosArr, null, 2));
-
-    await gitPushCambios('productos.json');
-    await gitPushCambios('pedidos.json'); 
-
-    res.status(200).json({ ok: true, mensaje: 'Pedido guardado correctamente' });
-  } catch (err) {
-    console.error('Error guardando pedido:', err);
-    res.status(500).json({ error: 'Error interno al guardar pedido' });
-  }
+          res.json({ ok: true, mensaje: 'Pedido guardado', id: this.lastID });
+        }
+      );
+    });
+  });
 });
 
-/* ========================
-     OBTENER PEDIDOS
-======================== */
-app.get('/api/pedidos', (req, res) => {
-  try {
-    if (!fs.existsSync(PEDIDOS_FILE)) return res.json({});
-    const arr = JSON.parse(fs.readFileSync(PEDIDOS_FILE, 'utf8') || '[]');
+app.get('/api/pedidos', (req,res)=>{
+  db.all('SELECT * FROM pedidos', (err, rows)=>{
+    if(err) return res.status(500).json({error: err.message});
     const map = {};
-    for (const orden of arr) {
-      const u = orden.user || 'invitado';
-      if (!map[u]) map[u] = [];
-      map[u].push(orden.items.map(it => ({ id: it.id, nombre: it.nombre, cantidad: it.cantidad, precio: it.precio_unitario })));
-    }
+    rows.forEach(r=>{
+      const u = r.user || 'invitado';
+      map[u] = map[u]||[];
+      map[u].push({ id:r.id, fecha:r.fecha, items: JSON.parse(r.items), total:r.total });
+    });
     res.json(map);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({});
-  }
+  });
 });
 
-app.delete('/api/eliminar-pedido/:usuario/:index', async (req, res) => {
-  try {
-    const usuario = req.params.usuario;
-    const index = Number(req.params.index);
+app.delete('/api/eliminar-pedido/:id', (req,res)=>{
+  const id = req.params.id;
+  db.get('SELECT * FROM pedidos WHERE id=?',[id],(err,row)=>{
+    if(err) return res.status(500).json({error: err.message});
+    if(!row) return res.status(404).json({error:'Pedido no encontrado'});
 
-    if (!fs.existsSync(PEDIDOS_FILE)) return res.status(404).json({ error: 'No hay pedidos' });
-    const pedidosArr = JSON.parse(fs.readFileSync(PEDIDOS_FILE, 'utf8') || '[]');
+    const items = JSON.parse(row.items);
+    // restaurar stock
+    const stmt = db.prepare('UPDATE productos SET stock=stock+? WHERE id=?');
+    items.forEach(it=>stmt.run(it.cantidad,it.id));
+    stmt.finalize();
 
-    const pedidoUsuario = pedidosArr.filter(p => p.user === usuario);
-    if (!pedidoUsuario[index]) return res.status(404).json({ error: 'Pedido no encontrado' });
-
-    // Restaurar stock
-    for (const it of pedidoUsuario[index].items) {
-      const prod = productos.find(p => p.id === it.id);
-      if (prod) prod.stock = (prod.stock || 0) + it.cantidad;
-    }
-
-    // Eliminar pedido
-    pedidosArr.splice(pedidosArr.indexOf(pedidoUsuario[index]), 1);
-
-    fs.writeFileSync(PEDIDOS_FILE, JSON.stringify(pedidosArr, null, 2));
-    guardarProductos();
-
-    // Push a GitHub
-    await gitPushCambios('productos.json');
-    await gitPushCambios('pedidos.json');
-
-    res.json({ ok: true, mensaje: 'Pedido eliminado y stock restaurado' });
-  } catch (err) {
-    console.error('Error eliminando pedido:', err);
-    res.status(500).json({ error: 'Error interno' });
-  }
+    // borrar pedido
+    db.run('DELETE FROM pedidos WHERE id=?',[id], err=>{
+      if(err) return res.status(500).json({error:err.message});
+      res.json({ok:true, mensaje:'Pedido eliminado y stock restaurado'});
+    });
+  });
 });
-
-
-
 
 /* ========================
           SERVIDOR
 ======================== */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
-
-
-
-
-
-
-
-
-
-
-
+app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
