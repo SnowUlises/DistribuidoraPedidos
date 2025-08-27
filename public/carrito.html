@@ -70,41 +70,18 @@ const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
 const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
 const totalPedido = document.getElementById('totalPedido');
 const btnConfirmar = document.getElementById('confirmarEnvio');
-const modeBanner = document.getElementById('modeBanner');
 const postActions = document.getElementById('postActions');
 const sinStockAviso = document.getElementById('sinStockAviso');
 
-let apiMode = false; // detectado
-let apiBase = 'https://distribuidora-funaz.vercel.app.com/api';
 
 // Detecta si existe endpoint API /api/productos (tiempo límite 2s)
-async function detectApi() {
-  try {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 2000);
-    const r = await fetch(apiBase + '/productos', { cache: 'no-store' });
-    clearTimeout(id);
-    if (!res.ok) throw new Error('no api');
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      apiMode = true;
-      modeBanner.textContent = 'MODO: API (actualiza JSON en el servidor)';
-      modeBanner.className = 'mode-banner api-mode';
-      modeBanner.style.display = 'block';
-      return;
-    }
-  } catch (e) {
-    apiMode = false;
-    modeBanner.textContent = 'MODO: Estático (no hay API). Se generarán archivos descargables con los cambios.';
-    modeBanner.className = 'mode-banner static-mode';
-    modeBanner.style.display = 'block';
-  }
-}
+const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-// Cargar productos (API o productos.json)
+
+  
 async function cargarProductos() {
   try {
-    const r = await fetch("https://distribuidora-funaz.onrender.com/api/productos"), { cache: 'no-store' });
+    const r = await fetch(`${apiBase}/productos`);
     productos = await r.json();
     renderizarCarrito();
   } catch (err) {
@@ -262,33 +239,7 @@ btnConfirmar.addEventListener('click', async () => {
     }, 0)
   };
 
-  if (apiMode) {
-  // ✅ MODO API: un solo POST al servidor que actualiza stock y guarda pedido
-  try {
-    const res = await fetch(apiBase + '/guardar-pedidos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pedido: nuevosCarrito })
-    });
 
-    if (!res.ok) throw new Error('Error en el servidor');
-
-    alert('Pedido enviado y stock actualizado en el servidor.');
-    localStorage.removeItem('carrito');
-    carrito = [];
-    renderizarCarrito();
-    window.location.href = 'index.html';
-  } catch (err) {
-    console.error(err);
-    alert('Error procesando pedido en servidor: ' + err.message);
-  } finally {
-    btnConfirmar.disabled = false;
-    btnConfirmar.textContent = 'Sí, enviar';
-  }
-} else {
-  // (deja tu bloque de modo estático igual que ahora)
-  ...
-}
 
 
 // helpers
@@ -304,6 +255,7 @@ function formatMoney(n) {
 </script>
 </body>
 </html>
+
 
 
 
