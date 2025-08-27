@@ -594,44 +594,26 @@ async function cargarUsuarios() {
 
   // Eliminar pedido (intenta servidor y luego borra local)
   async function eliminarPedido(usuario, index) {
-    if (!confirm('¿Eliminar este pedido?')) return;
+  if (!confirm('¿Eliminar este pedido?')) return;
 
-    try {
-      const res = await fetch(`${apiBase}/eliminar-pedido/${encodeURIComponent(usuario)}/${encodeURIComponent(index)}`, { method: 'DELETE' });
-      if (!res.ok) {
-        console.warn('El servidor respondió con error al eliminar pedido:', res.status, await res.text().catch(()=>''));
-      }
-    } catch (err) {
-      console.warn('Error al llamar al endpoint de eliminación (se ignorará y se borrará localmente):', err);
-    }
-
-    const pedidos = JSON.parse(localStorage.getItem('pedidos') || '{}');
-    if (!pedidos[usuario] || !Array.isArray(pedidos[usuario]) || pedidos[usuario].length <= index) {
-      alert('Pedido no encontrado localmente.');
+  try {
+    const res = await fetch(`${apiBase}/eliminar-pedido/${encodeURIComponent(usuario)}/${encodeURIComponent(index)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      console.warn('Error del servidor al eliminar pedido:', res.status, await res.text().catch(()=>''));
       return;
     }
-
-    pedidos[usuario].splice(index, 1);
-    localStorage.setItem('pedidos', JSON.stringify(pedidos));
-
-    // reindex estados
-    const estados = JSON.parse(localStorage.getItem('estadosPedidos') || '{}');
-    const nuevosEstados = {};
-    Object.keys(estados).forEach(k => {
-      const m = k.match(new RegExp(`^${usuario}-(\\d+)$`));
-      if (!m) { nuevosEstados[k] = estados[k]; return; }
-      const idx = parseInt(m[1], 10);
-      if (idx < index) { nuevosEstados[k] = estados[k]; }
-      else if (idx === index) { /* omitido */ }
-      else { nuevosEstados[`${usuario}-${idx-1}`] = estados[k]; }
-    });
-    localStorage.setItem('estadosPedidos', JSON.stringify(nuevosEstados));
-
-    await gitPushCambios('pedidos.json');
-    await gitPushCambios('productos.json'); 
-    cargarUsuarios();
-    alert('Pedido eliminado correctamente (se actualizó también localmente).');
+  } catch (err) {
+    console.warn('Error al llamar al endpoint de eliminación:', err);
+    return;
   }
+
+  // Actualizar todo desde el backend
+  await cargarPedidos();  // función que recarga pedidos desde API
+  await cargarProductos(); 
+  cargarUsuarios();
+  alert('Pedido eliminado correctamente.');
+}
+
 
   // Descargar (generar PDF en servidor) pedido
   async function descargarPedido(usuario, index) {
@@ -772,6 +754,7 @@ async function cargarUsuarios() {
 </script>
 </body>
 </html>
+
 
 
 
