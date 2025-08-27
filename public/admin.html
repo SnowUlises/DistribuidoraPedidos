@@ -529,53 +529,68 @@
   }
 
   // Cargar usuarios y pedidos desde localStorage (mantengo tu esquema)
-  function cargarUsuarios() {
-    const usuarios = JSON.parse(localStorage.getItem('users') || '[]');
-    const datosUsuarios = JSON.parse(localStorage.getItem('userData') || '{}');
-    const pedidos = JSON.parse(localStorage.getItem('pedidos') || '{}');
-    const listaUsuarios = document.getElementById('listaUsuarios');
-    if (!listaUsuarios) return;
-    listaUsuarios.innerHTML = '';
+async function cargarUsuarios() {
+  const usuarios = JSON.parse(localStorage.getItem('users') || '[]');
+  const datosUsuarios = JSON.parse(localStorage.getItem('userData') || '{}');
 
-    usuarios.forEach(userObj => {
-      const userName = userObj.user;
-      const info = datosUsuarios[userName] || {};
-      const userPedidos = pedidos[userName] || [];
-      const userDiv = document.createElement('details');
-      userDiv.className = 'user-details';
-
-      let pedidosHTML = '';
-      if (userPedidos.length === 0) {
-        pedidosHTML = '<p style="color:#777;font-style:italic;">No tiene pedidos.</p>';
-      } else {
-        pedidosHTML = '<ul style="padding-left:20px;">';
-        userPedidos.forEach((pedido, index) => {
-          const key = `${userName}-${index}`;
-          const estado = estadosPedidos[key] || {};
-          pedidosHTML += `<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${(p.precio || 0).toFixed ? p.precio.toFixed(2) : (p.precio||0)}</li>`).join('')}</ul>
-            <button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button>
-            <button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button>
-            <div class='status-container'>
-              <label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index}, this)">Guardado</label>
-              <label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index}, this)">Recibido</label>
-            </div>
-          </li>`;
-        });
-        pedidosHTML += '</ul>';
-      }
-
-      userDiv.innerHTML = `<summary>${userName}</summary>
-        <div class='usuario-item'>
-          <div class='usuario-info'><b>Contraseña:</b> ${userObj.pass}</div>
-          <div class='usuario-info'><b>Nombre:</b> ${info.nombre||'No definido'}</div>
-          <div class='usuario-info'><b>Apellido:</b> ${info.apellido||'No definido'}</div>
-          <div class='usuario-info'><b>Email:</b> ${info.email||'No definido'}</div>
-          <div class='usuario-info'><b>Teléfono:</b> ${info.telefono||'No definido'}</div>
-          <details><summary>Pedidos</summary>${pedidosHTML}</details>
-        </div>`;
-      listaUsuarios.appendChild(userDiv);
-    });
+  // Intentamos obtener pedidos desde el servidor (fuente de verdad)
+  let pedidosServer = {};
+  try {
+    const r = await fetch(`${apiBase}/pedidos`, { cache: 'no-store' });
+    if (r.ok) pedidosServer = await r.json();
+    else console.warn('GET /api/pedidos devuelve', r.status);
+  } catch (e) {
+    console.warn('No se pudo obtener pedidos del servidor:', e);
   }
+
+  // fallback a localStorage si servidor no responde
+  const pedidosLocal = JSON.parse(localStorage.getItem('pedidos') || '{}');
+  const pedidos = (Object.keys(pedidosServer).length ? pedidosServer : pedidosLocal);
+
+  const listaUsuarios = document.getElementById('listaUsuarios');
+  if (!listaUsuarios) return;
+  listaUsuarios.innerHTML = '';
+
+  usuarios.forEach(userObj => {
+    const userName = userObj.user;
+    const info = datosUsuarios[userName] || {};
+    const userPedidos = pedidos[userName] || [];
+    const userDiv = document.createElement('details');
+    userDiv.className = 'user-details';
+
+    let pedidosHTML = '';
+    if (userPedidos.length === 0) {
+      pedidosHTML = '<p style="color:#777;font-style:italic;">No tiene pedidos.</p>';
+    } else {
+      pedidosHTML = '<ul style="padding-left:20px;">';
+      userPedidos.forEach((pedido, index) => {
+        const key = `${userName}-${index}`;
+        const estado = estadosPedidos[key] || {};
+        pedidosHTML += `<li>Pedido #${index+1}:<ul>${pedido.map(p=>`<li>${p.nombre} x${p.cantidad} - $${(p.precio || 0).toFixed ? p.precio.toFixed(2) : (p.precio||0)}</li>`).join('')}</ul>
+          <button onclick="eliminarPedido('${userName}',${index})">Eliminar pedido</button>
+          <button onclick="descargarPedido('${userName}',${index})">Guardar pedido</button>
+          <div class='status-container'>
+            <label><input type='checkbox' ${estado.guardado?'checked':''} onchange="toggleGuardado('${userName}',${index}, this)">Guardado</label>
+            <label><input type='checkbox' ${estado.recibido?'checked':''} onchange="toggleRecibido('${userName}',${index}, this)">Recibido</label>
+          </div>
+        </li>`;
+      });
+      pedidosHTML += '</ul>';
+    }
+
+    userDiv.innerHTML = `<summary>${userName}</summary>
+      <div class='usuario-item'>
+        <div class='usuario-info'><b>Contraseña:</b> ${userObj.pass}</div>
+        <div class='usuario-info'><b>Nombre:</b> ${info.nombre||'No definido'}</div>
+        <div class='usuario-info'><b>Apellido:</b> ${info.apellido||'No definido'}</div>
+        <div class='usuario-info'><b>Email:</b> ${info.email||'No definido'}</div>
+        <div class='usuario-info'><b>Teléfono:</b> ${info.telefono||'No definido'}</div>
+        <details><summary>Pedidos</summary>${pedidosHTML}</details>
+      </div>`;
+    listaUsuarios.appendChild(userDiv);
+  });
+}
+
 
   // Eliminar pedido (intenta servidor y luego borra local)
   async function eliminarPedido(usuario, index) {
@@ -754,6 +769,7 @@
 </script>
 </body>
 </html>
+
 
 
 
