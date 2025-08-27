@@ -22,7 +22,7 @@ if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
 // DB setup
 const dbFile = path.join(__dirname, 'data/db.json');
 const adapter = new JSONFile(dbFile);
-const db = new Low(adapter);
+const db = new Low(adapter, { productos: {}, pedidos: {} });
 
 await db.read();
 db.data ||= { productos: {}, pedidos: {} };
@@ -155,3 +155,4 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
