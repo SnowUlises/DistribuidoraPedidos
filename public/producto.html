@@ -80,7 +80,7 @@
       if (!id) return mostrarError('Producto no encontrado.');
 
       try {
-        const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos')', { cache: 'no-store' });
+        const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos', { cache: 'no-store' });
         if (!res.ok) throw new Error('No se pudo cargar productos');
         const productos = await res.json();
         producto = productos.find(p => p.id == id);
@@ -209,6 +209,7 @@
   </script>
 </body>
 </html>
+
 
 
 
