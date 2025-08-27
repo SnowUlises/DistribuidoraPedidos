@@ -104,7 +104,7 @@ async function detectApi() {
 // Cargar productos (API o productos.json)
 async function cargarProductos() {
   try {
-    const r = await fetch('https://distribudirafunazpedidos.netlify.app/productos.json', { cache: 'no-store' });
+    const r = await fetch("https://distribuidora-funaz.onrender.com/api/productos"), { cache: 'no-store' });
     productos = await r.json();
     renderizarCarrito();
   } catch (err) {
@@ -304,6 +304,7 @@ function formatMoney(n) {
 </script>
 </body>
 </html>
+
 
 
 
