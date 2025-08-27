@@ -251,7 +251,7 @@ app.post('/api/guardar-pedidos', (req, res) => {
     // Añadimos la orden (si querés un id, lo agregamos aquí)
     pedidosArr.push(orden);
     fs.writeFileSync(pedidosFile, JSON.stringify(pedidosArr, null, 2));
-    await gitPushCambios();
+    gitPushCambios();
 
     
     res.status(200).send('Pedidos guardados');
@@ -314,7 +314,7 @@ app.delete('/api/eliminar-pedido/:usuario/:index', async (req, res) => {
     // 3) intentar push a Github (no hacemos fallar la respuesta si falla el push)
     try {
       if (typeof gitPushCambios === 'function') {
-        await gitPushCambios();
+        gitPushCambios();
       }
     } catch (e) {
       console.error('Aviso: fallo al pushear cambios tras eliminar pedido:', e);
@@ -334,6 +334,7 @@ app.delete('/api/eliminar-pedido/:usuario/:index', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+
 
 
 
