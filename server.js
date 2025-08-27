@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
+import PDFDocument from 'pdfkit';
 
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
@@ -14,9 +15,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join('public')));
 app.use('/imagenes', express.static(path.join('public', 'imagenes')));
+app.use('/pedidos-pdf', express.static(path.join('public', 'pedidos-pdf')));
 
+// Crear carpetas necesarias
 const IMG_PATH = path.join('public', 'imagenes');
 if (!fs.existsSync(IMG_PATH)) fs.mkdirSync(IMG_PATH);
+const PDF_PATH = path.join('public', 'pedidos-pdf');
+if (!fs.existsSync(PDF_PATH)) fs.mkdirSync(PDF_PATH);
 
 // Multer
 const storage = multer.diskStorage({
@@ -31,6 +36,39 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
   process.exit(1);
 }
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+/* ========================
+   FUNCIÓN PARA GENERAR PDF
+======================== */
+function generarPDF(pedido) {
+  return new Promise((resolve, reject) => {
+    const pdfFile = path.join(PDF_PATH, `pedido_${pedido.id}.pdf`);
+    const doc = new PDFDocument({ margin: 50 });
+    const stream = fs.createWriteStream(pdfFile);
+    doc.pipe(stream);
+
+    doc.fontSize(20).text("Distribuidora Funaz", { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(16).text(`Pedido #${pedido.id}`);
+    doc.text(`Usuario: ${pedido.user}`);
+    doc.text(`Fecha: ${new Date(pedido.fecha).toLocaleString()}`);
+    doc.moveDown();
+
+    doc.fontSize(14).text("Items:");
+    pedido.items.forEach(it => {
+      doc.fontSize(12).text(
+        `- ${it.nombre} x${it.cantidad} @ $${it.precio_unitario.toFixed(2)} = $${it.subtotal.toFixed(2)}`
+      );
+    });
+
+    doc.moveDown();
+    doc.fontSize(14).text(`TOTAL: $${pedido.total.toFixed(2)}`, { align: 'right' });
+
+    doc.end();
+    stream.on('finish', () => resolve(`/pedidos-pdf/pedido_${pedido.id}.pdf`));
+    stream.on('error', reject);
+  });
+}
 
 /* ========================
         PRODUCTOS
@@ -137,26 +175,26 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 
     if (items.length === 0) return res.status(400).json({ error: 'No hay items válidos para el pedido' });
 
-    const id = Date.now(); // numeric id
+    const id = Date.now();
     const payload = { id, user: usuarioPedido, fecha: new Date().toISOString(), items, total };
 
-    // importante: .select() para que supabase devuelva la fila insertada
     const { data, error } = await supabase.from('pedidos').insert([payload]).select().single();
     if (error) {
       console.error('Supabase insert error:', error);
       return res.status(500).json({ error });
     }
 
-    // data puede ser el objeto insertado; si por alguna razón es null, devolvemos el id generado
     const returnedId = (data && (data.id ?? data[0]?.id)) ?? id;
-    res.json({ ok: true, mensaje: 'Pedido guardado', id: returnedId });
+
+    // Generar PDF
+    const pdfUrl = await generarPDF(payload);
+
+    res.json({ ok: true, mensaje: 'Pedido guardado', id: returnedId, pdf: pdfUrl });
   } catch (err) {
     console.error('Exception en guardar-pedidos:', err);
     res.status(500).json({ error: err.message || err });
   }
 });
-
-
 
 app.get('/api/pedidos', async (req, res) => {
   try {
@@ -192,6 +230,11 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 
     const { error: deleteError } = await supabase.from('pedidos').delete().eq('id', id);
     if (deleteError) { console.error(deleteError); return res.status(500).json({ error: deleteError }); }
+
+    // eliminar PDF
+    const pdfFile = path.join(PDF_PATH, `pedido_${id}.pdf`);
+    if (fs.existsSync(pdfFile)) fs.unlinkSync(pdfFile);
+
     res.json({ ok: true, mensaje: 'Pedido eliminado y stock restaurado' });
   } catch (err) {
     console.error(err); res.status(500).json({ error: 'Error interno' });
@@ -203,5 +246,3 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
-
-
