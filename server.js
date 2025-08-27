@@ -3,7 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
-import { Low, JSONFile } from 'lowdb';
+import { Low } from 'lowdb';
+import { JSONFile } from 'lowdb/node';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -158,3 +159,4 @@ app.delete('/api/eliminar-pedido/:id', async (req,res)=>{
 ======================== */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=>console.log(`Servidor en puerto ${PORT}`));
+
