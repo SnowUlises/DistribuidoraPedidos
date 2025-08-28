@@ -269,9 +269,10 @@
     <img src="imagenes/logo.png" alt="Logo" />
     <h1>Distribuidora Funaz</h1>
     <div style="margin-left:auto; display:flex; gap:0.5em; align-items:center;">
-      <div id="usuarioMenu"></div>
-      <button id="btnCarrito">Carrito (0)</button>
-    </div>
+  <div id="usuarioMenu"></div>
+  <button id="btnAdmin">Admin</button>
+  <button id="btnCarrito">Carrito (0)</button>
+</div>
   </header>
   
   <div id="carritoContainer" style="display:none;">
@@ -493,8 +494,13 @@ function agregarAlCarrito(id) {
   else carrito.push({ id, cantidad: 1 });
 
   localStorage.setItem('carrito', JSON.stringify(carrito));
+
+  // totals
+  const total = carrito.reduce((acc, i) => acc + i.cantidad, 0);
+  const cantidadProducto = carrito.find(i => i.id === id).cantidad;
+
   actualizarContadorCarrito();
-  mostrarMensaje('Producto agregado al carrito');
+  mostrarMensaje(`Agregaste ${cantidadProducto} × ${producto.nombre}. Total en carrito: ${total}`);
   renderCarrito();
 }
 
@@ -538,12 +544,26 @@ function vaciarCarrito() {
     renderCarrito();
   }
 }
-
+  
+const btnAdmin = document.getElementById('btnAdmin');
+if (btnAdmin) {
+  btnAdmin.addEventListener('click', () => {
+    // si querés que se abra en nueva pestaña: window.open('admin.html', '_blank');
+    location.href = 'admin.html';
+  });
+}
+  
+let mensajeTimeout = null;
 function mostrarMensaje(texto) {
   const m = document.getElementById('mensajeCarrito');
   m.textContent = texto;
   m.classList.add('visible');
-  setTimeout(() => m.classList.remove('visible'), 2500);
+
+  if (mensajeTimeout) clearTimeout(mensajeTimeout);
+  mensajeTimeout = setTimeout(() => {
+    m.classList.remove('visible');
+    mensajeTimeout = null;
+  }, 2600);
 }
 
 // --- SISTEMA DE LOGIN ---
@@ -609,6 +629,7 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
+
 
 
 
