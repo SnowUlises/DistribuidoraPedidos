@@ -191,11 +191,11 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 async function generarPDF(pedido) {
   return new Promise((resolve, reject) => {
     const items = Array.isArray(pedido.items) ? pedido.items : [];
-    const altura = Math.max(260, 160 + items.length * 28); // alto dinámico para el ticket
+    const altura = Math.max(300, 180 + items.length * 40); // Más alto para no cortar texto
 
     const doc = new PDFDocument({
-      size: [220, altura],
-      margins: { top: 10, bottom: 10, left: 10, right: 10 },
+      size: [240, altura], // Ticket más ancho
+      margins: { top: 15, bottom: 15, left: 15, right: 15 },
     });
 
     const chunks = [];
@@ -203,27 +203,34 @@ async function generarPDF(pedido) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Logo (usar CWD en ESM)
+    // Logo
     const logoPath = path.join(process.cwd(), 'public', 'logo.png');
-    if (fs.existsSync(logoPath)) doc.image(logoPath, 60, 10, { width: 100 });
-    doc.moveDown(6);
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, 70, 15, { width: 90 }); // más chico para dejar espacio
+      doc.moveDown(6);
+    } else {
+      doc.moveDown(2);
+    }
 
     // Encabezado
-    doc.font('Courier').fontSize(9);
+    doc.font('Helvetica-Bold').fontSize(12).text(`Distribuidora Funaz`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.font('Helvetica').fontSize(11);
     doc.text(`Dirección: Calle Colon 1740 Norte`);
     doc.text(`Factura N°: ${pedido.id || ''}`);
     doc.text(`Pedidos: 2645583761`);
     doc.text(`Consultas: 2645156933`);
-    doc.moveDown(0.5);
+    doc.moveDown(1);
 
     const fecha = new Date(pedido.fecha || Date.now());
-    doc.text(`Fecha: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
-    doc.moveDown(0.5);
+    doc.fontSize(11).text(`Fecha: ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`, { align: 'center' });
+    doc.moveDown(1);
+    doc.moveTo(15, doc.y).lineTo(225, doc.y).stroke();
+    doc.moveDown(1);
 
-    doc.fontSize(10).text('PEDIDO', { underline: true, align: 'center' });
-    doc.moveDown(0.5);
+    // Título
+    doc.fontSize(14).font('Helvetica-Bold').text('PEDIDO', { underline: true, align: 'center' });
+    doc.moveDown(1);
 
     // Ítems
     let total = 0;
@@ -233,23 +240,26 @@ async function generarPDF(pedido) {
       const subtotal = cant * precio;
       total += subtotal;
 
-      doc.fontSize(9).font('Helvetica-Bold').text(`${item.nombre || ''}`);
-      doc.font('Courier').fontSize(9);
+      doc.fontSize(12).font('Helvetica-Bold').text(`${item.nombre || ''}`);
+      doc.font('Helvetica').fontSize(11);
       doc.text(`${cant} x $${precio.toFixed(2)}`, { continued: true });
       doc.text(` $${subtotal.toFixed(2)}`, { align: 'right' });
-      doc.moveDown(0.3);
+      doc.moveDown(0.8); // Más espacio entre items
     });
 
     // Total
-    doc.moveDown(0.5);
-    doc.moveTo(10, doc.y).lineTo(210, doc.y).stroke();
-    doc.moveDown(0.5);
-    doc.fontSize(14).font('Helvetica-Bold').text(`TOTAL: $${total.toFixed(2)}`, { align: 'center' });
+    doc.moveDown(1);
+    doc.moveTo(15, doc.y).lineTo(225, doc.y).stroke();
+    doc.moveDown(1);
+    doc.fontSize(16).font('Helvetica-Bold').text(`TOTAL: $${total.toFixed(2)}`, { align: 'center' });
 
     doc.moveDown(2);
+    doc.fontSize(10).text('¡Gracias por su compra!', { align: 'center' });
+
     doc.end();
   });
 }
+
 
 /* -----------------------------
  ❌ ELIMINAR PEDIDO
@@ -307,6 +317,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
