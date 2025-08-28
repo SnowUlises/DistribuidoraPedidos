@@ -194,10 +194,10 @@ async function generarPDF(pedido) {
 
     // 🔹 Calculamos altura dinámica basada en ítems
     const alturaCalculada = 300 + (items.length * 60); // 60px aprox. por ítem
-    const altura = 9286;     // Mínimo 400px
+    const altura = 862;     // Mínimo 400px
 
     const doc = new PDFDocument({
-      size: [227, altura], // 🔥 Tamaño personalizado, ancho fijo, alto dinámico
+      size: [267, altura], // 🔥 Tamaño personalizado, ancho fijo, alto dinámico
       margins: { top: 20, bottom: 20, left: 20, right: 20 },
     });
 
@@ -323,6 +323,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
