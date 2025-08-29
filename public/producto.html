@@ -106,6 +106,18 @@
             </div>
           </div>
         `;
+
+        const cantidadInput = document.getElementById('cantidad');
+  cantidadInput.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    let valor = parseInt(cantidadInput.value);
+    if (e.deltaY < 0) {
+      valor = valor + 1; // rueda arriba → sumar
+    } else {
+      valor = valor - 1; // rueda abajo → restar, sin límite inferior si querés stock negativo
+    }
+    cantidadInput.value = valor;
+  });
         actualizarContadorCarrito();
       } catch (err) {
         console.error(err);
@@ -117,23 +129,7 @@
       document.getElementById('detalle').innerHTML = `<p style="color:red;font-weight:bold;">${msg}</p>`;
     }
 
-const cantidadInput = document.getElementById('cantidad');
 
-cantidadInput.addEventListener('wheel', (e) => {
-  e.preventDefault(); // evita scroll de página
-  let step = 1;
-  let valor = parseInt(cantidadInput.value);
-
-  if (e.deltaY < 0) {
-    // rueda hacia arriba → sumar
-    valor = Math.min(valor + step, producto.stock);
-  } else {
-    // rueda hacia abajo → restar, sin límite inferior
-    valor = valor - step;
-  }
-
-  cantidadInput.value = valor;
-});
 
 function agregarAlCarrito() {
   const cantidad = parseInt(cantidadInput.value);
@@ -221,6 +217,7 @@ function agregarAlCarrito() {
   </script>
 </body>
 </html>
+
 
 
 
