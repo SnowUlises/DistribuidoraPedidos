@@ -112,11 +112,11 @@ async function cargarProducto() {
     // guardamos input en global
     cantidadInput = document.getElementById('cantidad');
     cantidadInput.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  let valor = parseInt(cantidadInput.value);
-  if (e.deltaY < 0) valor = valor + 1;
-  else valor = Math.max(1, valor - 1);
-  cantidadInput.value = valor;
+      e.preventDefault();
+      let valor = parseInt(cantidadInput.value);
+      if (e.deltaY < 0) valor += 1; // rueda arriba → suma
+      else valor = Math.max(1, valor - 1); // rueda abajo → no baja de 1
+      cantidadInput.value = valor;
 });
 
     actualizarContadorCarrito();
@@ -133,15 +133,16 @@ async function cargarProducto() {
 
 
 function agregarAlCarrito() {
-  if (!cantidadInput) return; // seguridad
+  if (!cantidadInput) return; 
   let cantidad = parseInt(cantidadInput.value);
-  if (isNaN(cantidad)) return;
+  if (isNaN(cantidad) || cantidad < 1) return; // cantidad siempre >=1
 
   const existente = carrito.find(p => p.id === producto.id);
   if (existente) existente.cantidad += cantidad;
   else carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
 
-  producto.stock -= cantidad;
+  // Stock puede ser negativo
+  producto.stock -= cantidad; 
   updateStockDisplay();
 
   localStorage.setItem('carrito', JSON.stringify(carrito));
@@ -216,6 +217,7 @@ function agregarAlCarrito() {
   </script>
 </body>
 </html>
+
 
 
 
