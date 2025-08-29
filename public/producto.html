@@ -75,55 +75,56 @@
       document.getElementById('btnCarritoHeader').textContent = `Carrito (${total})`;
     }
 
-    async function cargarProducto() {
-      const id = new URLSearchParams(location.search).get('id');
-      if (!id) return mostrarError('Producto no encontrado.');
+   let cantidadInput; // variable global
 
-      try {
-        const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos', { cache: 'no-store' });
-        if (!res.ok) throw new Error('No se pudo cargar productos');
-        const productos = await res.json();
-        producto = productos.find(p => p.id == id);
-        if (!producto) throw new Error('Producto no encontrado');
+async function cargarProducto() {
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) return mostrarError('Producto no encontrado.');
 
-        const stockCheck = producto.stock > 0 ? '<span class="checkmark checked"></span>' : '<span class="checkmark"></span>';
+  try {
+    const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos', { cache: 'no-store' });
+    if (!res.ok) throw new Error('No se pudo cargar productos');
+    const productos = await res.json();
+    producto = productos.find(p => p.id == id);
+    if (!producto) throw new Error('Producto no encontrado');
 
-        document.getElementById('detalle').innerHTML = `
-          <div class="imagen-container">
-            <img src="imagenes/${producto.id}.png" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" alt="Producto" />
+    const check = producto.stock > 0 ? '<span class="checkmark checked"></span>' : '<span class="checkmark"></span>';
+
+    document.getElementById('detalle').innerHTML = `
+      <div class="imagen-container">
+        <img src="imagenes/${producto.id}.png" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" alt="Producto" />
+      </div>
+      <div class="detalle">
+        <div>
+          <div class="nombre">${producto.nombre}</div>
+          <div class="precio">$${(producto.precio * 1.17).toFixed(2)}</div>
+          <div class="stock" id="stockDisplay">
+            ${check} Stock: ${producto.stock}
           </div>
-          <div class="detalle">
-            <div>
-              <div class="nombre">${producto.nombre}</div>
-              <div class="precio">$${(producto.precio * 1.17).toFixed(2)}</div>
-              <div class="stock" id="stockDisplay">
-  ${check} Stock: ${producto.stock}
-</div>
-            </div>
-            <div class="acciones">
-             <input type="number" id="cantidad" value="1" min="1" />
-              <button class="agregar" id="btnAgregar" onclick="agregarAlCarrito()">Agregar al carrito</button>
-            </div>
-          </div>
-        `;
+        </div>
+        <div class="acciones">
+          <input type="number" id="cantidad" value="1" min="1" />
+          <button class="agregar" id="btnAgregar" onclick="agregarAlCarrito()">Agregar al carrito</button>
+        </div>
+      </div>
+    `;
 
-        const cantidadInput = document.getElementById('cantidad');
-  cantidadInput.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    let valor = parseInt(cantidadInput.value);
-    if (e.deltaY < 0) {
-      valor = valor + 1; // rueda arriba → sumar
-    } else {
-      valor = valor - 1; // rueda abajo → restar, sin límite inferior si querés stock negativo
-    }
-    cantidadInput.value = valor;
-  });
-        actualizarContadorCarrito();
-      } catch (err) {
-        console.error(err);
-        mostrarError('Error cargando producto.');
-      }
-    }
+    // guardamos input en global
+    cantidadInput = document.getElementById('cantidad');
+    cantidadInput.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  let valor = parseInt(cantidadInput.value);
+  if (e.deltaY < 0) valor = Math.min(valor + 1, producto.stock);
+  else valor = Math.max(1, valor - 1);
+  cantidadInput.value = valor;
+});
+
+    actualizarContadorCarrito();
+  } catch (err) {
+    console.error(err);
+    mostrarError('Error cargando producto.');
+  }
+}
 
     function mostrarError(msg) {
       document.getElementById('detalle').innerHTML = `<p style="color:red;font-weight:bold;">${msg}</p>`;
@@ -132,15 +133,13 @@
 
 
 function agregarAlCarrito() {
-  const cantidad = parseInt(cantidadInput.value);
-  if (isNaN(cantidad)) return; // solo chequeamos si es número
+  if (!cantidadInput) return; // seguridad
+  let cantidad = parseInt(cantidadInput.value);
+  if (isNaN(cantidad)) return;
 
   const existente = carrito.find(p => p.id === producto.id);
-  if (existente) {
-    existente.cantidad += cantidad;
-  } else {
-    carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
-  }
+  if (existente) existente.cantidad += cantidad;
+  else carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
 
   producto.stock -= cantidad;
   updateStockDisplay();
@@ -217,6 +216,7 @@ function agregarAlCarrito() {
   </script>
 </body>
 </html>
+
 
 
 
