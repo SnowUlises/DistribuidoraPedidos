@@ -128,8 +128,8 @@ cantidadInput.addEventListener('wheel', (e) => {
     // rueda hacia arriba → sumar
     valor = Math.min(valor + step, producto.stock);
   } else {
-    // rueda hacia abajo → restar
-    valor = Math.max(1, valor - step);
+    // rueda hacia abajo → restar, sin límite inferior
+    valor = valor - step;
   }
 
   cantidadInput.value = valor;
@@ -137,26 +137,24 @@ cantidadInput.addEventListener('wheel', (e) => {
 
 function agregarAlCarrito() {
   const cantidad = parseInt(cantidadInput.value);
-  if (isNaN(cantidad) || cantidad < 1) return;
-
-  const cantidadFinal = Math.min(cantidad, producto.stock);
+  if (isNaN(cantidad)) return; // solo chequeamos si es número
 
   const existente = carrito.find(p => p.id === producto.id);
   if (existente) {
-    existente.cantidad += cantidadFinal;
+    existente.cantidad += cantidad;
   } else {
-    carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad: cantidadFinal });
+    carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
   }
 
-  producto.stock -= cantidadFinal;
+  producto.stock -= cantidad;
   updateStockDisplay();
-  cantidadInput.max = producto.stock;
 
   localStorage.setItem('carrito', JSON.stringify(carrito));
   actualizarCarrito();
   actualizarContadorCarrito();
-  mostrarMensaje(producto.nombre, cantidadFinal);
+  mostrarMensaje(producto.nombre, cantidad);
 }
+
 
     function updateStockDisplay() {
   const stockEl = document.getElementById('stockDisplay');
@@ -223,6 +221,7 @@ function agregarAlCarrito() {
   </script>
 </body>
 </html>
+
 
 
 
