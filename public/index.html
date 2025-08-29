@@ -445,8 +445,10 @@ function renderProductos() {
       <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
       <h3>${p.nombre}</h3>
       <div>$${(p.precio * 1.10).toFixed(2)}</div>
-      <div class="stock ${p.stock ? 'con-stock' : 'sin-stock'}"> ${p.stock ? `En stock: ${p.stock}` : 'Sin stock'} </div>
-      <button class="btn-carrito" ${!p.stock ? 'disabled' : ''} onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
+      <div class="stock ${p.stock > 0 ? 'con-stock' : 'sin-stock'}">
+  En stock: ${p.stock}
+</div>
+      <button class="btn-carrito" onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
     `;
     div.style.cursor = 'pointer'; // opcional para indicar que es clickeable
     div.onclick = () => {
@@ -487,7 +489,7 @@ function agregarAlCarrito(id) {
     return;
   }
   const producto = productos.find(p => p.id === id);
-  if (!producto || !producto.stock) return;
+  if (!producto) return;
 
   const item = carrito.find(i => i.id === id);
   if (item) item.cantidad++;
@@ -629,6 +631,7 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
+
 
 
 
