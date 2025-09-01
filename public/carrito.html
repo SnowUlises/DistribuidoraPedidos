@@ -178,11 +178,12 @@ function mostrarFormulario() {
     return acc + (precioPublico * item.cantidad);
   }, 0);
 
-  // 🔹 Aplicar descuento si es cliente regular
   const esRegular = document.getElementById('clienteRegular').checked;
   if (esRegular) total *= 0.97;
 
   totalPedido.textContent = 'Total: ' + formatMoney(total);
+
+  // 🔹 Esta línea es la clave:
   formOverlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -295,6 +296,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
