@@ -223,7 +223,7 @@ btnConfirmar.addEventListener('click', async () => {
     producto.stock = Math.max(0, producto.stock - item.cantidad);
   }
 
-  const precioConRecargo = Number(producto.precio) * 1.10;
+  let precioConRecargo = Number(producto.precio) * 1.10;
   const esRegular = document.getElementById('clienteRegular').checked;
   if (esRegular) precioConRecargo *= 0.97;
 
@@ -296,6 +296,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
