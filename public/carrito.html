@@ -34,7 +34,15 @@
     <div id="modeBanner" style="display:none" class="mode-banner"></div>
 
     <div id="listaCarrito"></div>
-
+    <div style="margin: 10px 0; text-align:center;">
+  <label>
+    <input type="checkbox" id="clienteRegular">
+    Cliente regular (3% descuento)
+  </label>
+</div>
+<div style="margin: 10px 0; text-align:center;">
+  <input type="text" id="nombreCliente" placeholder="Nombre del cliente" style="padding:6px; width:80%; max-width:300px;">
+</div>
     <button id="btnMostrarFormulario" class="enviar">Enviar pedido</button>
 
     <div id="formOverlay">
@@ -164,17 +172,18 @@ function renderizarCarrito() {
 
 // Modal formulario
 function mostrarFormulario() {
-  const total = carrito.reduce((acc, item) => {
+  let total = carrito.reduce((acc, item) => {
     const p = productos.find(prod => prod.id == item.id);
     const precioPublico = p ? Number(p.precio || 0) * 1.10 : 0;
     return acc + (precioPublico * item.cantidad);
   }, 0);
+
+  // 🔹 Aplicar descuento si es cliente regular
+  const esRegular = document.getElementById('clienteRegular').checked;
+  if (esRegular) total *= 0.97;
+
   totalPedido.textContent = 'Total: ' + formatMoney(total);
-  sinStockAviso.textContent = '';
-  postActions.innerHTML = '';
-  formOverlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
+
 
 function ocultarFormulario() {
   formOverlay.style.display = 'none';
@@ -210,8 +219,9 @@ btnConfirmar.addEventListener('click', async () => {
     producto.stock = Math.max(0, producto.stock - item.cantidad);
   }
 
-  // ✅ Precio ya con +10%
   const precioConRecargo = Number(producto.precio) * 1.10;
+  const esRegular = document.getElementById('clienteRegular').checked;
+  if (esRegular) precioConRecargo *= 0.97;
 
   nuevosCarrito.push({
     ...item,
@@ -235,10 +245,12 @@ btnConfirmar.addEventListener('click', async () => {
     const res = await fetch(`${apiBase}/guardar-pedidos`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ 
+  const nombreInput = document.getElementById('nombreCliente');
+  const nombreCliente = nombreInput.value.trim() || 'cliente';
+    body: JSON.stringify({ 
     pedido: nuevosCarrito,
-    user: usuario.user   // 👈 acá mandamos el usuario
-  })
+    user: nombreCliente
+})
 });
 
 
@@ -281,6 +293,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
