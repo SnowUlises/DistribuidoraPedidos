@@ -267,12 +267,14 @@ const nombreCliente = nombreInput.value.trim() || 'cliente';
     guardarCarrito();
     ocultarFormulario();
     renderizarCarrito();
+    
   } catch (err) {
     console.error('Error enviando pedido:', err);
     alert('No se pudo enviar el pedido al servidor. Revisa la consola.');
   } finally {
     btnConfirmar.disabled = false;
     btnConfirmar.textContent = 'Sí, enviar';
+    window.location.href = 'index.html';
   }
 });
 
@@ -296,6 +298,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
