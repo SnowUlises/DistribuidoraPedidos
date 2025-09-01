@@ -183,6 +183,8 @@ function mostrarFormulario() {
   if (esRegular) total *= 0.97;
 
   totalPedido.textContent = 'Total: ' + formatMoney(total);
+  formOverlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
 
 
@@ -293,6 +295,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
