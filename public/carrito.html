@@ -240,18 +240,17 @@ btnConfirmar.addEventListener('click', async () => {
     btnConfirmar.textContent = 'Sí, enviar';
     return;
   }
-
+const nombreInput = document.getElementById('nombreCliente');
+const nombreCliente = nombreInput.value.trim() || 'cliente';
   // enviar al servidor: endpoint que existe en tu server.js
   try {
     const res = await fetch(`${apiBase}/guardar-pedidos`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  const nombreInput = document.getElementById('nombreCliente');
-  const nombreCliente = nombreInput.value.trim() || 'cliente';
-    body: JSON.stringify({ 
+  body: JSON.stringify({
     pedido: nuevosCarrito,
     user: nombreCliente
-})
+  })
 });
 
 
@@ -294,6 +293,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
