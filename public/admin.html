@@ -529,7 +529,7 @@
   }
 
   // Cargar usuarios y pedidos desde localStorage (mantengo tu esquema)
-async function cargarPedidosMenu() {
+async function cargarUsuarios() {
   const res = await fetch(`${apiBase}/pedidos`);
   const pedidosRaw = await res.json();
   const listaPedidos = document.getElementById('listaUsuarios'); // renombralo en HTML si querés
@@ -822,6 +822,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
