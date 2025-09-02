@@ -529,19 +529,24 @@
   }
 
   // Cargar usuarios y pedidos desde localStorage (mantengo tu esquema)
-function cargarUsuarios(pedidos, datosUsuarios) {
-  listaUsuarios.innerHTML = '';
+async function cargarPedidosMenu() {
+  const res = await fetch(`${apiBase}/pedidos`);
+  const pedidosRaw = await res.json();
+  const listaPedidos = document.getElementById('listaUsuarios'); // renombralo en HTML si querés
+  if (!listaPedidos) return;
+  listaPedidos.innerHTML = '';
 
-  // 🔹 Sacar usuarios directamente de los pedidos
-  const usuariosUnicos = [...new Set(pedidos.map(p => p.user))];
+  // Agrupar pedidos por usuario
+  const pedidosPorUsuario = {};
+  pedidosRaw.forEach(p => {
+    const user = p.user;
+    if (!pedidosPorUsuario[user]) pedidosPorUsuario[user] = [];
+    pedidosPorUsuario[user].push(p);
+  });
 
-  usuariosUnicos.forEach((userName) => {
-    const info = datosUsuarios[userName] || {};
-
-    // Filtrar pedidos por usuario
-    const userPedidos = pedidos
-      .filter(p => p.user === userName)
-      .sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  Object.entries(pedidosPorUsuario).forEach(([userName, userPedidos]) => {
+    // Orden descendente por fecha si existe
+    userPedidos.sort((a,b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
 
     const userDiv = document.createElement('details');
     userDiv.className = 'user-details';
@@ -549,7 +554,7 @@ function cargarUsuarios(pedidos, datosUsuarios) {
     let pedidosHTML = '<ul>';
     userPedidos.forEach((pedido, index) => {
       const items = Array.isArray(pedido.items) ? pedido.items : [];
-      const pedidoId = (pedido.id !== undefined && pedido.id !== null) ? `${pedido.id}` : `${userName}-${index}`;
+      const pedidoId = pedido.id ?? `${userName}-${index}`;
       const key = `${userName}-${index}`;
       const estado = estadosPedidos[key] || {};
 
@@ -563,13 +568,11 @@ function cargarUsuarios(pedidos, datosUsuarios) {
           <strong>Pedido #${index + 1}</strong> (ID: ${pedidoId}) - <b>Total: $${total.toFixed(2)}</b>
         </div>
         <ul>
-          ${items.map(p => {
+          ${(items.map(p => {
             const precio = p.precio_unitario ?? p.precio ?? 0;
-            const precioStr = (typeof precio === 'number' && precio.toFixed) ? precio.toFixed(2) : precio;
-            return `<li>${p.nombre} x${p.cantidad ?? 1} - $${precioStr}</li>`;
-          }).join('')}
+            return `<li>${p.nombre} x${p.cantidad ?? 1} - $${precio.toFixed(2)}</li>`;
+          })).join('')}
         </ul>
-
         <div class="pedido-actions">
           <button onclick="eliminarPedido('${pedidoId}')">Eliminar pedido</button>
           <button class="guardar-btn" data-pedidoid="${pedidoId}" data-username="${userName}" data-index="${index}">
@@ -579,7 +582,6 @@ function cargarUsuarios(pedidos, datosUsuarios) {
             ${estado.guardado ? '✅ Guardado' : ''}
           </span>
         </div>
-
         <div class='status-container'>
           <label><input type='checkbox' ${estado.guardado ? 'checked' : ''} onchange="toggleGuardado('${userName}',${index}, this)"> Guardado</label>
           <label><input type='checkbox' ${estado.recibido ? 'checked' : ''} onchange="toggleRecibido('${userName}',${index}, this)"> Recibido</label>
@@ -589,26 +591,20 @@ function cargarUsuarios(pedidos, datosUsuarios) {
     pedidosHTML += '</ul>';
 
     userDiv.innerHTML = `<summary>${userName}</summary>
-      <div class='usuario-item'>
-        <div class='usuario-info'><b>Contraseña:</b> No definido</div>
-        <div class='usuario-info'><b>Nombre:</b> ${info.nombre || 'No definido'}</div>
-        <div class='usuario-info'><b>Apellido:</b> ${info.apellido || 'No definido'}</div>
-        <div class='usuario-info'><b>Email:</b> ${info.email || 'No definido'}</div>
-        <div class='usuario-info'><b>Teléfono:</b> ${info.telefono || 'No definido'}</div>
-        <details><summary>Pedidos</summary>${pedidosHTML}</details>
-      </div>`;
+      <div class='usuario-item'>${pedidosHTML}</div>`;
 
-    listaUsuarios.appendChild(userDiv);
+    listaPedidos.appendChild(userDiv);
 
+    // enganchar listeners a "Guardar pedido"
     userDiv.querySelectorAll('.guardar-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', async () => {
         const pedidoId = btn.dataset.pedidoid;
         const username = btn.dataset.username;
         const idx = Number(btn.dataset.index);
         const statusSpan = document.getElementById(`guardar-status-${pedidoId}`);
         if (statusSpan) statusSpan.textContent = '⏳ Guardando...';
         try {
-          await guardarPedido(pedidoId, username, idx);
+          await guardarPedido(pedidoId);
           if (statusSpan) statusSpan.textContent = '✅ Guardado';
           const key = `${username}-${idx}`;
           estadosPedidos[key] = estadosPedidos[key] || {};
@@ -623,6 +619,7 @@ function cargarUsuarios(pedidos, datosUsuarios) {
     });
   });
 }
+
 
 
 
@@ -825,6 +822,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
