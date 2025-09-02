@@ -743,20 +743,14 @@ async function eliminarPedido(pedidoId) {
           row.style.color = '#111';
 
           if (!prod) {
-            row.style.background = '#ffcccc';
-            row.textContent = `${cantidad} x ${nombre} — NO ENCONTRADO`;
-          } else if (!prod.stock || prod.stock <= 0) {
   row.style.background = '#ffcccc';
+  row.textContent = `${cantidad} x ${nombre} — NO ENCONTRADO`;
+} else {
+  // Permitir pedir aunque no haya stock
+  row.style.background = '#ccffcc';
   row.textContent = `${cantidad} x ${prod.nombre} — se agregarán ${cantidad} (stock actual: ${prod.stock})`;
   pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidad });
 }
- else {
-            const cantidadFinal = Math.min(cantidad, prod.stock);
-            row.style.background = '#ccffcc';
-            row.textContent = `${cantidad} x ${prod.nombre} — se agregarán ${cantidadFinal} (stock actual: ${prod.stock})`;
-            pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidadFinal });
-          }
-
           previsualizacion.appendChild(row);
         });
 
@@ -822,6 +816,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
