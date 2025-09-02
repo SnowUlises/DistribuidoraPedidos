@@ -130,8 +130,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
       }
       if (!prod) continue;
 
-      const cantidadFinal = Math.min(Number(it.cantidad) || 0, Number(prod.stock) || 0);
-      if (cantidadFinal <= 0) continue;
+      const cantidadFinal = Number(it.cantidad) || 0;
 
       const precioUnitario = Number(it.precio ?? it.precio_unitario ?? prod.precio) || 0;
       const subtotal = cantidadFinal * precioUnitario;
@@ -323,6 +322,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
