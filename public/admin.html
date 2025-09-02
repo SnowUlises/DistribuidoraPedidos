@@ -746,10 +746,11 @@ async function eliminarPedido(pedidoId) {
             row.style.background = '#ffcccc';
             row.textContent = `${cantidad} x ${nombre} — NO ENCONTRADO`;
           } else if (!prod.stock || prod.stock <= 0) {
-            row.style.background = '#ffcccc';
-            row.textContent = `${cantidad} x ${prod.nombre} — SIN STOCK (0)`;
-            pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: 0 });
-          } else {
+  row.style.background = '#ffcccc';
+  row.textContent = `${cantidad} x ${prod.nombre} — se agregarán ${cantidad} (stock actual: ${prod.stock})`;
+  pedidoTemporal.push({ id: prod.id, nombre: prod.nombre, cantidad: cantidad });
+}
+ else {
             const cantidadFinal = Math.min(cantidad, prod.stock);
             row.style.background = '#ccffcc';
             row.textContent = `${cantidad} x ${prod.nombre} — se agregarán ${cantidadFinal} (stock actual: ${prod.stock})`;
@@ -782,7 +783,6 @@ async function eliminarPedido(pedidoId) {
         const prod = productos.find(p => p.id === item.id);
         if (!prod) continue;
         prod.stock = (Number(prod.stock) || 0) - Number(item.cantidad);
-        if (prod.stock < 0) prod.stock = 0;
         try {
           const res = await fetch(`${apiBase}/productos/${prod.id}`, {
             method:'PUT',
@@ -822,6 +822,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
