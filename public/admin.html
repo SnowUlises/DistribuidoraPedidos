@@ -532,7 +532,7 @@
 function cargarUsuarios(pedidos, datosUsuarios) {
   listaUsuarios.innerHTML = '';
 
-  // 🔹 Sacar usuarios únicos directamente de los pedidos
+  // 🔹 Sacar usuarios directamente de los pedidos
   const usuariosUnicos = [...new Set(pedidos.map(p => p.user))];
 
   usuariosUnicos.forEach((userName) => {
@@ -600,7 +600,6 @@ function cargarUsuarios(pedidos, datosUsuarios) {
 
     listaUsuarios.appendChild(userDiv);
 
-    // Enganchar listeners
     userDiv.querySelectorAll('.guardar-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const pedidoId = btn.dataset.pedidoid;
@@ -624,6 +623,7 @@ function cargarUsuarios(pedidos, datosUsuarios) {
     });
   });
 }
+
 
 
 
@@ -825,6 +825,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
