@@ -529,113 +529,102 @@
   }
 
   // Cargar usuarios y pedidos desde localStorage (mantengo tu esquema)
-async function cargarUsuarios() {
-  const usuarios = JSON.parse(localStorage.getItem('users') || '[]');
-  const datosUsuarios = JSON.parse(localStorage.getItem('userData') || '{}');
-
-  // Traer pedidos del servidor
-  let pedidos = [];
-  try {
-    const r = await fetch(`${apiBase}/pedidos`, { cache: 'no-store' });
-    if (r.ok) pedidos = await r.json();
-  } catch (e) {
-    console.warn('No se pudo obtener pedidos del servidor:', e);
-  }
-
-  const listaUsuarios = document.getElementById('listaUsuarios');
-  if (!listaUsuarios) return;
+function cargarUsuarios(pedidos, datosUsuarios) {
   listaUsuarios.innerHTML = '';
 
+  // 🔹 Sacar usuarios únicos directamente de los pedidos
   const usuariosUnicos = [...new Set(pedidos.map(p => p.user))];
 
-usuariosUnicos.forEach((userName) => {
-  const info = datosUsuarios[userName] || {};
+  usuariosUnicos.forEach((userName) => {
+    const info = datosUsuarios[userName] || {};
 
-  // Filtrar pedidos por usuario
-  const userPedidos = pedidos
-    .filter(p => p.user === userName)
-    .sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+    // Filtrar pedidos por usuario
+    const userPedidos = pedidos
+      .filter(p => p.user === userName)
+      .sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
 
-  const userDiv = document.createElement('details');
-  userDiv.className = 'user-details';
+    const userDiv = document.createElement('details');
+    userDiv.className = 'user-details';
 
-  let pedidosHTML = '<ul>';
-  userPedidos.forEach((pedido, index) => {
-    const items = Array.isArray(pedido.items) ? pedido.items : [];
-    const pedidoId = (pedido.id !== undefined && pedido.id !== null) ? `${pedido.id}` : `${userName}-${index}`;
-    const key = `${userName}-${index}`;
-    const estado = estadosPedidos[key] || {};
+    let pedidosHTML = '<ul>';
+    userPedidos.forEach((pedido, index) => {
+      const items = Array.isArray(pedido.items) ? pedido.items : [];
+      const pedidoId = (pedido.id !== undefined && pedido.id !== null) ? `${pedido.id}` : `${userName}-${index}`;
+      const key = `${userName}-${index}`;
+      const estado = estadosPedidos[key] || {};
 
-    const total = items.reduce((sum, p) => {
-      const precio = p.precio_unitario ?? p.precio ?? 0;
-      return sum + precio * (p.cantidad ?? 1);
-    }, 0);
+      const total = items.reduce((sum, p) => {
+        const precio = p.precio_unitario ?? p.precio ?? 0;
+        return sum + precio * (p.cantidad ?? 1);
+      }, 0);
 
-    pedidosHTML += `<li>
-      <div class="pedido-line">
-        <strong>Pedido #${index + 1}</strong> (ID: ${pedidoId}) - <b>Total: $${total.toFixed(2)}</b>
-      </div>
-      <ul>
-        ${items.map(p => {
-          const precio = p.precio_unitario ?? p.precio ?? 0;
-          const precioStr = (typeof precio === 'number' && precio.toFixed) ? precio.toFixed(2) : precio;
-          return `<li>${p.nombre} x${p.cantidad ?? 1} - $${precioStr}</li>`;
-        }).join('')}
-      </ul>
+      pedidosHTML += `<li>
+        <div class="pedido-line">
+          <strong>Pedido #${index + 1}</strong> (ID: ${pedidoId}) - <b>Total: $${total.toFixed(2)}</b>
+        </div>
+        <ul>
+          ${items.map(p => {
+            const precio = p.precio_unitario ?? p.precio ?? 0;
+            const precioStr = (typeof precio === 'number' && precio.toFixed) ? precio.toFixed(2) : precio;
+            return `<li>${p.nombre} x${p.cantidad ?? 1} - $${precioStr}</li>`;
+          }).join('')}
+        </ul>
 
-      <div class="pedido-actions">
-        <button onclick="eliminarPedido('${pedidoId}')">Eliminar pedido</button>
-        <button class="guardar-btn" data-pedidoid="${pedidoId}" data-username="${userName}" data-index="${index}">
-          Guardar pedido
-        </button>
-        <span class="guardar-status" id="guardar-status-${pedidoId}" aria-hidden="true">
-          ${estado.guardado ? '✅ Guardado' : ''}
-        </span>
-      </div>
+        <div class="pedido-actions">
+          <button onclick="eliminarPedido('${pedidoId}')">Eliminar pedido</button>
+          <button class="guardar-btn" data-pedidoid="${pedidoId}" data-username="${userName}" data-index="${index}">
+            Guardar pedido
+          </button>
+          <span class="guardar-status" id="guardar-status-${pedidoId}" aria-hidden="true">
+            ${estado.guardado ? '✅ Guardado' : ''}
+          </span>
+        </div>
 
-      <div class='status-container'>
-        <label><input type='checkbox' ${estado.guardado ? 'checked' : ''} onchange="toggleGuardado('${userName}',${index}, this)"> Guardado</label>
-        <label><input type='checkbox' ${estado.recibido ? 'checked' : ''} onchange="toggleRecibido('${userName}',${index}, this)"> Recibido</label>
-      </div>
-    </li>`;
-  });
-  pedidosHTML += '</ul>';
+        <div class='status-container'>
+          <label><input type='checkbox' ${estado.guardado ? 'checked' : ''} onchange="toggleGuardado('${userName}',${index}, this)"> Guardado</label>
+          <label><input type='checkbox' ${estado.recibido ? 'checked' : ''} onchange="toggleRecibido('${userName}',${index}, this)"> Recibido</label>
+        </div>
+      </li>`;
+    });
+    pedidosHTML += '</ul>';
 
-  userDiv.innerHTML = `<summary>${userName}</summary>
-    <div class='usuario-item'>
-      <div class='usuario-info'><b>Contraseña:</b> ${'No definido'}</div>
-      <div class='usuario-info'><b>Nombre:</b> ${info.nombre || 'No definido'}</div>
-      <div class='usuario-info'><b>Apellido:</b> ${info.apellido || 'No definido'}</div>
-      <div class='usuario-info'><b>Email:</b> ${info.email || 'No definido'}</div>
-      <div class='usuario-info'><b>Teléfono:</b> ${info.telefono || 'No definido'}</div>
-      <details><summary>Pedidos</summary>${pedidosHTML}</details>
-    </div>`;
+    userDiv.innerHTML = `<summary>${userName}</summary>
+      <div class='usuario-item'>
+        <div class='usuario-info'><b>Contraseña:</b> No definido</div>
+        <div class='usuario-info'><b>Nombre:</b> ${info.nombre || 'No definido'}</div>
+        <div class='usuario-info'><b>Apellido:</b> ${info.apellido || 'No definido'}</div>
+        <div class='usuario-info'><b>Email:</b> ${info.email || 'No definido'}</div>
+        <div class='usuario-info'><b>Teléfono:</b> ${info.telefono || 'No definido'}</div>
+        <details><summary>Pedidos</summary>${pedidosHTML}</details>
+      </div>`;
 
-  listaUsuarios.appendChild(userDiv);
+    listaUsuarios.appendChild(userDiv);
 
-  // Enganchar listeners "Guardar pedido"
-  userDiv.querySelectorAll('.guardar-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const pedidoId = btn.dataset.pedidoid;
-      const username = btn.dataset.username;
-      const idx = Number(btn.dataset.index);
-      const statusSpan = document.getElementById(`guardar-status-${pedidoId}`);
-      if (statusSpan) statusSpan.textContent = '⏳ Guardando...';
-      try {
-        await guardarPedido(pedidoId, username, idx);
-        if (statusSpan) statusSpan.textContent = '✅ Guardado';
-        const key = `${username}-${idx}`;
-        estadosPedidos[key] = estadosPedidos[key] || {};
-        estadosPedidos[key].guardado = true;
-        localStorage.setItem('estadosPedidos', JSON.stringify(estadosPedidos));
-      } catch (err) {
-        if (statusSpan) statusSpan.textContent = '❌ Error';
-        console.error(err);
-        alert('Error al guardar el pedido.');
-      }
+    // Enganchar listeners
+    userDiv.querySelectorAll('.guardar-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const pedidoId = btn.dataset.pedidoid;
+        const username = btn.dataset.username;
+        const idx = Number(btn.dataset.index);
+        const statusSpan = document.getElementById(`guardar-status-${pedidoId}`);
+        if (statusSpan) statusSpan.textContent = '⏳ Guardando...';
+        try {
+          await guardarPedido(pedidoId, username, idx);
+          if (statusSpan) statusSpan.textContent = '✅ Guardado';
+          const key = `${username}-${idx}`;
+          estadosPedidos[key] = estadosPedidos[key] || {};
+          estadosPedidos[key].guardado = true;
+          localStorage.setItem('estadosPedidos', JSON.stringify(estadosPedidos));
+        } catch (err) {
+          if (statusSpan) statusSpan.textContent = '❌ Error';
+          console.error(err);
+          alert('Error al guardar el pedido.');
+        }
+      });
     });
   });
-});
+}
+
 
 
 /* ---------------------------
@@ -836,6 +825,7 @@ async function eliminarPedido(pedidoId) {
 </script>
 </body>
 </html>
+
 
 
 
