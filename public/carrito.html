@@ -211,9 +211,11 @@ btnConfirmar.addEventListener('click', async () => {
   const producto = productosClon.find(p => p.id == item.id);
   if (!producto) continue;
 
-  if (typeof producto.stock === 'number') {
-    producto.stock = Math.max(0, producto.stock - item.cantidad);
-  }
+ if (typeof producto.stock === 'number') {
+  // restamos la cantidad aunque quede negativa
+  producto.stock = producto.stock - item.cantidad;
+
+}
 
   let precioConRecargo = Number(producto.precio) * 1.10;
   const esRegular = document.getElementById('clienteRegular').checked;
@@ -287,6 +289,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
