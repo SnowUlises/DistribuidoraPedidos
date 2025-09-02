@@ -212,14 +212,6 @@ btnConfirmar.addEventListener('click', async () => {
   if (!producto) continue;
 
   if (typeof producto.stock === 'number') {
-    if (producto.stock === 0) {
-      sinStock.push(producto.nombre);
-      continue;
-    }
-    if (item.cantidad > producto.stock) {
-      sinStock.push(`${producto.nombre} (solo ${producto.stock} disponibles)`);
-      item.cantidad = producto.stock;
-    }
     producto.stock = Math.max(0, producto.stock - item.cantidad);
   }
 
@@ -298,6 +290,7 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
 
 
