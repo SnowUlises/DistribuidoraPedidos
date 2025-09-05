@@ -144,7 +144,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
         subtotal
       });
 
-      const newStock = (Number(prod.stock) || 0) - cantidadFinal;
+      const newStock = Math.max(0, (Number(prod.stock) || 0) - cantidadFinal);
       const { error: updErr } = await supabase
         .from('productos')
         .update({ stock: newStock })
@@ -322,6 +322,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
