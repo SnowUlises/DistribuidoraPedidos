@@ -5,11 +5,11 @@
   <title>Distribuidora Funaz</title>
   <style>
     body { font-family: 'Segoe UI', sans-serif; margin:0; background:#f2f2f2; color:#333; }
-    header { 
-      background:#4a90e2; color:#fff; padding:1em 2em; 
-      display:flex; align-items:center; gap:1em; 
+    header {
+      background:#4a90e2; color:#fff; padding:1em 2em;
+      display:flex; align-items:center; gap:1em;
       justify-content: flex-start;
-      position: relative; 
+      position: relative;
     }
     footer {
       background: #f8f8f8;
@@ -165,7 +165,6 @@
       opacity: 1;
       pointer-events: auto;
     }
-
     /* Modal Mi Cuenta */
     #modalCuenta {
       display: none;
@@ -209,7 +208,6 @@
     #modalCuenta .modal-content button.action-btn:hover {
       background: #357ABD;
     }
-
     /* Dropdown usuario */
     #usuarioMenu {
       position: relative;
@@ -262,6 +260,28 @@
       color: #d9534f;
       font-weight: bold;
     }
+    .item-review {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 0.95em;
+    }
+    .item-review button {
+      background: #d9534f;
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9em;
+      transition: background 0.2s;
+    }
+    .item-review button:hover {
+      background: #c9302c;
+    }
   </style>
 </head>
 <body>
@@ -270,11 +290,12 @@
     <h1>Distribuidora Funaz</h1>
     <div style="margin-left:auto; display:flex; gap:0.5em; align-items:center;">
   <div id="usuarioMenu"></div>
+  <button id="btnPedido">Pedido</button>
   <button id="btnAdmin">Admin</button>
   <button id="btnCarrito">Carrito (0)</button>
 </div>
   </header>
-  
+ 
   <div id="carritoContainer" style="display:none;">
     <h3>Carrito de compras</h3>
     <div id="itemsCarrito"></div>
@@ -287,7 +308,6 @@
       </button>
     </div>
   </div>
- 
   <div class="container">
     <aside>
       <h2>Categorías</h2>
@@ -310,7 +330,6 @@
         <li onclick="filtrarCategoria('TINTURAS NANTYR', this)">Tinturas Nantyr</li>
       </ul>
     </aside>
-
     <main>
       <div class="ordenar">
   Ordenar por:
@@ -319,12 +338,10 @@
     <option value="precioAsc">Precio ↑</option>
     <option value="precioDesc">Precio ↓</option>
   </select>
-
   <!-- BUSCADOR -->
   <label for="buscador" style="margin-left:12px;">Buscar:</label>
   <input id="buscador" type="search" placeholder="Buscar producto..." style="padding:0.45em; border-radius:6px; border:1px solid #ccc; margin-left:6px;" />
 </div>
-
       <div class="cantidad-por-pagina">
         Mostrar productos por página:
         <select id="cantidadPagina" onchange="cambiarCantidadPagina()">
@@ -334,9 +351,7 @@
           <option value="25">5x5 (25)</option>
         </select>
       </div>
-
       <div class="productos"></div>
-
       <div class="paginacion" style="margin-top:1em;">
         <button onclick="paginaAnterior()" id="btnPrev">Anterior</button>
         <span id="infoPagina" style="align-self:center;"></span>
@@ -344,9 +359,7 @@
       </div>
     </main>
   </div>
-
   <div id="mensajeCarrito"></div>
-
   <!-- Modal Mi Cuenta -->
   <div id="modalCuenta">
     <div class="modal-content">
@@ -356,12 +369,26 @@
       <button class="action-btn" onclick="location.href='register.html'">Registrarse</button>
     </div>
   </div>
-
+  <div id="modalPedido" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1500;">
+    <div class="modal-content" style="background:#fff; padding:2em; border-radius:12px; max-width:400px; width:90%; text-align:center; position:relative;">
+      <button class="close-btn" onclick="cerrarModalPedido()">×</button>
+      <h2>Pedido Rápido</h2>
+      <textarea id="textoPedido" placeholder="Ej: 532x5,242x9" style="width:100%; height:100px; padding:0.5em; border:1px solid #ccc; border-radius:6px;"></textarea>
+      <button class="action-btn" onclick="procesarPedido()">Aceptar</button>
+    </div>
+  </div>
+  <div id="modalReviewPedido" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1500;">
+    <div class="modal-content" style="background:#fff; padding:2em; border-radius:12px; max-width:400px; width:90%; text-align:center; position:relative;">
+      <button class="close-btn" onclick="cerrarModalReview()">×</button>
+      <h2>Revisar Pedido</h2>
+      <div id="listaReview" style="max-height:200px; overflow-y:auto;"></div>
+      <button class="action-btn" onclick="confirmarAgregar()">Confirmar</button>
+    </div>
+  </div>
   <footer>
     <div class="contacto">Información de contacto</div>
     <div class="derechos">Distribuidora Funaz, © 2025. Todos los derechos reservados.</div>
   </footer>
-
 <script>
 let productos = [];
 let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
@@ -369,13 +396,11 @@ let categoriaSeleccionada = 'Todos';
 let paginaActual = 1;
 let cantidadPorPagina = 9;
 let terminoBusqueda = '';
-
 function toggleCarrito() {
   const c = document.getElementById('carritoContainer');
   c.style.display = c.style.display === 'block' ? 'none' : 'block';
   renderCarrito();
 }
-
 function verCarrito() {
   if (carrito.length === 0) {
     alert('El carrito está vacío. Agrega productos antes de ver el carrito.');
@@ -383,9 +408,7 @@ function verCarrito() {
     location.href = 'carrito.html';
   }
 }
-
 document.getElementById('btnCarrito').addEventListener('click', toggleCarrito);
-
 async function cargarProductos() {
   try {
     const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos');
@@ -397,7 +420,6 @@ async function cargarProductos() {
     alert('No se pudieron cargar los productos. Revisa la consola.');
   }
 }
-
 function filtrarCategoria(categoria, elemento) {
   categoriaSeleccionada = categoria;
   document.querySelectorAll('#listaCategorias li').forEach(li => li.classList.remove('active'));
@@ -405,7 +427,6 @@ function filtrarCategoria(categoria, elemento) {
   paginaActual = 1;
   renderProductos();
 }
-
 function cambiarCantidadPagina() {
   const sel = document.getElementById('cantidadPagina');
   cantidadPorPagina = parseInt(sel.value);
@@ -414,16 +435,13 @@ function cambiarCantidadPagina() {
   document.querySelector('.productos').style.setProperty('--cols', cols);
   renderProductos();
 }
-
 function renderProductos() {
   const cont = document.querySelector('.productos');
   cont.innerHTML = '';
-
   let filtrados = productos;
   if (categoriaSeleccionada !== 'Todos') {
     filtrados = productos.filter(p => p.categoria === categoriaSeleccionada);
   }
-
   const orden = document.getElementById('orden').value;
   if (orden === 'nombre') {
     filtrados.sort((a,b) => a.nombre.localeCompare(b.nombre));
@@ -432,22 +450,18 @@ function renderProductos() {
   } else if (orden === 'precioDesc') {
     filtrados.sort((a,b) => b.precio - a.precio);
   }
-
   if (terminoBusqueda) {
   filtrados = filtrados.filter(p => {
     const nombre = (p.nombre || '').toString().toLowerCase();
-    const desc   = (p.descripcion || '').toString().toLowerCase();
+    const desc = (p.descripcion || '').toString().toLowerCase();
     return nombre.includes(terminoBusqueda) || desc.includes(terminoBusqueda);
   });
 }
-
   const totalPaginas = Math.ceil(filtrados.length / cantidadPorPagina);
   if(paginaActual > totalPaginas) paginaActual = totalPaginas || 1;
-
   const inicio = (paginaActual -1) * cantidadPorPagina;
   const fin = inicio + cantidadPorPagina;
   const productosPagina = filtrados.slice(inicio, fin);
-
   productosPagina.forEach(p => {
     const div = document.createElement('div');
     div.className = 'producto';
@@ -464,21 +478,17 @@ function renderProductos() {
     div.onclick = () => {
   window.location.href = `producto.html?id=${p.id}`;
 };
-    
+   
 div.querySelector('button.btn-carrito').onclick = (event) => {
   event.stopPropagation();
   agregarAlCarrito(p.id);
 };
     cont.appendChild(div);
   });
-
   document.getElementById('infoPagina').textContent = `Página ${paginaActual} de ${totalPaginas || 1}`;
   document.getElementById('btnPrev').disabled = paginaActual === 1;
   document.getElementById('btnNext').disabled = paginaActual === totalPaginas || totalPaginas === 0;
 }
-
-
-
 function paginaAnterior() {
   if (paginaActual > 1) {
     paginaActual--;
@@ -492,35 +502,30 @@ function paginaSiguiente() {
     renderProductos();
   }
 }
-
-function agregarAlCarrito(id) {
+function agregarAlCarrito(id, cantidad = 1, silent = false) {
   if (!localStorage.getItem('loggedUser')) {
     abrirModalCuenta();
     return;
   }
   const producto = productos.find(p => p.id === id);
   if (!producto) return;
-
   const item = carrito.find(i => i.id === id);
-  if (item) item.cantidad++;
-  else carrito.push({ id, cantidad: 1 });
-
+  if (item) item.cantidad += cantidad;
+  else carrito.push({ id, cantidad });
   localStorage.setItem('carrito', JSON.stringify(carrito));
-
   // totals
   const total = carrito.reduce((acc, i) => acc + i.cantidad, 0);
   const cantidadProducto = carrito.find(i => i.id === id).cantidad;
-
   actualizarContadorCarrito();
-  mostrarMensaje(`Agregaste ${cantidadProducto} × ${producto.nombre}. Total en carrito: ${total}`);
+  if (!silent) {
+    mostrarMensaje(`Agregaste ${cantidad} × ${producto.nombre}. Total en carrito: ${total}`);
+  }
   renderCarrito();
 }
-
 function actualizarContadorCarrito() {
   const total = carrito.reduce((acc, i) => acc + i.cantidad, 0);
   document.getElementById('btnCarrito').textContent = `Carrito (${total})`;
 }
-
 function renderCarrito() {
   const cont = document.getElementById('itemsCarrito');
   cont.innerHTML = '';
@@ -540,14 +545,12 @@ function renderCarrito() {
     cont.appendChild(div);
   });
 }
-
 function eliminarDelCarrito(id) {
   carrito = carrito.filter(i => i.id !== id);
   localStorage.setItem('carrito', JSON.stringify(carrito));
   actualizarContadorCarrito();
   renderCarrito();
 }
-
 function vaciarCarrito() {
   if(confirm('¿Vaciar todo el carrito?')){
     carrito = [];
@@ -556,7 +559,7 @@ function vaciarCarrito() {
     renderCarrito();
   }
 }
-  
+ 
 const btnAdmin = document.getElementById('btnAdmin');
 if (btnAdmin) {
   btnAdmin.addEventListener('click', () => {
@@ -564,24 +567,20 @@ if (btnAdmin) {
     location.href = 'admin.html';
   });
 }
-  
+ 
 let mensajeTimeout = null;
 function mostrarMensaje(texto) {
   const m = document.getElementById('mensajeCarrito');
   m.textContent = texto;
   m.classList.add('visible');
-
   if (mensajeTimeout) clearTimeout(mensajeTimeout);
   mensajeTimeout = setTimeout(() => {
     m.classList.remove('visible');
     mensajeTimeout = null;
   }, 2600);
 }
-
 // --- SISTEMA DE LOGIN ---
-
 const usuarioMenuDiv = document.getElementById('usuarioMenu');
-
 function renderUsuarioMenu() {
   const user = localStorage.getItem('loggedUser');
   if (!user) {
@@ -609,27 +608,22 @@ function renderUsuarioMenu() {
     };
   }
 }
-
 function abrirModalCuenta() {
   document.getElementById('modalCuenta').style.display = 'flex';
 }
 function cerrarModalCuenta() {
   document.getElementById('modalCuenta').style.display = 'none';
 }
-
 function cerrarSesion() {
   localStorage.removeItem('loggedUser');
   location.reload();
 }
-
 function irAMiCuenta() {
   location.href = 'micuenta.html';
 }
-
 renderUsuarioMenu();
 actualizarContadorCarrito();
 cargarProductos();
-
 const buscadorInput = document.getElementById('buscador');
 if (buscadorInput) {
   buscadorInput.addEventListener('input', (e) => {
@@ -638,16 +632,71 @@ if (buscadorInput) {
     renderProductos();
   });
 }
+document.getElementById('btnPedido').addEventListener('click', abrirModalPedido);
+function abrirModalPedido() {
+  document.getElementById('modalPedido').style.display = 'flex';
+  document.getElementById('textoPedido').value = '';
+}
+function cerrarModalPedido() {
+  document.getElementById('modalPedido').style.display = 'none';
+}
+let tempPedido = [];
+function procesarPedido() {
+  const texto = document.getElementById('textoPedido').value.trim();
+  if (!texto) return alert('Ingrese el pedido');
+  const items = texto.split(',');
+  tempPedido = [];
+  for (let item of items) {
+    const [idStr, cantStr] = item.split('x');
+    const id = parseInt(idStr.trim());
+    const cantidad = parseInt(cantStr.trim()) || 1;
+    if (isNaN(id) || isNaN(cantidad) || cantidad < 1) continue;
+    const prod = productos.find(p => p.id === id);
+    if (!prod) continue;
+    tempPedido.push({id, cantidad, nombre: prod.nombre});
+  }
+  if (tempPedido.length === 0) return alert('No se encontraron productos válidos');
+  cerrarModalPedido();
+  renderReview();
+  document.getElementById('modalReviewPedido').style.display = 'flex';
+}
+function renderReview() {
+  const cont = document.getElementById('listaReview');
+  cont.innerHTML = '';
+  tempPedido.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'item-review';
+    div.innerHTML = `
+      <span>${item.nombre} x ${item.cantidad}</span>
+      <button onclick="borrarDeReview(${index})">X</button>
+    `;
+    cont.appendChild(div);
+  });
+}
+function borrarDeReview(index) {
+  tempPedido.splice(index, 1);
+  renderReview();
+  if (tempPedido.length === 0) {
+    cerrarModalReview();
+  }
+}
+function cerrarModalReview() {
+  document.getElementById('modalReviewPedido').style.display = 'none';
+}
+function confirmarAgregar() {
+  if (!localStorage.getItem('loggedUser')) {
+    abrirModalCuenta();
+    return;
+  }
+  let totalAdded = 0;
+  tempPedido.forEach(item => {
+    agregarAlCarrito(item.id, item.cantidad, true);
+    totalAdded += item.cantidad;
+  });
+  cerrarModalReview();
+  mostrarMensaje(`Agregados ${totalAdded} items al carrito.`);
+  renderCarrito();
+}
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
