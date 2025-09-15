@@ -10,12 +10,17 @@
     .producto-carrito img { width:100px; height:100px; object-fit:cover; border-radius:6px; }
     .producto-info { flex:1; }
     .producto-info p { margin:4px 0; }
-    .controles-cantidad { display:flex; flex-direction:column; align-items:center; gap:0.3em; min-width:110px; }
-    .controles-cantidad button { padding:4px 8px; border:none; background:#4a90e2; color:white; border-radius:6px; cursor:pointer; font-weight:bold; width:100%; }
+    .controles-cantidad { display:flex; align-items:center; gap:0.5em; min-width:150px; }
+    .controles-cantidad button { padding:6px 12px; border:none; background:#4a90e2; color:white; border-radius:6px; cursor:pointer; font-weight:bold; transition: background 0.2s; }
     .controles-cantidad button:hover { background:#357abd; }
+    .controles-cantidad .cantidad-display { min-width:30px; text-align:center; font-weight:bold; }
+    .controles-cantidad .btn-eliminar { background:#d9534f; margin-left:10px; }
+    .controles-cantidad .btn-eliminar:hover { background:#c9302c; }
+    #totalCarrito { text-align:right; font-weight:bold; font-size:1.2em; margin-top:1em; }
     #formOverlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); display:none; justify-content:center; align-items:center; z-index:10000; }
     #formDatos { background:#f4f4f4; padding:2em; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 12px rgba(0,0,0,0.3); position:relative; }
     #formDatos h3 { text-align:center; margin-bottom:1em; color:#4a90e2; }
+    #formDatos input { display:block; width:100%; padding:8px; margin-bottom:1em; border:1px solid #ccc; border-radius:6px; }
     button.enviar { background:#4a90e2; border:none; color:white; padding:12px 20px; border-radius:6px; font-weight:bold; cursor:pointer; display:block; margin:0 auto; min-width:140px; }
     button.enviar:hover { background:#357ABD; }
     #btnCerrarFormulario { position:absolute; top:8px; right:8px; background:#d9534f; border:none; color:white; border-radius:50%; width:28px; height:28px; font-weight:bold; cursor:pointer; font-size:18px; line-height:22px; text-align:center; padding:0; }
@@ -33,24 +38,18 @@
     <div id="modeBanner" style="display:none" class="mode-banner"></div>
 
     <div id="listaCarrito"></div>
-    <div style="margin: 10px 0; text-align:center;">
-  <label>
-    <input type="checkbox" id="clienteRegular">
-    Cliente regular (3% descuento)
-  </label>
-</div>
-<div style="margin: 10px 0; text-align:center;">
-  <input type="text" id="nombreCliente" placeholder="Nombre del cliente" style="padding:6px; width:80%; max-width:300px;">
-</div>
+    <div id="totalCarrito"></div>
     <button id="btnMostrarFormulario" class="enviar">Enviar pedido</button>
 
     <div id="formOverlay">
       <div id="formDatos">
         <button type="button" id="btnCerrarFormulario" title="Cerrar">&times;</button>
-        <h3>¿Estás seguro de enviar el pedido?</h3>
-        <p id="totalPedido" style="text-align:center; font-weight:bold;"></p>
+        <h3>Completa tus datos</h3>
+        <input type="text" id="nombre" placeholder="Nombre" required>
+        <input type="text" id="apellido" placeholder="Apellido" required>
+        <input type="tel" id="telefono" placeholder="Número de teléfono" required>
         <div id="sinStockAviso" style="color:#d9534f; margin-bottom:8px; text-align:center;"></div>
-        <button class="enviar" id="confirmarEnvio">Sí, enviar</button>
+        <button class="enviar" id="confirmarEnvio">Enviar</button>
 
         <div id="postActions" style="margin-top:12px; text-align:center;"></div>
       </div>
@@ -68,10 +67,10 @@ let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 const usuario = { user: localStorage.getItem('loggedUser') || 'invitado' };
 
 const lista = document.getElementById('listaCarrito');
+const totalCarritoElem = document.getElementById('totalCarrito');
 const formOverlay = document.getElementById('formOverlay');
 const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
 const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
-const totalPedido = document.getElementById('totalPedido');
 const btnConfirmar = document.getElementById('confirmarEnvio');
 const postActions = document.getElementById('postActions');
 const sinStockAviso = document.getElementById('sinStockAviso');
@@ -102,10 +101,13 @@ function renderizarCarrito() {
   if (carrito.length === 0) {
     lista.innerHTML = '<p>El carrito está vacío.</p>';
     btnMostrarFormulario.style.display = 'none';
+    totalCarritoElem.textContent = '';
     ocultarFormulario();
     return;
   }
   btnMostrarFormulario.style.display = 'block';
+
+  let total = 0;
 
   carrito.forEach((item, i) => {
     // comparación tolerante a tipo (string/number)
@@ -115,19 +117,21 @@ function renderizarCarrito() {
     const div = document.createElement('div');
     div.className = 'producto-carrito';
     const precioPublico = (Number(p.precio || 0) * 1.10);
+    const subtotal = precioPublico * item.cantidad;
+    total += subtotal;
 
     div.innerHTML = `
       <img src="/imagenes/${p.id}.png" alt="${(p.nombre||'').replace(/"/g,'')}" onerror="this.onerror=null; this.src='/imagenes/placeholder.png'"/>
       <div class="producto-info">
         <p><strong>${p.nombre}</strong></p>
         <p>Precio unitario: ${formatMoney(precioPublico)}</p>
-        <p>Subtotal: ${formatMoney(precioPublico * item.cantidad)}</p>
+        <p>Subtotal: ${formatMoney(subtotal)}</p>
       </div>
       <div class="controles-cantidad">
-        <button class="btn-aumentar" title="Aumentar cantidad">+</button>
-        <span class="cantidad-display">${item.cantidad}</span>
         <button class="btn-reducir" title="Reducir cantidad">-</button>
-        <button class="btn-eliminar" title="Eliminar producto" style="background:#d9534f;">X</button>
+        <span class="cantidad-display">${item.cantidad}</span>
+        <button class="btn-aumentar" title="Aumentar cantidad">+</button>
+        <button class="btn-eliminar" title="Eliminar producto">X</button>
       </div>
     `;
 
@@ -167,26 +171,20 @@ function renderizarCarrito() {
 
     lista.appendChild(div);
   });
+
+  totalCarritoElem.textContent = `Total: ${formatMoney(total)}`;
 }
 
 // Modal formulario
 function mostrarFormulario() {
-  let total = carrito.reduce((acc, item) => {
-    const p = productos.find(prod => prod.id == item.id);
-    const precioPublico = p ? Number(p.precio || 0) * 1.10 : 0;
-    return acc + (precioPublico * item.cantidad);
-  }, 0);
+  // Limpiar inputs
+  document.getElementById('nombre').value = '';
+  document.getElementById('apellido').value = '';
+  document.getElementById('telefono').value = '';
 
-  const esRegular = document.getElementById('clienteRegular').checked;
-  if (esRegular) total *= 0.97;
-
-  totalPedido.textContent = 'Total: ' + formatMoney(total);
-
-  // 🔹 Esta línea es la clave:
   formOverlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
-
 
 function ocultarFormulario() {
   formOverlay.style.display = 'none';
@@ -198,6 +196,15 @@ btnCerrarFormulario.addEventListener('click', ocultarFormulario);
 formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
 btnConfirmar.addEventListener('click', async () => {
+  const nombre = document.getElementById('nombre').value.trim();
+  const apellido = document.getElementById('apellido').value.trim();
+  const telefono = document.getElementById('telefono').value.trim();
+
+  if (!nombre || !apellido || !telefono) {
+    alert('Por favor, completa todos los campos.');
+    return;
+  }
+
   btnConfirmar.disabled = true;
   btnConfirmar.textContent = 'Procesando...';
 
@@ -207,45 +214,41 @@ btnConfirmar.addEventListener('click', async () => {
   const productosClon = productos.map(p => ({...p}));
 
   for (const item of carrito) {
-  const producto = productosClon.find(p => p.id == item.id);
-  if (!producto) continue;
+    const producto = productosClon.find(p => p.id == item.id);
+    if (!producto) continue;
 
- if (typeof producto.stock === 'number') {
-  // restamos la cantidad aunque quede negativa
-  producto.stock = Math.max(0, producto.stock - item.cantidad);
+    if (typeof producto.stock === 'number') {
+      // restamos la cantidad aunque quede negativa
+      producto.stock = Math.max(0, producto.stock - item.cantidad);
+    }
 
-}
+    let precioConRecargo = Number(producto.precio) * 1.10;
 
-  let precioConRecargo = Number(producto.precio) * 1.10;
-  const esRegular = document.getElementById('clienteRegular').checked;
-  if (esRegular) precioConRecargo *= 0.97;
-
-  nuevosCarrito.push({
-    ...item,
-    precio: precioConRecargo
-  });
-}
-
+    nuevosCarrito.push({
+      ...item,
+      precio: precioConRecargo
+    });
+  }
 
   if (nuevosCarrito.length === 0) {
     alert('No hay productos disponibles para pedir.');
     btnConfirmar.disabled = false;
-    btnConfirmar.textContent = 'Sí, enviar';
+    btnConfirmar.textContent = 'Enviar';
     return;
   }
-const nombreInput = document.getElementById('nombreCliente');
-const nombreCliente = nombreInput.value.trim() || 'cliente';
-  // enviar al servidor: endpoint que existe en tu server.js
-  try {
-    const res = await fetch(`${apiBase}/guardar-pedidos`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    pedido: nuevosCarrito,
-    user: nombreCliente
-  })
-});
 
+  // enviar al servidor: nuevo endpoint
+  try {
+    const res = await fetch(`${apiBase}/Enviar-Peticion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pedido: nuevosCarrito,
+        nombre,
+        apellido,
+        telefono
+      })
+    });
 
     if (!res.ok) {
       const txt = await res.text().catch(()=>null);
@@ -263,7 +266,7 @@ const nombreCliente = nombreInput.value.trim() || 'cliente';
     alert('No se pudo enviar el pedido al servidor. Revisa la consola.');
   } finally {
     btnConfirmar.disabled = false;
-    btnConfirmar.textContent = 'Sí, enviar';
+    btnConfirmar.textContent = 'Enviar';
     window.location.href = 'index.html';
   }
 });
@@ -288,26 +291,3 @@ function formatMoney(n) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
