@@ -165,123 +165,6 @@
       opacity: 1;
       pointer-events: auto;
     }
-    /* Modal Mi Cuenta */
-    #modalCuenta {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1500;
-    }
-    #modalCuenta .modal-content {
-      background: #fff;
-      padding: 2em;
-      border-radius: 12px;
-      max-width: 320px;
-      width: 90%;
-      text-align: center;
-      position: relative;
-    }
-    #modalCuenta .modal-content button.close-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: none;
-      border: none;
-      font-size: 1.5em;
-      cursor: pointer;
-    }
-    #modalCuenta .modal-content button.action-btn {
-      margin: 1em 0;
-      padding: 10px 20px;
-      width: 100%;
-      font-weight: bold;
-      cursor: pointer;
-      border-radius: 6px;
-      border: none;
-      background: #4a90e2;
-      color: white;
-      transition: background 0.2s;
-    }
-    #modalCuenta .modal-content button.action-btn:hover {
-      background: #357ABD;
-    }
-    /* Dropdown usuario */
-    #usuarioMenu {
-      position: relative;
-    }
-    #usuarioMenu button {
-      background: #fff;
-      color: #4a90e2;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-weight: bold;
-      cursor: pointer;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    #usuarioMenu button:hover {
-      background: #dceeff;
-    }
-    #usuarioDropdown {
-      display: none;
-      position: absolute;
-      top: 38px;
-      right: 0;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-      width: 140px;
-      z-index: 2000;
-    }
-    #usuarioDropdown button {
-      width: 100%;
-      border: none;
-      background: none;
-      padding: 10px;
-      text-align: left;
-      cursor: pointer;
-      font-weight: normal;
-      color: #333;
-      border-bottom: 1px solid #eee;
-      transition: background 0.2s;
-    }
-    #usuarioDropdown button:hover {
-      background: #f0f8ff;
-    }
-    #usuarioDropdown button:last-child {
-      border-bottom: none;
-      color: #d9534f;
-      font-weight: bold;
-    }
-    .item-review {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 0.95em;
-    }
-    .item-review button {
-      background: #d9534f;
-      border: none;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 0.9em;
-      transition: background 0.2s;
-    }
-    .item-review button:hover {
-      background: #c9302c;
-    }
   </style>
 </head>
 <body>
@@ -289,9 +172,6 @@
     <img src="imagenes/logo.png" alt="Logo" />
     <h1>Distribuidora Funaz</h1>
     <div style="margin-left:auto; display:flex; gap:0.5em; align-items:center;">
-  <div id="usuarioMenu"></div>
-  <button id="btnPedido">Pedido</button>
-  <button id="btnAdmin">Admin</button>
   <button id="btnCarrito">Carrito (0)</button>
 </div>
   </header>
@@ -360,31 +240,6 @@
     </main>
   </div>
   <div id="mensajeCarrito"></div>
-  <!-- Modal Mi Cuenta -->
-  <div id="modalCuenta">
-    <div class="modal-content">
-      <button class="close-btn" onclick="cerrarModalCuenta()">×</button>
-      <h2>Mi cuenta</h2>
-      <button class="action-btn" onclick="location.href='login.html'">Iniciar sesión</button>
-      <button class="action-btn" onclick="location.href='register.html'">Registrarse</button>
-    </div>
-  </div>
-  <div id="modalPedido" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1500;">
-    <div class="modal-content" style="background:#fff; padding:2em; border-radius:12px; max-width:400px; width:90%; text-align:center; position:relative;">
-      <button class="close-btn" onclick="cerrarModalPedido()">×</button>
-      <h2>Pedido Rápido</h2>
-      <textarea id="textoPedido" placeholder="Ej: 532x5,242x9" style="width:100%; height:100px; padding:0.5em; border:1px solid #ccc; border-radius:6px;"></textarea>
-      <button class="action-btn" onclick="procesarPedido()">Aceptar</button>
-    </div>
-  </div>
-  <div id="modalReviewPedido" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1500;">
-    <div class="modal-content" style="background:#fff; padding:2em; border-radius:12px; max-width:400px; width:90%; text-align:center; position:relative;">
-      <button class="close-btn" onclick="cerrarModalReview()">×</button>
-      <h2>Revisar Pedido</h2>
-      <div id="listaReview" style="max-height:200px; overflow-y:auto;"></div>
-      <button class="action-btn" onclick="confirmarAgregar()">Confirmar</button>
-    </div>
-  </div>
   <footer>
     <div class="contacto">Información de contacto</div>
     <div class="derechos">Distribuidora Funaz, © 2025. Todos los derechos reservados.</div>
@@ -503,10 +358,6 @@ function paginaSiguiente() {
   }
 }
 function agregarAlCarrito(id, cantidad = 1, silent = false) {
-  if (!localStorage.getItem('loggedUser')) {
-    abrirModalCuenta();
-    return;
-  }
   const producto = productos.find(p => p.id === id);
   if (!producto) return;
   const item = carrito.find(i => i.id === id);
@@ -560,14 +411,6 @@ function vaciarCarrito() {
   }
 }
  
-const btnAdmin = document.getElementById('btnAdmin');
-if (btnAdmin) {
-  btnAdmin.addEventListener('click', () => {
-    // si querés que se abra en nueva pestaña: window.open('admin.html', '_blank');
-    location.href = 'admin.html';
-  });
-}
- 
 let mensajeTimeout = null;
 function mostrarMensaje(texto) {
   const m = document.getElementById('mensajeCarrito');
@@ -579,49 +422,6 @@ function mostrarMensaje(texto) {
     mensajeTimeout = null;
   }, 2600);
 }
-// --- SISTEMA DE LOGIN ---
-const usuarioMenuDiv = document.getElementById('usuarioMenu');
-function renderUsuarioMenu() {
-  const user = localStorage.getItem('loggedUser');
-  if (!user) {
-    usuarioMenuDiv.innerHTML = `<button id="btnMiCuenta">Mi cuenta</button>`;
-    document.getElementById('btnMiCuenta').onclick = abrirModalCuenta;
-  } else {
-    usuarioMenuDiv.innerHTML = `
-      <div id="usuarioMenuWrapper" style="position:relative;">
-        <button id="btnUsuario">${user} ▼</button>
-        <div id="usuarioDropdown">
-          <button onclick="irAMiCuenta()">Mi cuenta</button>
-          <button onclick="cerrarSesion()" style="color:#d9534f;">Cerrar sesión</button>
-        </div>
-      </div>
-    `;
-    const btnUsuario = document.getElementById('btnUsuario');
-    const dropdown = document.getElementById('usuarioDropdown');
-    btnUsuario.onclick = () => {
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    };
-    document.body.onclick = (e) => {
-      if (!document.getElementById('usuarioMenuWrapper').contains(e.target)) {
-        dropdown.style.display = 'none';
-      }
-    };
-  }
-}
-function abrirModalCuenta() {
-  document.getElementById('modalCuenta').style.display = 'flex';
-}
-function cerrarModalCuenta() {
-  document.getElementById('modalCuenta').style.display = 'none';
-}
-function cerrarSesion() {
-  localStorage.removeItem('loggedUser');
-  location.reload();
-}
-function irAMiCuenta() {
-  location.href = 'micuenta.html';
-}
-renderUsuarioMenu();
 actualizarContadorCarrito();
 cargarProductos();
 const buscadorInput = document.getElementById('buscador');
@@ -631,71 +431,6 @@ if (buscadorInput) {
     paginaActual = 1;
     renderProductos();
   });
-}
-document.getElementById('btnPedido').addEventListener('click', abrirModalPedido);
-function abrirModalPedido() {
-  document.getElementById('modalPedido').style.display = 'flex';
-  document.getElementById('textoPedido').value = '';
-}
-function cerrarModalPedido() {
-  document.getElementById('modalPedido').style.display = 'none';
-}
-let tempPedido = [];
-function procesarPedido() {
-  const texto = document.getElementById('textoPedido').value.trim();
-  if (!texto) return alert('Ingrese el pedido');
-  const items = texto.split(',');
-  tempPedido = [];
-  for (let item of items) {
-    const [idStr, cantStr] = item.split('x');
-    const id = parseInt(idStr.trim());
-    const cantidad = parseInt(cantStr.trim()) || 1;
-    if (isNaN(id) || isNaN(cantidad) || cantidad < 1) continue;
-    const prod = productos.find(p => p.id === id);
-    if (!prod) continue;
-    tempPedido.push({id, cantidad, nombre: prod.nombre});
-  }
-  if (tempPedido.length === 0) return alert('No se encontraron productos válidos');
-  cerrarModalPedido();
-  renderReview();
-  document.getElementById('modalReviewPedido').style.display = 'flex';
-}
-function renderReview() {
-  const cont = document.getElementById('listaReview');
-  cont.innerHTML = '';
-  tempPedido.forEach((item, index) => {
-    const div = document.createElement('div');
-    div.className = 'item-review';
-    div.innerHTML = `
-      <span>${item.nombre} x ${item.cantidad}</span>
-      <button onclick="borrarDeReview(${index})">X</button>
-    `;
-    cont.appendChild(div);
-  });
-}
-function borrarDeReview(index) {
-  tempPedido.splice(index, 1);
-  renderReview();
-  if (tempPedido.length === 0) {
-    cerrarModalReview();
-  }
-}
-function cerrarModalReview() {
-  document.getElementById('modalReviewPedido').style.display = 'none';
-}
-function confirmarAgregar() {
-  if (!localStorage.getItem('loggedUser')) {
-    abrirModalCuenta();
-    return;
-  }
-  let totalAdded = 0;
-  tempPedido.forEach(item => {
-    agregarAlCarrito(item.id, item.cantidad, true);
-    totalAdded += item.cantidad;
-  });
-  cerrarModalReview();
-  mostrarMensaje(`Agregados ${totalAdded} items al carrito.`);
-  renderCarrito();
 }
 </script>
 </body>
