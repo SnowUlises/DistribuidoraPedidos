@@ -353,7 +353,7 @@ function agregarAlCarrito(id, cantidad = 1, silent = false) {
   const cantidadProducto = carrito.find(i => i.id === id).cantidad;
   actualizarContadorCarrito();
   if (!silent) {
-    mostrarMensaje(`Agregaste ${cantidad} × ${producto.nombre}. Total en carrito: ${total}`);
+    mostrarMensaje(`Agregaste ${cantidadProducto} × ${producto.nombre}. Total en carrito: ${total}`);
   }
   renderCarrito();
 }
@@ -418,3 +418,4 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
+
