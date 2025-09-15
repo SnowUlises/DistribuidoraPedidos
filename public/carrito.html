@@ -203,87 +203,70 @@ btnCerrarFormulario.addEventListener('click', ocultarFormulario);
 formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
 btnConfirmar.addEventListener('click', async () => {
-  const nombreInput = document.getElementById('nombre').value.trim();
-  const apellidoInput = document.getElementById('apellido').value.trim();
-  const telefono = document.getElementById('telefono').value.trim();
-
-  if (!nombreInput || !apellidoInput || !telefono) {
-    alert('Por favor, completa todos los campos.');
-    return;
-  }
-
-  const nombre = capitalize(nombreInput);
-  const apellido = capitalize(apellidoInput);
-  const fullName = `${nombre} ${apellido}`;
-
-  btnConfirmar.disabled = true;
-  btnConfirmar.textContent = 'Procesando...';
-
-  const nuevosCarrito = [];
-  let total = 0;
-
-  const productosClon = productos.map(p => ({...p}));
-
-  for (const item of carrito) {
-    const producto = productosClon.find(p => p.id == item.id);
-    if (!producto) continue;
-
-    if (typeof producto.stock === 'number') {
-      // restamos la cantidad aunque quede negativa
-      producto.stock = Math.max(0, producto.stock - item.cantidad);
+    const nombreInput = document.getElementById('nombre').value.trim();
+    const apellidoInput = document.getElementById('apellido').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    if (!nombreInput || !apellidoInput || !telefono) {
+        alert('Por favor, completa todos los campos.');
+        return;
     }
-
-    const precioConRecargo = Number(producto.precio) * 1.10;
-
-    nuevosCarrito.push({
-      ...item,
-      precio: precioConRecargo
-    });
-
-    total += item.cantidad * precioConRecargo;
-  }
-
-  if (nuevosCarrito.length === 0) {
-    alert('No hay productos disponibles para pedir.');
-    btnConfirmar.disabled = false;
-    btnConfirmar.textContent = 'Enviar';
-    return;
-  }
-
-  // enviar al servidor: nuevo endpoint
-  try {
-    const res = await fetch(`${apiBase}/Enviar-Peticion`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: fullName,
-        telefono: telefono,
-        items: nuevosCarrito,
-        total: total
-      })
-    });
-
-    if (!res.ok) {
-      const txt = await res.text().catch(()=>null);
-      throw new Error(txt || `HTTP ${res.status}`);
+    const nombre = capitalize(nombreInput);
+    const apellido = capitalize(apellidoInput);
+    const fullName = `${nombre} ${apellido}`;
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'Procesando...';
+    const nuevosCarrito = [];
+    let total = 0;
+    const productosClon = productos.map(p => ({...p}));
+    for (const item of carrito) {
+        const producto = productosClon.find(p => p.id == item.id);
+        if (!producto) continue;
+        const precioConRecargo = Number(producto.precio) * 1.10;
+        nuevosCarrito.push({
+            ...item,
+            precio: precioConRecargo
+        });
+        total += item.cantidad * precioConRecargo;
     }
-
-    alert('Pedido enviado y stock actualizado en el servidor.');
-    carrito = [];
-    guardarCarrito();
-    ocultarFormulario();
-    renderizarCarrito();
-    
-  } catch (err) {
-    console.error('Error enviando pedido:', err);
-    alert('No se pudo enviar el pedido al servidor. Revisa la consola.');
-  } finally {
-    btnConfirmar.disabled = false;
-    btnConfirmar.textContent = 'Enviar';
-    window.location.href = 'index.html';
-  }
+    if (nuevosCarrito.length === 0) {
+        alert('No hay productos disponibles para pedir.');
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Enviar';
+        return;
+    }
+    try {
+        const res = await fetch(`${apiBase}/Enviar-Peticion`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nombre: fullName,
+                telefono: telefono,
+                items: nuevosCarrito,
+                total: total
+            })
+        });
+        if (!res.ok) {
+            const txt = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+            throw new Error(txt.error || `HTTP ${res.status}`);
+        }
+        alert('Pedido enviado con éxito.');
+        carrito = [];
+        guardarCarrito();
+        ocultarFormulario();
+        renderizarCarrito();
+        // Delay redirect to ensure alert is visible
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+    } catch (err) {
+        console.error('Error enviando pedido:', err);
+        alert(`No se pudo enviar el pedido: ${err.message}`);
+    } finally {
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Enviar';
+    }
 });
-
+  
 // helper
 function formatMoney(n) {
   try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
@@ -304,3 +287,4 @@ function formatMoney(n) {
 
 </body>
 </html>
+
