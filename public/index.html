@@ -77,16 +77,6 @@
       margin-bottom: 0.5em;
       pointer-events:none;
     }
-    .stock { font-weight:bold; margin-top:0.5em; }
-    .con-stock { color:#28a745; }
-    .sin-stock { color:#d9534f; }
-    .paginacion button {
-      background:#4a90e2; border:none; color:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;
-      transition:background 0.2s;
-    }
-    .paginacion button:disabled {
-      background:#a0c1f7; cursor:default;
-    }
     .btn-carrito {
       margin-top:8px;
       background:#4CAF50;
@@ -172,10 +162,9 @@
     <img src="imagenes/logo.png" alt="Logo" />
     <h1>Distribuidora Funaz</h1>
     <div style="margin-left:auto; display:flex; gap:0.5em; align-items:center;">
-  <button id="btnCarrito">Carrito (0)</button>
-</div>
+      <button id="btnCarrito">Carrito (0)</button>
+    </div>
   </header>
- 
   <div id="carritoContainer" style="display:none;">
     <h3>Carrito de compras</h3>
     <div id="itemsCarrito"></div>
@@ -193,7 +182,7 @@
       <h2>Categorías</h2>
       <ul id="listaCategorias">
         <li class="active" onclick="filtrarCategoria('Todos', this)">Todos</li>
-         <li onclick="filtrarCategoria('ALIMENTOS', this)">Alimentos</li>
+        <li onclick="filtrarCategoria('ALIMENTOS', this)">Alimentos</li>
         <li onclick="filtrarCategoria('ACCESORIOS', this)">Accesorios</li>
         <li onclick="filtrarCategoria('LIMPIEZA', this)">Limpieza</li>
         <li onclick="filtrarCategoria('PERFUMERIA', this)">Perfumeria</li>
@@ -212,16 +201,16 @@
     </aside>
     <main>
       <div class="ordenar">
-  Ordenar por:
-  <select id="orden" onchange="renderProductos()">
-    <option value="nombre">Nombre</option>
-    <option value="precioAsc">Precio ↑</option>
-    <option value="precioDesc">Precio ↓</option>
-  </select>
-  <!-- BUSCADOR -->
-  <label for="buscador" style="margin-left:12px;">Buscar:</label>
-  <input id="buscador" type="search" placeholder="Buscar producto..." style="padding:0.45em; border-radius:6px; border:1px solid #ccc; margin-left:6px;" />
-</div>
+        Ordenar por:
+        <select id="orden" onchange="renderProductos()">
+          <option value="nombre">Nombre</option>
+          <option value="precioAsc">Precio ↑</option>
+          <option value="precioDesc">Precio ↓</option>
+        </select>
+        <!-- BUSCADOR -->
+        <label for="buscador" style="margin-left:12px;">Buscar:</label>
+        <input id="buscador" type="search" placeholder="Buscar producto..." style="padding:0.45em; border-radius:6px; border:1px solid #ccc; margin-left:6px;" />
+      </div>
       <div class="cantidad-por-pagina">
         Mostrar productos por página:
         <select id="cantidadPagina" onchange="cambiarCantidadPagina()">
@@ -306,12 +295,12 @@ function renderProductos() {
     filtrados.sort((a,b) => b.precio - a.precio);
   }
   if (terminoBusqueda) {
-  filtrados = filtrados.filter(p => {
-    const nombre = (p.nombre || '').toString().toLowerCase();
-    const desc = (p.descripcion || '').toString().toLowerCase();
-    return nombre.includes(terminoBusqueda) || desc.includes(terminoBusqueda);
-  });
-}
+    filtrados = filtrados.filter(p => {
+      const nombre = (p.nombre || '').toString().toLowerCase();
+      const desc = (p.descripcion || '').toString().toLowerCase();
+      return nombre.includes(terminoBusqueda) || desc.includes(terminoBusqueda);
+    });
+  }
   const totalPaginas = Math.ceil(filtrados.length / cantidadPorPagina);
   if(paginaActual > totalPaginas) paginaActual = totalPaginas || 1;
   const inicio = (paginaActual -1) * cantidadPorPagina;
@@ -324,20 +313,16 @@ function renderProductos() {
       <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
       <h3>${p.nombre}</h3>
       <div>$${(p.precio * 1.10).toFixed(2)}</div>
-      <div class="stock ${p.stock > 0 ? 'con-stock' : 'sin-stock'}">
-  En stock: ${p.stock}
-</div>
       <button class="btn-carrito" onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
     `;
-    div.style.cursor = 'pointer'; // opcional para indicar que es clickeable
+    div.style.cursor = 'pointer';
     div.onclick = () => {
-  window.location.href = `producto.html?id=${p.id}`;
-};
-   
-div.querySelector('button.btn-carrito').onclick = (event) => {
-  event.stopPropagation();
-  agregarAlCarrito(p.id);
-};
+      window.location.href = `producto.html?id=${p.id}`;
+    };
+    div.querySelector('button.btn-carrito').onclick = (event) => {
+      event.stopPropagation();
+      agregarAlCarrito(p.id);
+    };
     cont.appendChild(div);
   });
   document.getElementById('infoPagina').textContent = `Página ${paginaActual} de ${totalPaginas || 1}`;
@@ -364,7 +349,6 @@ function agregarAlCarrito(id, cantidad = 1, silent = false) {
   if (item) item.cantidad += cantidad;
   else carrito.push({ id, cantidad });
   localStorage.setItem('carrito', JSON.stringify(carrito));
-  // totals
   const total = carrito.reduce((acc, i) => acc + i.cantidad, 0);
   const cantidadProducto = carrito.find(i => i.id === id).cantidad;
   actualizarContadorCarrito();
@@ -410,7 +394,6 @@ function vaciarCarrito() {
     renderCarrito();
   }
 }
- 
 let mensajeTimeout = null;
 function mostrarMensaje(texto) {
   const m = document.getElementById('mensajeCarrito');
