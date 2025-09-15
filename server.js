@@ -49,6 +49,21 @@ app.get('/api/pedidos', async (req, res) => {
   }
 });
 
+app.get('/api/peticiones', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('Peticiones')
+      .select('*')
+      .order('fecha', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('❌ Error cargando peticiones:', err);
+    res.status(500).json({ error: 'No se pudieron cargar peticiones' });
+  }
+});
+
+
 app.get('/api/pedidos/:id/pdf', async (req, res) => {
   try {
     const pedidoId = req.params.id;
@@ -186,6 +201,77 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   }
 });
 
+app.post('/api/Enviar-Peticion', async (req, res) => {
+  try {
+    const { nombre, telefono, items: pedidoItems, total: providedTotal } = req.body;
+
+    if (!nombre || !telefono || !Array.isArray(pedidoItems) || pedidoItems.length === 0)
+      return res.status(400).json({ error: 'Petición inválida' });
+
+    let total = 0;
+    const processedItems = [];
+
+    for (const it of pedidoItems) {
+      const prodId = it.id;
+      const { data: prod, error: prodError } = await supabase
+        .from('productos')
+        .select('*')
+        .eq('id', prodId)
+        .single();
+
+      if (prodError) {
+        console.warn('⚠️ Producto no encontrado:', prodError);
+        continue;
+      }
+      if (!prod) continue;
+
+      const cantidadFinal = Number(it.cantidad) || 0;
+
+      const precioUnitario = Number(it.precio ?? it.precio_unitario ?? prod.precio) || 0;
+      const subtotal = cantidadFinal * precioUnitario;
+      total += subtotal;
+
+      processedItems.push({
+        id: prodId,
+        nombre: prod.nombre,
+        cantidad: cantidadFinal,
+        precio_unitario: precioUnitario,
+        subtotal
+      });
+    }
+
+    if (processedItems.length === 0)
+      return res.status(400).json({ error: 'No hay items válidos para la petición' });
+
+    const payload = { nombre, telefono, items: processedItems, total };
+
+    console.log('💾 Guardando petición:', payload);
+
+    const { data, error } = await supabase
+      .from('Peticiones')
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase insert error:', error);
+      return res.status(500).json({ error });
+    }
+
+    const returnedId = data?.id;
+
+    res.json({
+      ok: true,
+      mensaje: 'Petición guardada',
+      id: returnedId
+    });
+  } catch (err) {
+    console.error('❌ Exception en Enviar-Peticion:', err);
+    res.status(500).json({ error: err.message || err });
+  }
+});
+
+
 
 async function generarPDF(pedido) {
   return new Promise((resolve, reject) => {
@@ -322,6 +408,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
