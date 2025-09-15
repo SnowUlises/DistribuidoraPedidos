@@ -34,6 +34,9 @@
 </head>
 <body>
   <main>
+    <div style="text-align: left;">
+      <button onclick="location.href='index.html'" style="background:#4a90e2; color:white; padding:8px 12px; border:none; border-radius:6px; cursor:pointer;">Volver a la tienda</button>
+    </div>
     <h2>Tu Carrito</h2>
     <div id="modeBanner" style="display:none" class="mode-banner"></div>
 
@@ -91,6 +94,10 @@ async function cargarProductos() {
 
 function guardarCarrito() {
   localStorage.setItem('carrito', JSON.stringify(carrito));
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 function renderizarCarrito() {
@@ -196,20 +203,24 @@ btnCerrarFormulario.addEventListener('click', ocultarFormulario);
 formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
 btnConfirmar.addEventListener('click', async () => {
-  const nombre = document.getElementById('nombre').value.trim();
-  const apellido = document.getElementById('apellido').value.trim();
+  const nombreInput = document.getElementById('nombre').value.trim();
+  const apellidoInput = document.getElementById('apellido').value.trim();
   const telefono = document.getElementById('telefono').value.trim();
 
-  if (!nombre || !apellido || !telefono) {
+  if (!nombreInput || !apellidoInput || !telefono) {
     alert('Por favor, completa todos los campos.');
     return;
   }
+
+  const nombre = capitalize(nombreInput);
+  const apellido = capitalize(apellidoInput);
+  const fullName = `${nombre} ${apellido}`;
 
   btnConfirmar.disabled = true;
   btnConfirmar.textContent = 'Procesando...';
 
   const nuevosCarrito = [];
-  const sinStock = [];
+  let total = 0;
 
   const productosClon = productos.map(p => ({...p}));
 
@@ -222,12 +233,14 @@ btnConfirmar.addEventListener('click', async () => {
       producto.stock = Math.max(0, producto.stock - item.cantidad);
     }
 
-    let precioConRecargo = Number(producto.precio) * 1.10;
+    const precioConRecargo = Number(producto.precio) * 1.10;
 
     nuevosCarrito.push({
       ...item,
       precio: precioConRecargo
     });
+
+    total += item.cantidad * precioConRecargo;
   }
 
   if (nuevosCarrito.length === 0) {
@@ -243,10 +256,9 @@ btnConfirmar.addEventListener('click', async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        pedido: nuevosCarrito,
-        nombre,
-        apellido,
-        telefono
+        nombre: fullName,
+        items: nuevosCarrito,
+        total: total
       })
     });
 
