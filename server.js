@@ -204,7 +204,12 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 app.post('/api/Enviar-Peticion', async (req, res) => {
     try {
         console.log('Received payload:', JSON.stringify(req.body, null, 2)); // Log payload for debugging
-        const { nombre, telefono, items: pedidoItems, total: providedTotal } = req.body;
+        let { nombre, telefono, items: pedidoItems, total: providedTotal } = req.body;
+
+        // Remove "Nombre: " prefix if present
+        if (nombre.startsWith('Nombre: ')) {
+            nombre = nombre.slice('Nombre: '.length).trim();
+        }
 
         // Validate input
         if (!nombre || !telefono || !Array.isArray(pedidoItems) || pedidoItems.length === 0) {
@@ -298,7 +303,6 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
         res.status(500).json({ error: err.message || 'Error interno del servidor' });
     }
 });
-
 
 
 async function generarPDF(pedido) {
@@ -436,6 +440,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
