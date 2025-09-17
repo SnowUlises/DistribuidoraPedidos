@@ -212,7 +212,7 @@ btnConfirmar.addEventListener('click', async () => {
     }
     const nombre = capitalize(nombreInput);
     const apellido = capitalize(apellidoInput);
-    const fullName = `${nombre} ${apellido}`;
+    const fullName = `${nombre} ${apellido}`.trim(); // Ensure no extra spaces
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = 'Procesando...';
     const nuevosCarrito = [];
@@ -239,7 +239,7 @@ btnConfirmar.addEventListener('click', async () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                nombre: fullName,
+                nombre: fullName, // Send clean fullName without prefix
                 telefono: telefono,
                 items: nuevosCarrito,
                 total: total
@@ -249,6 +249,7 @@ btnConfirmar.addEventListener('click', async () => {
             const txt = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
             throw new Error(txt.error || `HTTP ${res.status}`);
         }
+        const response = await res.json();
         alert('Pedido enviado con éxito.');
         carrito = [];
         guardarCarrito();
@@ -287,4 +288,3 @@ function formatMoney(n) {
 
 </body>
 </html>
-
