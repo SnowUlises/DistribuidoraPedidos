@@ -171,7 +171,9 @@ app.post('/api/guardar-pedidos', async (req, res) => {
       return res.status(400).json({ error: 'No hay items válidos para el pedido' });
 
     const id = Date.now().toString();
-    const payload = { id, user: usuarioPedido, fecha: new Date().toISOString(), items, total };
+   const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+
+    const payload = { id, user: usuarioPedido, fecha: fechaLocal, items, total };
 
     console.log('💾 Guardando pedido:', payload);
 
@@ -440,6 +442,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
