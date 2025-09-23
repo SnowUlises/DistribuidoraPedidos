@@ -272,6 +272,7 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
 
         // Round total to integer for int8 column
         const totalInt = Math.round(total);
+        const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
         // Insert into Peticiones table
         const payload = {
@@ -279,7 +280,7 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
             telefono: telefonoNum,
             items: processedItems,
             total: totalInt,
-            fecha: new Date().toISOString()
+            fecha: fechaLocal
         };
         console.log('💾 Guardando petición:', payload);
 
@@ -442,6 +443,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
