@@ -91,6 +91,13 @@
     .btn-carrito:hover {
       background:#388E3C;
     }
+    .sin-stock {
+      margin-top:8px;
+      color: red;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+    }
     #carritoContainer {
       position: fixed;
       top: 65px;
@@ -309,20 +316,28 @@ function renderProductos() {
   productosPagina.forEach(p => {
     const div = document.createElement('div');
     div.className = 'producto';
+    let accionHTML = '';
+    if (p.stock <= -99) {
+      accionHTML = '<div class="sin-stock">SIN STOCK</div>';
+    } else {
+      accionHTML = `<button class="btn-carrito" onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>`;
+    }
     div.innerHTML = `
       <img src="imagenes/${p.id}.png" alt="${p.nombre}" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" />
       <h3>${p.nombre}</h3>
       <div>$${(p.precio * 1.10).toFixed(2)}</div>
-      <button class="btn-carrito" onclick="agregarAlCarrito(${p.id})">Agregar al carrito</button>
+      ${accionHTML}
     `;
     div.style.cursor = 'pointer';
     div.onclick = () => {
       window.location.href = `producto.html?id=${p.id}`;
     };
-    div.querySelector('button.btn-carrito').onclick = (event) => {
-      event.stopPropagation();
-      agregarAlCarrito(p.id);
-    };
+    if (p.stock > -99) {
+      div.querySelector('button.btn-carrito').onclick = (event) => {
+        event.stopPropagation();
+        agregarAlCarrito(p.id);
+      };
+    }
     cont.appendChild(div);
   });
   document.getElementById('infoPagina').textContent = `Página ${paginaActual} de ${totalPaginas || 1}`;
@@ -345,6 +360,10 @@ function paginaSiguiente() {
 function agregarAlCarrito(id, cantidad = 1, silent = false) {
   const producto = productos.find(p => p.id === id);
   if (!producto) return;
+  if (producto.stock <= -99) {
+    mostrarMensaje('Producto sin stock. No se puede agregar.');
+    return;
+  }
   const item = carrito.find(i => i.id === id);
   if (item) item.cantidad += cantidad;
   else carrito.push({ id, cantidad });
@@ -426,7 +445,3 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
-
-
-
-
