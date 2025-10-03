@@ -24,6 +24,12 @@
     button.agregar { padding:10px 16px; background:#4CAF50; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer; transition:background 0.3s; }
     button.agregar:hover:not(:disabled){ background:#388E3C; }
     button.agregar:disabled{ background:#a0c1a7; cursor:not-allowed; }
+    .sin-stock {
+      color: red;
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-top: 0.5em;
+    }
     #carritoDesplegable{ position:fixed; top:60px; right:20px; width:320px; max-height:400px; background:white; box-shadow:0 2px 12px rgba(0,0,0,0.3); border-radius:8px; overflow-y:auto; padding:1em; display:none; z-index:100; }
     #carritoDesplegable h3{ margin:0 0 1em; font-weight:bold; text-align:center; }
     .item-carrito{ display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8em; border-bottom:1px solid #eee; padding-bottom:0.5em; }
@@ -107,6 +113,17 @@
         console.log('Producto cargado:', producto);
         const existingItem = carrito.find(p => p.id == id);
         const initialCantidad = existingItem ? existingItem.cantidad : 1;
+        let accionesHTML = '';
+        if (producto.stock <= -99) {
+          accionesHTML = '<div class="sin-stock">SIN STOCK</div>';
+        } else {
+          accionesHTML = `
+            <div class="acciones">
+              <input type="number" id="cantidad" value="${initialCantidad}" min="1" />
+              <button class="agregar" id="btnAgregar" onclick="agregarAlCarrito()">Agregar al carrito</button>
+            </div>
+          `;
+        }
         document.getElementById('detalle').innerHTML = `
           <div class="imagen-container">
             <img src="imagenes/${producto.id}.png" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" alt="Producto" />
@@ -116,26 +133,25 @@
               <div class="nombre">${producto.nombre}</div>
               <div class="precio">$${(producto.precio * 1.1).toFixed(2)}</div>
             </div>
-            <div class="acciones">
-              <input type="number" id="cantidad" value="${initialCantidad}" min="1" />
-              <button class="agregar" id="btnAgregar" onclick="agregarAlCarrito()">Agregar al carrito</button>
-            </div>
+            ${accionesHTML}
           </div>
         `;
-        cantidadInput = document.getElementById('cantidad');
-        if (cantidadInput) {
-          cantidadInput.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            let valor = parseInt(cantidadInput.value) || 1;
-            if (e.deltaY < 0) valor += 1; // rueda arriba → suma
-            else valor = Math.max(1, valor - 1); // rueda abajo → no baja de 1
-            cantidadInput.value = valor;
-          });
-          cantidadInput.addEventListener('input', () => {
-            if (parseInt(cantidadInput.value) < 1) cantidadInput.value = 1;
-          });
-        } else {
-          console.error('Elemento cantidad no encontrado después de cargar producto');
+        if (producto.stock > -99) {
+          cantidadInput = document.getElementById('cantidad');
+          if (cantidadInput) {
+            cantidadInput.addEventListener('wheel', (e) => {
+              e.preventDefault();
+              let valor = parseInt(cantidadInput.value) || 1;
+              if (e.deltaY < 0) valor += 1; // rueda arriba → suma
+              else valor = Math.max(1, valor - 1); // rueda abajo → no baja de 1
+              cantidadInput.value = valor;
+            });
+            cantidadInput.addEventListener('input', () => {
+              if (parseInt(cantidadInput.value) < 1) cantidadInput.value = 1;
+            });
+          } else {
+            console.error('Elemento cantidad no encontrado después de cargar producto');
+          }
         }
         actualizarContadorCarrito();
         actualizarCarrito();
@@ -153,9 +169,13 @@
       }
     }
     function agregarAlCarrito() {
-      if (!producto || !cantidadInput) {
-        console.error('Producto o cantidadInput no definidos');
-        mostrarError('Error: Producto no cargado o input no disponible');
+      if (!producto || (producto.stock <= -99)) {
+        mostrarMensaje('Producto sin stock. No se puede agregar.', 0);
+        return;
+      }
+      if (!cantidadInput) {
+        console.error('cantidadInput no definido');
+        mostrarError('Error: Input no disponible');
         return;
       }
       let cantidad = parseInt(cantidadInput.value);
@@ -184,7 +204,11 @@
     function mostrarMensaje(nombre, cantidad) {
       const msg = document.getElementById('mensajeAgregado');
       if (msg) {
-        msg.innerHTML = `Se agregó:<br><span class="producto-nombre">${nombre} x${cantidad}</span>`;
+        if (cantidad > 0) {
+          msg.innerHTML = `Se agregó:<br><span class="producto-nombre">${nombre} x${cantidad}</span>`;
+        } else {
+          msg.innerHTML = nombre; // Para mensajes de error como "Producto sin stock"
+        }
         msg.style.display = 'block';
         clearTimeout(msg.timeoutId);
         msg.timeoutId = setTimeout(() => msg.style.display = 'none', 2000);
@@ -294,4 +318,3 @@
   </script>
 </body>
 </html>
-
