@@ -358,8 +358,17 @@ function paginaSiguiente() {
   }
 }
 function agregarAlCarrito(id, cantidad = 1, silent = false) {
-  const producto = productos.find(p => p.id === id);
-  if (!producto) return;
+  const producto = productos.find(p => String(p.id) === String(id));
+  producto = productos.find(p => String(p.id) === String(id));
+
+if (!producto) {
+  console.error("Producto no encontrado");
+  console.log("ID buscado:", id);
+  console.log("IDs disponibles:", productos.map(p => p.id));
+  console.log("Primeros productos:", productos.slice(0, 5));
+  throw new Error("Producto no encontrado");
+}
+
   if (producto.stock <= -99) {
     mostrarMensaje('Producto sin stock. No se puede agregar.');
     return;
@@ -388,7 +397,7 @@ function renderCarrito() {
     return;
   }
   carrito.forEach(item => {
-    const prod = productos.find(p => p.id === item.id);
+    const prod = productos.find(p => String(p.id) === String(id));
     if (!prod) return;
     const div = document.createElement('div');
     div.className = 'item-carrito';
@@ -445,3 +454,4 @@ if (buscadorInput) {
 </script>
 </body>
 </html>
+
