@@ -108,8 +108,14 @@
         const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos', { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}: No se pudo cargar productos`);
         productos = await res.json();
-        producto = productos.find(p => p.id == id);
-        if (!producto) throw new Error('Producto no encontrado');
+        producto = productos.find(p => String(p.id) === String(id));
+        if (!producto) {
+  console.error("Producto no encontrado");
+  console.log("ID buscado:", id);
+  console.log("IDs disponibles:", productos.map(p => p.id));
+  console.log("Primeros productos:", productos.slice(0, 5));
+  throw new Error("Producto no encontrado");
+}
         console.log('Producto cargado:', producto);
         const existingItem = carrito.find(p => p.id == id);
         const initialCantidad = existingItem ? existingItem.cantidad : 1;
@@ -318,3 +324,4 @@
   </script>
 </body>
 </html>
+
