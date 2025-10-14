@@ -465,6 +465,8 @@ if (buscadorInput) {
 }
 const logoImg = document.getElementById('logoImg');
 logoImg.src = getImageUrl('logo.png');
+logoImg.onload = () => console.log('Logo loaded successfully');
+logoImg.onerror = () => console.error('Failed to load logo');
 </script>
 </body>
 </html>
