@@ -309,7 +309,7 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
 
 
 async function generarPDF(pedido) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const items = Array.isArray(pedido.items) ? pedido.items : [];
 
     // 🔹 Calculamos altura dinámica basada en ítems
@@ -326,13 +326,14 @@ async function generarPDF(pedido) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Logo
-    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
-    if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, 100, 20, { width: 100 });
-      doc.moveDown(8);
+    // Logo from Supabase
+    const { data: logoBlob, error: logoError } = await supabase.storage.from('imagenes').download('logo.png');
+    if (logoError) {
+      console.error('Error downloading logo:', logoError);
     } else {
-      doc.moveDown(3);
+      const logoBuffer = Buffer.from(await logoBlob.arrayBuffer());
+      doc.image(logoBuffer, 100, 20, { width: 100 });
+      doc.moveDown(8);
     }
 
     // Encabezado
@@ -443,25 +444,3 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
