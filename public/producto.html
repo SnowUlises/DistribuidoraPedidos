@@ -48,7 +48,7 @@
 <body>
   <header>
     <button onclick="location.href='index.html'">⬅ Volver</button>
-    <img src="imagenes/logo.png" alt="Logo" />
+    <img id="logoImg" src="" alt="Logo" />
     <h1>Distribuidora Funaz</h1>
     <button onclick="location.href='admin.html'">Mi cuenta</button>
     <button id="btnCarritoHeader" onclick="toggleCarrito()">Carrito (0)</button>
@@ -98,6 +98,11 @@
       btnCarritoHeader.textContent = `Carrito (${total})`;
       console.log('Contador de carrito actualizado:', total);
     }
+    function getImageUrl(fileName) {
+      if (!fileName) return '';
+      const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
+      return `https://slroycxifwezthdomkny.supabase.co/storage/v1/object/public/imagenes/${cleanFileName}`;
+    }
     async function cargarProducto() {
       const id = new URLSearchParams(location.search).get('id');
       if (!id) {
@@ -131,9 +136,7 @@
           `;
         }
         document.getElementById('detalle').innerHTML = `
-          <div class="imagen-container">
-            <img src="imagenes/${producto.id}.png" onerror="this.onerror=null; this.src='imagenes/placeholder.png'" alt="Producto" />
-          </div>
+          <div class="imagen-container"></div>
           <div class="detalle">
             <div>
               <div class="nombre">${producto.nombre}</div>
@@ -142,6 +145,20 @@
             ${accionesHTML}
           </div>
         `;
+        const imgContainer = document.querySelector('.imagen-container');
+        const img = document.createElement('img');
+        img.alt = producto.nombre;
+        img.src = getImageUrl('placeholder.png');
+        if (producto.imagen) {
+          const publicUrl = getImageUrl(producto.imagen);
+          if (publicUrl) {
+            const realImg = new Image();
+            realImg.src = publicUrl;
+            realImg.onload = () => { img.src = publicUrl; };
+            realImg.onerror = () => { img.src = getImageUrl('placeholder.png'); };
+          }
+        }
+        imgContainer.appendChild(img);
         if (producto.stock > -99) {
           cantidadInput = document.getElementById('cantidad');
           if (cantidadInput) {
@@ -320,8 +337,9 @@
       actualizarCarrito();
       actualizarContadorCarrito();
       cargarProducto();
+      const logoImg = document.getElementById('logoImg');
+      logoImg.src = getImageUrl('logo.png');
     });
   </script>
 </body>
 </html>
-
