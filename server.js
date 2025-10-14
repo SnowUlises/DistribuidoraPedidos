@@ -312,7 +312,7 @@ async function generarPDF(pedido) {
   return new Promise(async (resolve, reject) => {
     const items = Array.isArray(pedido.items) ? pedido.items : [];
 
-    // 🔹 Calculamos altura dinámica basada en ítems
+    // 🔹 Calculadura dinámica basada en ítems
     const alturaCalculada = 300 + (items.length * 60); // 60px aprox. por ítem
     const altura = 862;     // Mínimo 400px
 
