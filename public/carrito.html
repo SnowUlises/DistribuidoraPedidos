@@ -80,6 +80,12 @@ const sinStockAviso = document.getElementById('sinStockAviso');
 
 const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
+function getImageUrl(fileName) {
+  if (!fileName) return '';
+  const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
+  return `https://slroycxifwezthdomkny.supabase.co/storage/v1/object/public/imagenes/${cleanFileName}`;
+}
+
 async function cargarProductos() {
   try {
     const r = await fetch(`${apiBase}/productos`);
@@ -127,8 +133,19 @@ function renderizarCarrito() {
     const subtotal = precioPublico * item.cantidad;
     total += subtotal;
 
+    const img = document.createElement('img');
+    img.alt = p.nombre;
+    img.src = getImageUrl('placeholder.png');
+    if (p.imagen) {
+      const publicUrl = getImageUrl(p.imagen);
+      if (publicUrl) {
+        const realImg = new Image();
+        realImg.src = publicUrl;
+        realImg.onload = () => { img.src = publicUrl; };
+        realImg.onerror = () => { img.src = getImageUrl('placeholder.png'); };
+      }
+    }
     div.innerHTML = `
-      <img src="/imagenes/${p.id}.png" alt="${(p.nombre||'').replace(/"/g,'')}" onerror="this.onerror=null; this.src='/imagenes/placeholder.png'"/>
       <div class="producto-info">
         <p><strong>${p.nombre}</strong></p>
         <p>Precio unitario: ${formatMoney(precioPublico)}</p>
@@ -141,7 +158,7 @@ function renderizarCarrito() {
         <button class="btn-eliminar" title="Eliminar producto">X</button>
       </div>
     `;
-
+    div.insertBefore(img, div.firstChild);
     // handlers
     const btnAumentar = div.querySelector('.btn-aumentar');
     const btnReducir = div.querySelector('.btn-reducir');
