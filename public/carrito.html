@@ -51,7 +51,6 @@
         <input type="text" id="nombre" placeholder="Nombre" required>
         <input type="text" id="apellido" placeholder="Apellido" required>
         <input type="tel" id="telefono" placeholder="Número de teléfono" required>
-        <div id="sinStockAviso" style="color:#d9534f; margin-bottom:8px; text-align:center;"></div>
         <button class="enviar" id="confirmarEnvio">Enviar</button>
 
         <div id="postActions" style="margin-top:12px; text-align:center;"></div>
@@ -76,7 +75,6 @@ const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
 const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
 const btnConfirmar = document.getElementById('confirmarEnvio');
 const postActions = document.getElementById('postActions');
-const sinStockAviso = document.getElementById('sinStockAviso');
 
 const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
@@ -301,4 +299,5 @@ function formatMoney(n) {
 
 </body>
 </html>
+
 
