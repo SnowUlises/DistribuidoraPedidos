@@ -109,7 +109,7 @@ function capitalize(str) {
 function renderizarCarrito() {
   lista.innerHTML = '';
   postActions.innerHTML = '';
-  sinStockAviso.textContent = '';
+
 
   if (carrito.length === 0) {
     lista.innerHTML = '<p>El carrito está vacío.</p>';
@@ -168,10 +168,6 @@ function renderizarCarrito() {
     btnAumentar.addEventListener('click', (e) => {
       e.stopPropagation();
       const prod = productos.find(pr => pr.id == item.id);
-      if (typeof prod?.stock === 'number' && item.cantidad + 1 > prod.stock) {
-        alert(`No hay más stock disponible (${prod.stock}).`);
-        return;
-      }
       carrito[i].cantidad++;
       guardarCarrito();
       cantidadDisplay.textContent = carrito[i].cantidad;
@@ -305,3 +301,4 @@ function formatMoney(n) {
 
 </body>
 </html>
+
