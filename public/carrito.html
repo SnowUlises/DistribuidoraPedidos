@@ -2,68 +2,248 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Carrito de Compras — Distribuidora Funaz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Carrito - Distribuidora Funaz</title>
   <style>
-    main { max-width: 900px; margin: auto; padding: 2em; display:flex; flex-direction:column; gap:1em; }
-    h2 { text-align:center; margin-bottom:1em; color:#4a90e2; }
-    .producto-carrito { display:flex; align-items:center; gap:1em; background:#fff; padding:1em; margin-bottom:1em; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); justify-content:space-between; }
-    .producto-carrito img { width:100px; height:100px; object-fit:cover; border-radius:6px; }
-    .producto-info { flex:1; }
-    .producto-info p { margin:4px 0; }
-    .controles-cantidad { display:flex; align-items:center; gap:0.5em; min-width:150px; }
-    .controles-cantidad button { padding:6px 12px; border:none; background:#4a90e2; color:white; border-radius:6px; cursor:pointer; font-weight:bold; transition: background 0.2s; }
-    .controles-cantidad button:hover { background:#357abd; }
-    .controles-cantidad .cantidad-display { min-width:30px; text-align:center; font-weight:bold; }
-    .controles-cantidad .btn-eliminar { background:#d9534f; margin-left:10px; }
-    .controles-cantidad .btn-eliminar:hover { background:#c9302c; }
-    #totalCarrito { text-align:right; font-weight:bold; font-size:1.2em; margin-top:1em; }
-    #formOverlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); display:none; justify-content:center; align-items:center; z-index:10000; }
-    #formDatos { background:#f4f4f4; padding:2em; border-radius:10px; max-width:400px; width:90%; box-shadow:0 2px 12px rgba(0,0,0,0.3); position:relative; }
-    #formDatos h3 { text-align:center; margin-bottom:1em; color:#4a90e2; }
-    #formDatos input { display:block; width:100%; padding:8px; margin-bottom:1em; border:1px solid #ccc; border-radius:6px; }
-    button.enviar { background:#4a90e2; border:none; color:white; padding:12px 20px; border-radius:6px; font-weight:bold; cursor:pointer; display:block; margin:0 auto; min-width:140px; }
-    button.enviar:hover { background:#357ABD; }
-    #btnCerrarFormulario { position:absolute; top:8px; right:8px; background:#d9534f; border:none; color:white; border-radius:50%; width:28px; height:28px; font-weight:bold; cursor:pointer; font-size:18px; line-height:22px; text-align:center; padding:0; }
-    #btnCerrarFormulario:hover { background:#c9302c; }
-    footer { text-align:center; color:#777; margin-top:2em }
-    .mode-banner { text-align:center; padding:8px; border-radius:6px; font-weight:700; color:#fff; margin-bottom:0.6em; }
-    .api-mode { background:#28a745; }
-    .static-mode { background:#f39c12; }
-    .download-link { display:block; margin-top:10px; text-align:center; }
+    :root {
+      --primary-green: #2E7D32;
+      --light-green: #4CAF50;
+      --bg-color: #fcfdfc;
+      --white: #ffffff;
+      --danger: #e57373;
+      --text-dark: #333;
+      --text-grey: #666;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body { 
+      font-family: 'Segoe UI', 'Roboto', Helvetica, sans-serif; 
+      margin: 0; 
+      background: var(--bg-color); 
+      color: var(--text-dark); 
+      padding-bottom: 140px; /* Espacio para el footer flotante en movil */
+    }
+
+    /* HEADER SIMPLE */
+    header {
+      background: var(--primary-green);
+      color: var(--white);
+      padding: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    header h1 { margin: 0; font-size: 1.2em; font-weight: 600; }
+    
+    .btn-volver {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.9em;
+      font-weight: 500;
+      display: flex; align-items: center; gap: 5px;
+      border: none; cursor: pointer;
+    }
+
+    main { max-width: 800px; margin: auto; padding: 1.5em; }
+
+    /* LISTA DE PRODUCTOS */
+    #listaCarrito { display: flex; flex-direction: column; gap: 1em; }
+
+    .producto-carrito {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 1em;
+      display: flex;
+      gap: 1em;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      border: 1px solid #f0f0f0;
+      transition: transform 0.2s;
+    }
+    
+    .producto-carrito img {
+      width: 80px; height: 80px;
+      object-fit: cover;
+      border-radius: 12px;
+      background: #f9f9f9;
+      flex-shrink: 0;
+    }
+
+    .producto-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .producto-info h3 { margin: 0 0 5px 0; font-size: 1em; color: var(--text-dark); }
+    .producto-info .precio-unit { font-size: 0.85em; color: var(--text-grey); }
+    .producto-info .subtotal { font-weight: bold; color: var(--primary-green); margin-top: 4px; }
+
+    /* CONTROLES CANTIDAD */
+    .controles-cantidad {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    
+    .stepper {
+      display: flex;
+      align-items: center;
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .stepper button {
+      width: 30px; height: 30px;
+      background: var(--white); border: none;
+      border-radius: 6px;
+      font-weight: bold; color: var(--primary-green);
+      cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .stepper span {
+      width: 30px; text-align: center;
+      font-weight: 600; font-size: 0.9em;
+    }
+
+    .btn-eliminar {
+      background: none; border: none;
+      color: #e57373; font-size: 0.85em;
+      font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      padding: 5px;
+    }
+    .btn-eliminar:hover { color: #c62828; }
+
+    /* FOOTER FLOTANTE (RESUMEN) */
+    .resumen-fixed {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--white);
+      padding: 1.5em;
+      border-top: 1px solid #eee;
+      box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+      z-index: 90;
+      display: flex; flex-direction: column; gap: 10px;
+      max-width: 800px; margin: 0 auto; /* Centrado en desktop */
+    }
+
+    .total-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 1.2em; font-weight: bold; color: var(--text-dark);
+    }
+    .total-price { color: var(--primary-green); font-size: 1.3em; }
+
+    button.enviar {
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+      transition: background 0.2s;
+    }
+    button.enviar:hover { background: #1b5e20; }
+    button.enviar:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+
+    /* FORMULARIO MODAL */
+    #formOverlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      display: none; justify-content: center; align-items: center;
+      z-index: 10000;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    #formDatos {
+      background: var(--white);
+      padding: 2em;
+      border-radius: 20px;
+      max-width: 400px; width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      position: relative;
+      text-align: center;
+    }
+    
+    #formDatos h3 { margin-top: 0; color: var(--primary-green); }
+    
+    #formDatos input {
+      width: 100%; padding: 12px 15px; margin-bottom: 12px;
+      border: 1px solid #ddd; border-radius: 10px;
+      background: #f9f9f9; outline: none; transition: border 0.2s;
+      font-size: 1em;
+    }
+    #formDatos input:focus { border-color: var(--light-green); background: white; }
+
+    #btnCerrarFormulario {
+      position: absolute; top: 15px; right: 15px;
+      background: #f5f5f5; border: none;
+      color: #666; border-radius: 50%;
+      width: 32px; height: 32px;
+      font-size: 1.2em; cursor: pointer;
+    }
+
+    /* ESTADO VACIO */
+    .empty-cart {
+      text-align: center;
+      padding: 3em 1em;
+      color: #999;
+    }
+
+    @media (min-width: 800px) {
+      /* Ajustes PC */
+      .resumen-fixed {
+        position: static;
+        border: 1px solid #eee; border-radius: 16px;
+        margin-top: 2em;
+        padding: 2em;
+      }
+      body { padding-bottom: 0; }
+    }
   </style>
 </head>
 <body>
+  
+  <header>
+    <button onclick="location.href='index.html'" class="btn-volver">⬅ Seguir comprando</button>
+    <h1>Mi Pedido</h1>
+    <div style="width:20px;"></div> </header>
+
   <main>
-    <div style="text-align: left;">
-      <button onclick="location.href='index.html'" style="background:#4a90e2; color:white; padding:8px 12px; border:none; border-radius:6px; cursor:pointer;">Volver a la tienda</button>
-    </div>
-    <h2>Tu Carrito</h2>
-    <div id="modeBanner" style="display:none" class="mode-banner"></div>
-
     <div id="listaCarrito"></div>
-    <div id="totalCarrito"></div>
-    <button id="btnMostrarFormulario" class="enviar">Enviar pedido</button>
-
-    <div id="formOverlay">
-      <div id="formDatos">
-        <button type="button" id="btnCerrarFormulario" title="Cerrar">&times;</button>
-        <h3>Completa tus datos</h3>
-        <input type="text" id="nombre" placeholder="Nombre" required>
-        <input type="text" id="apellido" placeholder="Apellido" required>
-        <input type="tel" id="telefono" placeholder="Número de teléfono" required>
-        <button class="enviar" id="confirmarEnvio">Enviar</button>
-
-        <div id="postActions" style="margin-top:12px; text-align:center;"></div>
-      </div>
-    </div>
   </main>
 
-  <footer>
-    Distribuidora Funaz
-  </footer>
+  <div class="resumen-fixed">
+    <div class="total-row">
+      <span>Total:</span>
+      <span class="total-price" id="totalCarrito">$0.00</span>
+    </div>
+    <button id="btnMostrarFormulario" class="enviar">Confirmar Pedido</button>
+  </div>
+
+  <div id="formOverlay">
+    <div id="formDatos">
+      <button type="button" id="btnCerrarFormulario">&times;</button>
+      <h3>Datos de Envío</h3>
+      <p style="color:#666; font-size:0.9em; margin-bottom:1.5em;">Ingresa tus datos para finalizar</p>
+      
+      <input type="text" id="nombre" placeholder="Nombre" required>
+      <input type="text" id="apellido" placeholder="Apellido" required>
+      <input type="tel" id="telefono" placeholder="WhatsApp / Teléfono" required>
+      
+      <button class="enviar" id="confirmarEnvio">Enviar Pedido por WhatsApp</button>
+      <div id="postActions"></div>
+    </div>
+  </div>
 
 <script>
-/* Carrito corregido */
 let productos = [];
 let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 const usuario = { user: localStorage.getItem('loggedUser') || 'invitado' };
@@ -91,7 +271,7 @@ async function cargarProductos() {
     productos = await r.json();
     renderizarCarrito();
   } catch (err) {
-    lista.innerHTML = '<p>Error cargando productos.</p>';
+    lista.innerHTML = '<p class="empty-cart">Error cargando productos. Intente recargar.</p>';
     console.error(err);
   }
 }
@@ -104,33 +284,40 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
+function formatMoney(n) {
+  try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
+  catch(e){ return '$' + Number(n).toFixed(2); }
+}
+
 function renderizarCarrito() {
   lista.innerHTML = '';
   postActions.innerHTML = '';
 
-
   if (carrito.length === 0) {
-    lista.innerHTML = '<p>El carrito está vacío.</p>';
-    btnMostrarFormulario.style.display = 'none';
-    totalCarritoElem.textContent = '';
+    lista.innerHTML = '<div class="empty-cart">🛒<br><br>Tu carrito está vacío</div>';
+    btnMostrarFormulario.disabled = true;
+    btnMostrarFormulario.style.opacity = "0.5";
+    totalCarritoElem.textContent = '$0.00';
     ocultarFormulario();
     return;
   }
-  btnMostrarFormulario.style.display = 'block';
+  
+  btnMostrarFormulario.disabled = false;
+  btnMostrarFormulario.style.opacity = "1";
 
   let total = 0;
 
   carrito.forEach((item, i) => {
-    // comparación tolerante a tipo (string/number)
     const p = productos.find(prod => prod.id == item.id);
     if (!p) return;
 
-    const div = document.createElement('div');
-    div.className = 'producto-carrito';
     const precioPublico = (Number(p.precio || 0) * 1.10);
     const subtotal = precioPublico * item.cantidad;
     total += subtotal;
 
+    const div = document.createElement('div');
+    div.className = 'producto-carrito';
+    
     const img = document.createElement('img');
     img.alt = p.nombre;
     img.src = getImageUrl('placeholder.png');
@@ -140,35 +327,37 @@ function renderizarCarrito() {
         const realImg = new Image();
         realImg.src = publicUrl;
         realImg.onload = () => { img.src = publicUrl; };
-        realImg.onerror = () => { img.src = getImageUrl('placeholder.png'); };
       }
     }
+    
+    // Estructura Visual Renovada
     div.innerHTML = `
       <div class="producto-info">
-        <p><strong>${p.nombre}</strong></p>
-        <p>Precio unitario: ${formatMoney(precioPublico)}</p>
-        <p>Subtotal: ${formatMoney(subtotal)}</p>
+        <h3>${p.nombre}</h3>
+        <div class="precio-unit">${formatMoney(precioPublico)} c/u</div>
+        <div class="subtotal">${formatMoney(subtotal)}</div>
       </div>
+      
       <div class="controles-cantidad">
-        <button class="btn-reducir" title="Reducir cantidad">-</button>
-        <span class="cantidad-display">${item.cantidad}</span>
-        <button class="btn-aumentar" title="Aumentar cantidad">+</button>
-        <button class="btn-eliminar" title="Eliminar producto">X</button>
+        <div class="stepper">
+            <button class="btn-reducir">-</button>
+            <span class="cantidad-display">${item.cantidad}</span>
+            <button class="btn-aumentar">+</button>
+        </div>
+        <button class="btn-eliminar">Eliminar</button>
       </div>
     `;
     div.insertBefore(img, div.firstChild);
-    // handlers
+
+    // Handlers
     const btnAumentar = div.querySelector('.btn-aumentar');
     const btnReducir = div.querySelector('.btn-reducir');
     const btnEliminar = div.querySelector('.btn-eliminar');
-    const cantidadDisplay = div.querySelector('.cantidad-display');
 
     btnAumentar.addEventListener('click', (e) => {
       e.stopPropagation();
-      const prod = productos.find(pr => pr.id == item.id);
       carrito[i].cantidad++;
       guardarCarrito();
-      cantidadDisplay.textContent = carrito[i].cantidad;
       renderizarCarrito();
     });
 
@@ -190,16 +379,14 @@ function renderizarCarrito() {
     lista.appendChild(div);
   });
 
-  totalCarritoElem.textContent = `Total: ${formatMoney(total)}`;
+  totalCarritoElem.textContent = formatMoney(total);
 }
 
 // Modal formulario
 function mostrarFormulario() {
-  // Limpiar inputs
   document.getElementById('nombre').value = '';
   document.getElementById('apellido').value = '';
   document.getElementById('telefono').value = '';
-
   formOverlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -217,18 +404,23 @@ btnConfirmar.addEventListener('click', async () => {
     const nombreInput = document.getElementById('nombre').value.trim();
     const apellidoInput = document.getElementById('apellido').value.trim();
     const telefono = document.getElementById('telefono').value.trim();
+    
     if (!nombreInput || !apellidoInput || !telefono) {
         alert('Por favor, completa todos los campos.');
         return;
     }
+    
     const nombre = capitalize(nombreInput);
     const apellido = capitalize(apellidoInput);
-    const fullName = `${nombre} ${apellido}`.trim(); // Ensure no extra spaces
+    const fullName = `${nombre} ${apellido}`.trim();
+    
     btnConfirmar.disabled = true;
-    btnConfirmar.textContent = 'Procesando...';
+    btnConfirmar.textContent = 'Enviando...';
+    
     const nuevosCarrito = [];
     let total = 0;
     const productosClon = productos.map(p => ({...p}));
+    
     for (const item of carrito) {
         const producto = productosClon.find(p => p.id == item.id);
         if (!producto) continue;
@@ -239,65 +431,50 @@ btnConfirmar.addEventListener('click', async () => {
         });
         total += item.cantidad * precioConRecargo;
     }
+    
     if (nuevosCarrito.length === 0) {
-        alert('No hay productos disponibles para pedir.');
+        alert('No hay productos disponibles.');
         btnConfirmar.disabled = false;
-        btnConfirmar.textContent = 'Enviar';
+        btnConfirmar.textContent = 'Enviar Pedido';
         return;
     }
+    
     try {
         const res = await fetch(`${apiBase}/Enviar-Peticion`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                nombre: fullName, // Send clean fullName without prefix
+                nombre: fullName,
                 telefono: telefono,
                 items: nuevosCarrito,
                 total: total
             })
         });
+        
         if (!res.ok) {
             const txt = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
             throw new Error(txt.error || `HTTP ${res.status}`);
         }
-        const response = await res.json();
-        alert('Pedido enviado con éxito.');
+        
+        alert('¡Pedido enviado con éxito!');
         carrito = [];
         guardarCarrito();
         ocultarFormulario();
         renderizarCarrito();
-        // Delay redirect to ensure alert is visible
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1000);
+        setTimeout(() => { window.location.href = 'index.html'; }, 500);
+        
     } catch (err) {
         console.error('Error enviando pedido:', err);
-        alert(`No se pudo enviar el pedido: ${err.message}`);
+        alert(`Error al enviar: ${err.message}`);
     } finally {
         btnConfirmar.disabled = false;
-        btnConfirmar.textContent = 'Enviar';
+        btnConfirmar.textContent = 'Enviar Pedido por WhatsApp';
     }
 });
-  
-// helper
-function formatMoney(n) {
-  try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
-  catch(e){ return '$' + Number(n).toFixed(2); }
-}
 
-// iniciar
 (async function init(){
   await cargarProductos();
-  // actualizar contador del header si existe botón
-  const btnCarrito = document.getElementById('btnCarrito');
-  if (btnCarrito) {
-    const total = carrito.reduce((s,i) => s + i.cantidad, 0);
-    btnCarrito.textContent = `Carrito (${total})`;
-  }
 })();
 </script>
-
 </body>
 </html>
-
-
