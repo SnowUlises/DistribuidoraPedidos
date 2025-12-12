@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Distribuidora Funaz</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #2E7D32; margin-bottom: 1.5rem; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #2E7D32; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        button:hover { background: #1B5E20; }
+        .links { margin-top: 15px; font-size: 0.9em; }
+        a { color: #2E7D32; text-decoration: none; }
+        .error { color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 4px; display: none; margin-bottom: 10px; font-size: 0.9em; }
+        .success { color: #1B5E20; background: #E8F5E9; padding: 10px; border-radius: 4px; display: none; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>📝 Crear Cuenta</h2>
+    <div id="errorMsg" class="error"></div>
+    <div id="successMsg" class="success"></div>
+    
+    <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)" required>
+    <input type="email" id="email" placeholder="Correo electrónico" required>
+    <input type="password" id="password" placeholder="Contraseña (mínimo 6 caracteres)" required>
+    
+    <button onclick="registrar()">Registrarse</button>
+    
+    <div class="links">
+        ¿Ya tienes cuenta? <a href="login.html">Inicia Sesión</a>
+    </div>
+</div>
+
+<script>
+    // ⚠️ REEMPLAZA CON TUS CLAVES DE SUPABASE
+    const SUPABASE_URL = 'TU_SUPABASE_URL';
+    const SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function registrar() {
+        const nombre = document.getElementById('nombre').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btn = document.querySelector('button');
+        const errorDiv = document.getElementById('errorMsg');
+        const successDiv = document.getElementById('successMsg');
+
+        if(!email || !password || !nombre) {
+            mostrarError('Completa todos los campos');
+            return;
+        }
+        if(password.length < 6) {
+            mostrarError('La contraseña debe tener al menos 6 caracteres');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Creando cuenta...";
+        errorDiv.style.display = 'none';
+
+        try {
+            // Creamos usuario y guardamos el "nombre" en la metadata del usuario
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: { full_name: nombre }
+                }
+            });
+
+            if (error) throw error;
+
+            successDiv.innerText = "¡Cuenta creada con éxito! Iniciando sesión...";
+            successDiv.style.display = 'block';
+            
+            // Auto login tras registro exitoso (si Supabase no requiere confirmar email)
+            setTimeout(() => {
+                window.location.href = 'login.html'; 
+            }, 1500);
+
+        } catch (err) {
+            mostrarError(err.message);
+            btn.disabled = false;
+            btn.innerText = "Registrarse";
+        }
+    }
+
+    function mostrarError(msg) {
+        document.getElementById('errorMsg').innerText = msg;
+        document.getElementById('errorMsg').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
