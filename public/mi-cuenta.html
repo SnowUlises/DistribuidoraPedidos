@@ -5,38 +5,196 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Pedidos - Distribuidora Funaz</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #2E7D32; --bg: #f5f5f5; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
-        
-        header { background: var(--primary); color: white; padding: 1rem; display: flex; align-items: center; justify-content: space-between; }
-        header h1 { margin: 0; font-size: 1.2rem; }
-        .back-btn { color: white; text-decoration: none; font-weight: bold; }
+        :root {
+            --primary: #2E7D32;
+            --primary-dark: #1B5E20;
+            --bg: #f4f6f8;
+            --text-main: #333;
+            --text-secondary: #666;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
 
-        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 60px;
+            -webkit-font-smoothing: antialiased;
+        }
         
-        .pedido-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
-        
-        .header-card { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .fecha { font-size: 0.85em; color: #666; }
-        .estado { padding: 4px 10px; border-radius: 15px; font-size: 0.8em; font-weight: bold; color: white; }
-        
-        .negocio { font-weight: bold; color: #333; margin-bottom: 5px; display: block; }
-        
-        .items-list { list-style: none; padding: 0; margin: 10px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding-top: 10px; }
-        .item-row { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px; }
-        
-        .total { text-align: right; font-weight: bold; font-size: 1.1em; color: var(--primary); margin-top: 10px; }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-        .loading { text-align: center; margin-top: 50px; color: #666; }
+        header h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+        .back-btn:hover { opacity: 1; }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+        .container {
+            max-width: 600px; /* Más angosto para lectura más fácil */
+            margin: 24px auto;
+            padding: 0 16px;
+        }
         
-        .logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .loading {
+            text-align: center;
+            margin-top: 60px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Tarjeta de Pedido */
+        .pedido-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border-left: 5px solid #ccc;
+            transition: transform 0.2s;
+        }
+
+        /* Encabezado de la tarjeta */
+        .header-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .fecha-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fecha {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .negocio {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 4px;
+        }
+
+        .estado {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Lista de items */
+        .items-list {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            padding: 10px 0;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+        .item-row:last-child { border-bottom: none; }
+        
+        .item-nombre { color: var(--text-main); }
+        .item-precio { font-weight: 500; color: #444; }
+
+        /* Total y Pie */
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .total-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .total-amount {
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--primary);
+        }
+
+        .check-aprobado {
+            text-align: right;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Estado vacío */
+        .empty-state {
+            text-align: center;
+            color: #999;
+            margin-top: 40px;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="index.html" class="back-btn">← Tienda</a>
+    <a href="index.html" class="back-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        &nbsp;Tienda
+    </a>
     <h1>Mis Pedidos</h1>
     <button onclick="logout()" class="logout-btn">Salir</button>
 </header>
@@ -47,13 +205,43 @@
 </div>
 
 <script>
-    // 1. CONFIGURACIÓN CORRECTA
+    // 1. CONFIGURACIÓN
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
 
-    // 2. CORRECCIÓN DE NOMBRE DE VARIABLE
     const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     window.supabase = _sb;
+
+    // --- FUNCIONES DE FORMATO (NUEVAS) ---
+
+    // 1. Formato Moneda: Argentina (1.000,00)
+    const formatearDinero = (monto) => {
+        return new Intl.NumberFormat('es-AR', {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(monto);
+    };
+
+    // 2. Formato Fecha: DD/MM/AAAA HH:MM (Zona horaria Argentina)
+    const formatearFecha = (fechaISO) => {
+        try {
+            const fecha = new Date(fechaISO);
+            return new Intl.DateTimeFormat('es-AR', {
+                timeZone: 'America/Argentina/Buenos_Aires',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).format(fecha);
+        } catch (e) {
+            return fechaISO; // Fallback por si acaso
+        }
+    };
+
+    // -------------------------------------
 
     async function cargarHistorial() {
         const { data: { session } } = await supabase.auth.getSession();
@@ -64,7 +252,7 @@
         }
 
         const userId = session.user.id;
-        // Llamamos a TU backend que unifica peticiones y pedidos
+        
         try {
             const res = await fetch(`https://distribuidorafunaz-a2o6.onrender.com/api/mis-pedidos?uid=${userId}`);
             if(!res.ok) throw new Error('Error de red');
@@ -72,7 +260,7 @@
             const historial = await res.json();
             renderizar(historial);
         } catch (err) {
-            document.getElementById('loading').innerText = "Error cargando pedidos.";
+            document.getElementById('loading').innerHTML = "<span style='color:red'>Error cargando pedidos. Intente nuevamente.</span>";
             console.error(err);
         }
     }
@@ -84,39 +272,49 @@
         cont.innerHTML = '';
 
         if(lista.length === 0) {
-            cont.innerHTML = '<p style="text-align:center; color:#999;">Aún no tienes pedidos registrados.</p>';
+            cont.innerHTML = '<div class="empty-state">📦<br>Aún no tienes pedidos registrados.</div>';
             return;
         }
 
         lista.forEach(p => {
-            const fecha = new Date(p.fecha).toLocaleString();
-            // Si el backend no devuelve items (caso raro), poner array vacio
+            // Usamos las nuevas funciones de formato
+            const fechaStr = formatearFecha(p.fecha);
             const items = p.items || [];
             
-            // Construir HTML de items
             let itemsHtml = '';
             items.forEach(it => {
+                const precioRaw = it.subtotal || (it.cantidad * it.precio_unitario);
+                const precioFormateado = formatearDinero(precioRaw);
+
                 itemsHtml += `<li class="item-row">
-                    <span>${it.cantidad}x ${it.nombre}</span>
-                    <span>$${it.subtotal || (it.cantidad * it.precio_unitario)}</span>
+                    <span class="item-nombre"><b>${it.cantidad}x</b> ${it.nombre}</span>
+                    <span class="item-precio">$${precioFormateado}</span>
                 </li>`;
             });
 
+            // Formatear el total general
+            const totalFormateado = formatearDinero(p.total);
+
             const card = document.createElement('div');
             card.className = 'pedido-card';
-            card.style.borderLeftColor = p.color_estado; // Color dinámico (Naranja o Verde)
+            card.style.borderLeftColor = p.color_estado; 
 
             card.innerHTML = `
                 <div class="header-card">
-                    <span class="fecha">${fecha}</span>
+                    <div class="fecha-container">
+                        <span class="fecha">${fechaStr} hs</span>
+                        ${p.nombre_negocio ? `<span class="negocio">🏠 ${p.nombre_negocio}</span>` : ''}
+                    </div>
                     <span class="estado" style="background:${p.color_estado}">${p.estado_etiqueta}</span>
                 </div>
-                ${p.nombre_negocio ? `<span class="negocio">🏠 ${p.nombre_negocio}</span>` : ''}
                 
                 <ul class="items-list">${itemsHtml}</ul>
                 
-                <div class="total">Total: $${p.total}</div>
-                ${p.tipo === 'pedido' ? `<div style="text-align:right; margin-top:5px;"><small>✅ Aprobado</small></div>` : ''}
+                <div class="card-footer">
+                    <span class="total-label">Total del pedido</span>
+                    <span class="total-amount">$${totalFormateado}</span>
+                </div>
+                ${p.tipo === 'pedido' ? `<div class="check-aprobado">✅ Aprobado por sistema</div>` : ''}
             `;
             cont.appendChild(card);
         });
@@ -124,7 +322,7 @@
 
     async function logout() {
         await supabase.auth.signOut();
-        localStorage.removeItem('session'); // Limpiar backup local
+        localStorage.removeItem('session'); 
         window.location.href = 'login.html';
     }
 
