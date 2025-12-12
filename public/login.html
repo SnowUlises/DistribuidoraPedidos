@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro - Distribuidora Funaz</title>
+    <title>Iniciar Sesión - Distribuidora Funaz</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
@@ -15,85 +15,88 @@
         .links { margin-top: 15px; font-size: 0.9em; }
         a { color: #2E7D32; text-decoration: none; }
         .error { color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 4px; display: none; margin-bottom: 10px; font-size: 0.9em; }
-        .success { color: #1B5E20; background: #E8F5E9; padding: 10px; border-radius: 4px; display: none; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="login-card">
-    <h2>📝 Crear Cuenta</h2>
+    <h2>🔐 Iniciar Sesión</h2>
     <div id="errorMsg" class="error"></div>
-    <div id="successMsg" class="success"></div>
     
-    <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)" required>
     <input type="email" id="email" placeholder="Correo electrónico" required>
-    <input type="password" id="password" placeholder="Contraseña (mínimo 6 caracteres)" required>
+    <input type="password" id="password" placeholder="Contraseña" required>
     
-    <button onclick="registrar()">Registrarse</button>
+    <button onclick="login()">Ingresar</button>
     
     <div class="links">
-        ¿Ya tienes cuenta? <a href="login.html">Inicia Sesión</a>
+        ¿No tienes cuenta? <a href="registro.html">Regístrate aquí</a><br><br>
+        <a href="IndexEllos.html">← Volver a la tienda</a>
     </div>
 </div>
 
 <script>
-    // ⚠️ REEMPLAZA CON TUS CLAVES DE SUPABASE
-    const SUPABASE_URL = 'TU_SUPABASE_URL';
-    const SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 1. TUS CREDENCIALES CORRECTAS
+    const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
 
-    async function registrar() {
-        const nombre = document.getElementById('nombre').value;
+    // 2. CORRECCIÓN DE NOMBRE DE VARIABLE
+    const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.supabase = _sb;
+
+    async function login() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const btn = document.querySelector('button');
         const errorDiv = document.getElementById('errorMsg');
-        const successDiv = document.getElementById('successMsg');
 
-        if(!email || !password || !nombre) {
-            mostrarError('Completa todos los campos');
-            return;
-        }
-        if(password.length < 6) {
-            mostrarError('La contraseña debe tener al menos 6 caracteres');
+        if(!email || !password) {
+            mostrarError('Por favor completa todos los campos');
             return;
         }
 
         btn.disabled = true;
-        btn.innerText = "Creando cuenta...";
+        btn.innerText = "Verificando...";
         errorDiv.style.display = 'none';
 
         try {
-            // Creamos usuario y guardamos el "nombre" en la metadata del usuario
-            const { data, error } = await supabase.auth.signUp({
+            // Usamos "supabase" que ahora ya funciona correctamente
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
-                password: password,
-                options: {
-                    data: { full_name: nombre }
-                }
+                password: password
             });
 
             if (error) throw error;
 
-            successDiv.innerText = "¡Cuenta creada con éxito! Iniciando sesión...";
-            successDiv.style.display = 'block';
+            // Guardamos sesión en localStorage por si acaso (aunque supabase lo hace auto)
+            localStorage.setItem('session', JSON.stringify(data.session));
             
-            // Auto login tras registro exitoso (si Supabase no requiere confirmar email)
-            setTimeout(() => {
-                window.location.href = 'login.html'; 
-            }, 1500);
+            // Redirigir al inicio
+            window.location.href = 'IndexEllos.html';
 
         } catch (err) {
-            mostrarError(err.message);
+            mostrarError(traducirError(err.message));
             btn.disabled = false;
-            btn.innerText = "Registrarse";
+            btn.innerText = "Ingresar";
         }
     }
 
     function mostrarError(msg) {
-        document.getElementById('errorMsg').innerText = msg;
-        document.getElementById('errorMsg').style.display = 'block';
+        const div = document.getElementById('errorMsg');
+        div.innerText = msg;
+        div.style.display = 'block';
     }
+
+    function traducirError(msg) {
+        if(msg.includes('Invalid login')) return 'Correo o contraseña incorrectos';
+        return msg;
+    }
+
+    // Si ya está logueado, sacar de aquí
+    async function checkSession() {
+        const { data } = await supabase.auth.getSession();
+        if(data.session) window.location.href = 'IndexEllos.html';
+    }
+    checkSession();
 </script>
 
 </body>
