@@ -250,13 +250,13 @@
 
 <script>
   // -----------------------------------------------------
-  // ⚠️ CONFIGURACIÓN DE SUPABASE (SIN ARCHIVOS EXTERNOS)
+  // ⚠️ CONFIGURACIÓN DE SUPABASE
   // -----------------------------------------------------
   const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
 
-  // Inicializar Supabase
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // ⚠️ CAMBIO CRÍTICO: Renombramos la variable a 'supabaseClient' para no chocar con la librería 'supabase'
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   // -----------------------------------------------------
 
   let productos = [];
@@ -402,7 +402,8 @@
     document.getElementById('apellido').value = '';
     document.getElementById('telefono').value = '';
 
-    const { data: { session } } = await supabase.auth.getSession();
+    // ⚠️ USO DE 'supabaseClient' AQUÍ
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session && session.user && session.user.user_metadata) {
       if(session.user.user_metadata.full_name) {
           document.getElementById('nombre').value = session.user.user_metadata.full_name;
@@ -462,7 +463,8 @@
           return;
       }
       
-      const { data: { session } } = await supabase.auth.getSession();
+      // ⚠️ USO DE 'supabaseClient' AQUÍ
+      const { data: { session } } = await supabaseClient.auth.getSession();
       const userId = session ? session.user.id : null;
 
       try {
@@ -492,7 +494,7 @@
           
           setTimeout(() => { 
               if(userId) window.location.href = 'mi-cuenta.html';
-              else window.location.href = 'IndexEllos.html'; 
+              else window.location.href = 'Index.html'; 
           }, 500);
           
       } catch (err) {
@@ -510,4 +512,3 @@
 </script>
 </body>
 </html>
-
