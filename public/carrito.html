@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Carrito - Distribuidora Funaz</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --primary-green: #2E7D32;
@@ -212,7 +213,7 @@
 <body>
   
   <header>
-    <button onclick="location.href='index.html'" class="btn-volver">⬅ Seguir comprando</button>
+    <button onclick="location.href='IndexEllos.html'" class="btn-volver">⬅ Seguir comprando</button>
     <h1>Mi Pedido</h1>
     <div style="width:20px;"></div> </header>
 
@@ -232,10 +233,12 @@
     <div id="formDatos">
       <button type="button" id="btnCerrarFormulario">&times;</button>
       <h3>Datos de Envío</h3>
-      <p style="color:#666; font-size:0.9em; margin-bottom:1.5em;">Ingresa tus datos para finalizar</p>
+      <p style="color:#666; font-size:0.9em; margin-bottom:1.5em;">Completa los datos para finalizar</p>
       
-      <input type="text" id="nombre" placeholder="Nombre" required>
-      <input type="text" id="apellido" placeholder="Apellido" required>
+      <input type="text" id="negocio" placeholder="Nombre del Negocio (Ej: Kiosko Pepe)" required>
+      
+      <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)" required>
+      <input type="text" id="apellido" placeholder="Tu Apellido" required>
       <input type="tel" id="telefono" placeholder="Teléfono" required>
       
       <button class="enviar" id="confirmarEnvio">Enviar Pedido</button>
@@ -244,9 +247,13 @@
   </div>
 
 <script>
+// ⚠️ REEMPLAZA CON TUS CLAVES AQUI
+const SUPABASE_URL = 'TU_SUPABASE_URL';
+const SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let productos = [];
 let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-const usuario = { user: localStorage.getItem('loggedUser') || 'invitado' };
 
 const lista = document.getElementById('listaCarrito');
 const totalCarritoElem = document.getElementById('totalCarrito');
@@ -383,10 +390,20 @@ function renderizarCarrito() {
 }
 
 // Modal formulario
-function mostrarFormulario() {
+async function mostrarFormulario() {
+  document.getElementById('negocio').value = '';
   document.getElementById('nombre').value = '';
   document.getElementById('apellido').value = '';
   document.getElementById('telefono').value = '';
+
+  // Intentar pre-llenar si el usuario está logueado
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session && session.user && session.user.user_metadata) {
+    if(session.user.user_metadata.full_name) {
+        document.getElementById('nombre').value = session.user.user_metadata.full_name;
+    }
+  }
+
   formOverlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -401,12 +418,13 @@ btnCerrarFormulario.addEventListener('click', ocultarFormulario);
 formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
 btnConfirmar.addEventListener('click', async () => {
+    const negocioInput = document.getElementById('negocio').value.trim();
     const nombreInput = document.getElementById('nombre').value.trim();
     const apellidoInput = document.getElementById('apellido').value.trim();
     const telefono = document.getElementById('telefono').value.trim();
     
-    if (!nombreInput || !apellidoInput || !telefono) {
-        alert('Por favor, completa todos los campos.');
+    if (!negocioInput || !nombreInput || !apellidoInput || !telefono) {
+        alert('Por favor, completa todos los campos (Negocio, Nombre, Apellido, Teléfono).');
         return;
     }
     
@@ -439,6 +457,10 @@ btnConfirmar.addEventListener('click', async () => {
         return;
     }
     
+    // Obtener sesión actual (ID de usuario)
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session ? session.user.id : null;
+
     try {
         const res = await fetch(`${apiBase}/Enviar-Peticion`, {
             method: 'POST',
@@ -447,7 +469,10 @@ btnConfirmar.addEventListener('click', async () => {
                 nombre: fullName,
                 telefono: telefono,
                 items: nuevosCarrito,
-                total: total
+                total: total,
+                // NUEVOS DATOS
+                user_id: userId,
+                nombre_negocio: negocioInput
             })
         });
         
@@ -461,14 +486,19 @@ btnConfirmar.addEventListener('click', async () => {
         guardarCarrito();
         ocultarFormulario();
         renderizarCarrito();
-        setTimeout(() => { window.location.href = 'index.html'; }, 500);
+        
+        // Si estaba logueado, lo mandamos a "Mi Cuenta", si no, al inicio
+        setTimeout(() => { 
+            if(userId) window.location.href = 'mi-cuenta.html';
+            else window.location.href = 'IndexEllos.html'; 
+        }, 500);
         
     } catch (err) {
         console.error('Error enviando pedido:', err);
         alert(`Error al enviar: ${err.message}`);
     } finally {
         btnConfirmar.disabled = false;
-        btnConfirmar.textContent = 'Enviar Pedido por WhatsApp';
+        btnConfirmar.textContent = 'Enviar Pedido';
     }
 });
 
@@ -478,4 +508,3 @@ btnConfirmar.addEventListener('click', async () => {
 </script>
 </body>
 </html>
-
