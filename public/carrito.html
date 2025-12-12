@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Carrito - Distribuidora Funaz</title>
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root {
       --primary-green: #2E7D32;
@@ -247,265 +249,264 @@
   </div>
 
 <script>
-// ⚠️ REEMPLAZA CON TUS CLAVES AQUI
-const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // -----------------------------------------------------
+  // ⚠️ CONFIGURACIÓN DE SUPABASE (SIN ARCHIVOS EXTERNOS)
+  // -----------------------------------------------------
+  const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
 
-let productos = [];
-let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+  // Inicializar Supabase
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // -----------------------------------------------------
 
-const lista = document.getElementById('listaCarrito');
-const totalCarritoElem = document.getElementById('totalCarrito');
-const formOverlay = document.getElementById('formOverlay');
-const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
-const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
-const btnConfirmar = document.getElementById('confirmarEnvio');
-const postActions = document.getElementById('postActions');
+  let productos = [];
+  let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
-const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
+  const lista = document.getElementById('listaCarrito');
+  const totalCarritoElem = document.getElementById('totalCarrito');
+  const formOverlay = document.getElementById('formOverlay');
+  const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
+  const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
+  const btnConfirmar = document.getElementById('confirmarEnvio');
+  const postActions = document.getElementById('postActions');
 
-function getImageUrl(fileName) {
-  if (!fileName) return '';
-  const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
-  return `https://slroycxifwezthdomkny.supabase.co/storage/v1/object/public/imagenes/${cleanFileName}`;
-}
+  const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-async function cargarProductos() {
-  try {
-    const r = await fetch(`${apiBase}/productos`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    productos = await r.json();
-    renderizarCarrito();
-  } catch (err) {
-    lista.innerHTML = '<p class="empty-cart">Error cargando productos. Intente recargar.</p>';
-    console.error(err);
+  // Obtener URL de imagen usando la variable global SUPABASE_URL
+  function getImageUrl(fileName) {
+    if (!fileName) return '';
+    const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
+    return `${SUPABASE_URL}/storage/v1/object/public/imagenes/${cleanFileName}`;
   }
-}
 
-function guardarCarrito() {
-  localStorage.setItem('carrito', JSON.stringify(carrito));
-}
-
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
-
-function formatMoney(n) {
-  try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
-  catch(e){ return '$' + Number(n).toFixed(2); }
-}
-
-function renderizarCarrito() {
-  lista.innerHTML = '';
-  postActions.innerHTML = '';
-
-  if (carrito.length === 0) {
-    lista.innerHTML = '<div class="empty-cart">🛒<br><br>Tu carrito está vacío</div>';
-    btnMostrarFormulario.disabled = true;
-    btnMostrarFormulario.style.opacity = "0.5";
-    totalCarritoElem.textContent = '$0.00';
-    ocultarFormulario();
-    return;
+  async function cargarProductos() {
+    try {
+      const r = await fetch(`${apiBase}/productos`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      productos = await r.json();
+      renderizarCarrito();
+    } catch (err) {
+      lista.innerHTML = '<p class="empty-cart">Error cargando productos. Intente recargar.</p>';
+      console.error(err);
+    }
   }
-  
-  btnMostrarFormulario.disabled = false;
-  btnMostrarFormulario.style.opacity = "1";
 
-  let total = 0;
+  function guardarCarrito() {
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+  }
 
-  carrito.forEach((item, i) => {
-    const p = productos.find(prod => prod.id == item.id);
-    if (!p) return;
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  }
 
-    const precioPublico = (Number(p.precio || 0) * 1.10);
-    const subtotal = precioPublico * item.cantidad;
-    total += subtotal;
+  function formatMoney(n) {
+    try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
+    catch(e){ return '$' + Number(n).toFixed(2); }
+  }
 
-    const div = document.createElement('div');
-    div.className = 'producto-carrito';
+  function renderizarCarrito() {
+    lista.innerHTML = '';
+    postActions.innerHTML = '';
+
+    if (carrito.length === 0) {
+      lista.innerHTML = '<div class="empty-cart">🛒<br><br>Tu carrito está vacío</div>';
+      btnMostrarFormulario.disabled = true;
+      btnMostrarFormulario.style.opacity = "0.5";
+      totalCarritoElem.textContent = '$0.00';
+      ocultarFormulario();
+      return;
+    }
     
-    const img = document.createElement('img');
-    img.alt = p.nombre;
-    img.src = getImageUrl('placeholder.png');
-    if (p.imagen) {
-      const publicUrl = getImageUrl(p.imagen);
-      if (publicUrl) {
-        const realImg = new Image();
-        realImg.src = publicUrl;
-        realImg.onload = () => { img.src = publicUrl; };
+    btnMostrarFormulario.disabled = false;
+    btnMostrarFormulario.style.opacity = "1";
+
+    let total = 0;
+
+    carrito.forEach((item, i) => {
+      const p = productos.find(prod => prod.id == item.id);
+      if (!p) return;
+
+      const precioPublico = (Number(p.precio || 0) * 1.10);
+      const subtotal = precioPublico * item.cantidad;
+      total += subtotal;
+
+      const div = document.createElement('div');
+      div.className = 'producto-carrito';
+      
+      const img = document.createElement('img');
+      img.alt = p.nombre;
+      img.src = getImageUrl('placeholder.png');
+      if (p.imagen) {
+        const publicUrl = getImageUrl(p.imagen);
+        if (publicUrl) {
+          const realImg = new Image();
+          realImg.src = publicUrl;
+          realImg.onload = () => { img.src = publicUrl; };
+        }
+      }
+      
+      div.innerHTML = `
+        <div class="producto-info">
+          <h3>${p.nombre}</h3>
+          <div class="precio-unit">${formatMoney(precioPublico)} c/u</div>
+          <div class="subtotal">${formatMoney(subtotal)}</div>
+        </div>
+        
+        <div class="controles-cantidad">
+          <div class="stepper">
+              <button class="btn-reducir">-</button>
+              <span class="cantidad-display">${item.cantidad}</span>
+              <button class="btn-aumentar">+</button>
+          </div>
+          <button class="btn-eliminar">Eliminar</button>
+        </div>
+      `;
+      div.insertBefore(img, div.firstChild);
+
+      const btnAumentar = div.querySelector('.btn-aumentar');
+      const btnReducir = div.querySelector('.btn-reducir');
+      const btnEliminar = div.querySelector('.btn-eliminar');
+
+      btnAumentar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        carrito[i].cantidad++;
+        guardarCarrito();
+        renderizarCarrito();
+      });
+
+      btnReducir.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (carrito[i].cantidad > 1) carrito[i].cantidad--;
+        else carrito.splice(i, 1);
+        guardarCarrito();
+        renderizarCarrito();
+      });
+
+      btnEliminar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        carrito.splice(i, 1);
+        guardarCarrito();
+        renderizarCarrito();
+      });
+
+      lista.appendChild(div);
+    });
+
+    totalCarritoElem.textContent = formatMoney(total);
+  }
+
+  // Modal formulario
+  async function mostrarFormulario() {
+    document.getElementById('negocio').value = '';
+    document.getElementById('nombre').value = '';
+    document.getElementById('apellido').value = '';
+    document.getElementById('telefono').value = '';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user && session.user.user_metadata) {
+      if(session.user.user_metadata.full_name) {
+          document.getElementById('nombre').value = session.user.user_metadata.full_name;
       }
     }
-    
-    // Estructura Visual Renovada
-    div.innerHTML = `
-      <div class="producto-info">
-        <h3>${p.nombre}</h3>
-        <div class="precio-unit">${formatMoney(precioPublico)} c/u</div>
-        <div class="subtotal">${formatMoney(subtotal)}</div>
-      </div>
-      
-      <div class="controles-cantidad">
-        <div class="stepper">
-            <button class="btn-reducir">-</button>
-            <span class="cantidad-display">${item.cantidad}</span>
-            <button class="btn-aumentar">+</button>
-        </div>
-        <button class="btn-eliminar">Eliminar</button>
-      </div>
-    `;
-    div.insertBefore(img, div.firstChild);
 
-    // Handlers
-    const btnAumentar = div.querySelector('.btn-aumentar');
-    const btnReducir = div.querySelector('.btn-reducir');
-    const btnEliminar = div.querySelector('.btn-eliminar');
-
-    btnAumentar.addEventListener('click', (e) => {
-      e.stopPropagation();
-      carrito[i].cantidad++;
-      guardarCarrito();
-      renderizarCarrito();
-    });
-
-    btnReducir.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (carrito[i].cantidad > 1) carrito[i].cantidad--;
-      else carrito.splice(i, 1);
-      guardarCarrito();
-      renderizarCarrito();
-    });
-
-    btnEliminar.addEventListener('click', (e) => {
-      e.stopPropagation();
-      carrito.splice(i, 1);
-      guardarCarrito();
-      renderizarCarrito();
-    });
-
-    lista.appendChild(div);
-  });
-
-  totalCarritoElem.textContent = formatMoney(total);
-}
-
-// Modal formulario
-async function mostrarFormulario() {
-  document.getElementById('negocio').value = '';
-  document.getElementById('nombre').value = '';
-  document.getElementById('apellido').value = '';
-  document.getElementById('telefono').value = '';
-
-  // Intentar pre-llenar si el usuario está logueado
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session && session.user && session.user.user_metadata) {
-    if(session.user.user_metadata.full_name) {
-        document.getElementById('nombre').value = session.user.user_metadata.full_name;
-    }
+    formOverlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
   }
 
-  formOverlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
+  function ocultarFormulario() {
+    formOverlay.style.display = 'none';
+    document.body.style.overflow = '';
+  }
 
-function ocultarFormulario() {
-  formOverlay.style.display = 'none';
-  document.body.style.overflow = '';
-}
+  btnMostrarFormulario.addEventListener('click', mostrarFormulario);
+  btnCerrarFormulario.addEventListener('click', ocultarFormulario);
+  formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
-btnMostrarFormulario.addEventListener('click', mostrarFormulario);
-btnCerrarFormulario.addEventListener('click', ocultarFormulario);
-formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
+  btnConfirmar.addEventListener('click', async () => {
+      const negocioInput = document.getElementById('negocio').value.trim();
+      const nombreInput = document.getElementById('nombre').value.trim();
+      const apellidoInput = document.getElementById('apellido').value.trim();
+      const telefono = document.getElementById('telefono').value.trim();
+      
+      if (!negocioInput || !nombreInput || !apellidoInput || !telefono) {
+          alert('Por favor, completa todos los campos (Negocio, Nombre, Apellido, Teléfono).');
+          return;
+      }
+      
+      const nombre = capitalize(nombreInput);
+      const apellido = capitalize(apellidoInput);
+      const fullName = `${nombre} ${apellido}`.trim();
+      
+      btnConfirmar.disabled = true;
+      btnConfirmar.textContent = 'Enviando...';
+      
+      const nuevosCarrito = [];
+      let total = 0;
+      const productosClon = productos.map(p => ({...p}));
+      
+      for (const item of carrito) {
+          const producto = productosClon.find(p => p.id == item.id);
+          if (!producto) continue;
+          const precioConRecargo = Number(producto.precio) * 1.10;
+          nuevosCarrito.push({
+              ...item,
+              precio: precioConRecargo
+          });
+          total += item.cantidad * precioConRecargo;
+      }
+      
+      if (nuevosCarrito.length === 0) {
+          alert('No hay productos disponibles.');
+          btnConfirmar.disabled = false;
+          btnConfirmar.textContent = 'Enviar Pedido';
+          return;
+      }
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session ? session.user.id : null;
 
-btnConfirmar.addEventListener('click', async () => {
-    const negocioInput = document.getElementById('negocio').value.trim();
-    const nombreInput = document.getElementById('nombre').value.trim();
-    const apellidoInput = document.getElementById('apellido').value.trim();
-    const telefono = document.getElementById('telefono').value.trim();
-    
-    if (!negocioInput || !nombreInput || !apellidoInput || !telefono) {
-        alert('Por favor, completa todos los campos (Negocio, Nombre, Apellido, Teléfono).');
-        return;
-    }
-    
-    const nombre = capitalize(nombreInput);
-    const apellido = capitalize(apellidoInput);
-    const fullName = `${nombre} ${apellido}`.trim();
-    
-    btnConfirmar.disabled = true;
-    btnConfirmar.textContent = 'Enviando...';
-    
-    const nuevosCarrito = [];
-    let total = 0;
-    const productosClon = productos.map(p => ({...p}));
-    
-    for (const item of carrito) {
-        const producto = productosClon.find(p => p.id == item.id);
-        if (!producto) continue;
-        const precioConRecargo = Number(producto.precio) * 1.10;
-        nuevosCarrito.push({
-            ...item,
-            precio: precioConRecargo
-        });
-        total += item.cantidad * precioConRecargo;
-    }
-    
-    if (nuevosCarrito.length === 0) {
-        alert('No hay productos disponibles.');
-        btnConfirmar.disabled = false;
-        btnConfirmar.textContent = 'Enviar Pedido';
-        return;
-    }
-    
-    // Obtener sesión actual (ID de usuario)
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session ? session.user.id : null;
+      try {
+          const res = await fetch(`${apiBase}/Enviar-Peticion`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  nombre: fullName,
+                  telefono: telefono,
+                  items: nuevosCarrito,
+                  total: total,
+                  user_id: userId,
+                  nombre_negocio: negocioInput
+              })
+          });
+          
+          if (!res.ok) {
+              const txt = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+              throw new Error(txt.error || `HTTP ${res.status}`);
+          }
+          
+          alert('¡Pedido enviado con éxito!');
+          carrito = [];
+          guardarCarrito();
+          ocultarFormulario();
+          renderizarCarrito();
+          
+          setTimeout(() => { 
+              if(userId) window.location.href = 'mi-cuenta.html';
+              else window.location.href = 'IndexEllos.html'; 
+          }, 500);
+          
+      } catch (err) {
+          console.error('Error enviando pedido:', err);
+          alert(`Error al enviar: ${err.message}`);
+      } finally {
+          btnConfirmar.disabled = false;
+          btnConfirmar.textContent = 'Enviar Pedido';
+      }
+  });
 
-    try {
-        const res = await fetch(`${apiBase}/Enviar-Peticion`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                nombre: fullName,
-                telefono: telefono,
-                items: nuevosCarrito,
-                total: total,
-                // NUEVOS DATOS
-                user_id: userId,
-                nombre_negocio: negocioInput
-            })
-        });
-        
-        if (!res.ok) {
-            const txt = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-            throw new Error(txt.error || `HTTP ${res.status}`);
-        }
-        
-        alert('¡Pedido enviado con éxito!');
-        carrito = [];
-        guardarCarrito();
-        ocultarFormulario();
-        renderizarCarrito();
-        
-        // Si estaba logueado, lo mandamos a "Mi Cuenta", si no, al inicio
-        setTimeout(() => { 
-            if(userId) window.location.href = 'mi-cuenta.html';
-            else window.location.href = 'IndexEllos.html'; 
-        }, 500);
-        
-    } catch (err) {
-        console.error('Error enviando pedido:', err);
-        alert(`Error al enviar: ${err.message}`);
-    } finally {
-        btnConfirmar.disabled = false;
-        btnConfirmar.textContent = 'Enviar Pedido';
-    }
-});
-
-(async function init(){
-  await cargarProductos();
-})();
+  (async function init(){
+    await cargarProductos();
+  })();
 </script>
 </body>
 </html>
-
