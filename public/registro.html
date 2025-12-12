@@ -37,10 +37,13 @@
 </div>
 
 <script>
-    // ⚠️ REEMPLAZA CON TUS CLAVES DE SUPABASE
-    const SUPABASE_URL = 'TU_SUPABASE_URL';
-    const SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 1. CONFIGURACIÓN CORRECTA
+    const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+
+    // 2. CORRECCIÓN DE NOMBRE DE VARIABLE (Para evitar conflicto con la librería)
+    const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.supabase = _sb; // Asignamos a la variable global
 
     async function registrar() {
         const nombre = document.getElementById('nombre').value;
@@ -78,7 +81,7 @@
             successDiv.innerText = "¡Cuenta creada con éxito! Iniciando sesión...";
             successDiv.style.display = 'block';
             
-            // Auto login tras registro exitoso (si Supabase no requiere confirmar email)
+            // Auto login tras registro exitoso
             setTimeout(() => {
                 window.location.href = 'login.html'; 
             }, 1500);
