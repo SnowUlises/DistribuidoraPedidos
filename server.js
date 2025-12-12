@@ -221,7 +221,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
         fecha: fechaLocal, 
         items, 
         total,
-        user_id: userId,          
+        user_id: userId,           
         nombre_negocio: nombreNegocio 
     };
     // ----------------------------------------------------------------
@@ -255,31 +255,26 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 });
 
 /* -----------------------------
- 📦 ENVIAR PETICION
+ 📦 ENVIAR PETICION (MODIFICADO: SIN TELÉFONO)
 ----------------------------- */
 app.post('/api/Enviar-Peticion', async (req, res) => {
     try {
-        console.log('Received payload:', JSON.stringify(req.body, null, 2)); // Log payload for debugging
+        console.log('Received payload:', JSON.stringify(req.body, null, 2));
         
-        // --- MODIFICADO: Extraemos user_id y nombre_negocio ---
-        let { nombre, telefono, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
-        // ------------------------------------------------------
-
+        // ⚠️ CAMBIO: Ya no leemos 'telefono'
+        let { nombre, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
+        
         // Remove "Nombre: " prefix if present
         if (nombre && nombre.startsWith('Nombre: ')) {
             nombre = nombre.slice('Nombre: '.length).trim();
         }
 
-        // Validate input
-        if (!nombre || !telefono || !Array.isArray(pedidoItems) || pedidoItems.length === 0) {
-            return res.status(400).json({ error: 'Petición inválida: nombre, telefono, o items faltantes' });
+        // ⚠️ CAMBIO: Eliminada la validación de telefono
+        if (!nombre || !Array.isArray(pedidoItems) || pedidoItems.length === 0) {
+            return res.status(400).json({ error: 'Petición inválida: nombre o items faltantes' });
         }
 
-        // Convert telefono to integer
-        const telefonoNum = parseInt(telefono.replace(/\D/g, '')); // Remove non-digits
-        if (isNaN(telefonoNum)) {
-            return res.status(400).json({ error: 'Número de teléfono inválido' });
-        }
+        // ⚠️ CAMBIO: Eliminado el bloque de parsing de telefono
 
         let total = 0;
         const processedItems = [];
@@ -331,18 +326,16 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
         const totalInt = Math.round(total);
         const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
-        // Insert into Peticiones table
-        // --- MODIFICADO: Agregamos user_id y nombre_negocio al payload ---
+        // ⚠️ CAMBIO: Payload SIN teléfono
         const payload = {
             nombre,
-            telefono: telefonoNum,
+            // telefono: ELIMINADO
             items: processedItems,
             total: totalInt,
             fecha: fechaLocal,
-            user_id: user_id || null,             
+            user_id: user_id || null,              
             nombre_negocio: nombre_negocio || null 
         };
-        // ----------------------------------------------------------------
         
         console.log('💾 Guardando petición:', payload);
 
@@ -506,6 +499,7 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+// ⚠️ PUERTO CONFIGURADO PARA RENDER
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
