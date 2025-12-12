@@ -25,10 +25,9 @@
       margin: 0; 
       background: var(--bg-color); 
       color: var(--text-dark); 
-      padding-bottom: 140px; /* Espacio para el footer flotante en movil */
+      padding-bottom: 140px; 
     }
 
-    /* HEADER SIMPLE */
     header {
       background: var(--primary-green);
       color: var(--white);
@@ -57,7 +56,6 @@
 
     main { max-width: 800px; margin: auto; padding: 1.5em; }
 
-    /* LISTA DE PRODUCTOS */
     #listaCarrito { display: flex; flex-direction: column; gap: 1em; }
 
     .producto-carrito {
@@ -85,7 +83,6 @@
     .producto-info .precio-unit { font-size: 0.85em; color: var(--text-grey); }
     .producto-info .subtotal { font-weight: bold; color: var(--primary-green); margin-top: 4px; }
 
-    /* CONTROLES CANTIDAD */
     .controles-cantidad {
       display: flex;
       flex-direction: column;
@@ -121,7 +118,6 @@
     }
     .btn-eliminar:hover { color: #c62828; }
 
-    /* FOOTER FLOTANTE (RESUMEN) */
     .resumen-fixed {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: var(--white);
@@ -130,7 +126,7 @@
       box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
       z-index: 90;
       display: flex; flex-direction: column; gap: 10px;
-      max-width: 800px; margin: 0 auto; /* Centrado en desktop */
+      max-width: 800px; margin: 0 auto; 
     }
 
     .total-row {
@@ -155,7 +151,6 @@
     button.enviar:hover { background: #1b5e20; }
     button.enviar:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
 
-    /* FORMULARIO MODAL */
     #formOverlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
@@ -192,8 +187,9 @@
       width: 32px; height: 32px;
       font-size: 1.2em; cursor: pointer;
     }
+    
+    .hidden { display: none; }
 
-    /* ESTADO VACIO */
     .empty-cart {
       text-align: center;
       padding: 3em 1em;
@@ -201,7 +197,6 @@
     }
 
     @media (min-width: 800px) {
-      /* Ajustes PC */
       .resumen-fixed {
         position: static;
         border: 1px solid #eee; border-radius: 16px;
@@ -215,7 +210,7 @@
 <body>
   
   <header>
-    <button onclick="location.href='Index.html'" class="btn-volver">⬅ Seguir comprando</button>
+    <button onclick="location.href='IndexEllos.html'" class="btn-volver">⬅ Seguir comprando</button>
     <h1>Mi Pedido</h1>
     <div style="width:20px;"></div> </header>
 
@@ -239,9 +234,11 @@
       
       <input type="text" id="negocio" placeholder="Nombre del Negocio (Ej: Kiosko Pepe)" required>
       
-      <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)" required>
-      <input type="text" id="apellido" placeholder="Tu Apellido" required>
-      <input type="tel" id="telefono" placeholder="Teléfono" required>
+      <div id="datosPersonalesContainer">
+        <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)">
+        <input type="text" id="apellido" placeholder="Tu Apellido">
+        <input type="tel" id="telefono" placeholder="Teléfono">
+      </div>
       
       <button class="enviar" id="confirmarEnvio">Enviar Pedido</button>
       <div id="postActions"></div>
@@ -249,15 +246,11 @@
   </div>
 
 <script>
-  // -----------------------------------------------------
-  // ⚠️ CONFIGURACIÓN DE SUPABASE
-  // -----------------------------------------------------
   const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
 
-  // ⚠️ CAMBIO CRÍTICO: Renombramos la variable a 'supabaseClient' para no chocar con la librería 'supabase'
+  // Usamos 'supabaseClient' para evitar conflictos
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  // -----------------------------------------------------
 
   let productos = [];
   let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
@@ -269,10 +262,10 @@
   const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
   const btnConfirmar = document.getElementById('confirmarEnvio');
   const postActions = document.getElementById('postActions');
+  const datosPersonalesContainer = document.getElementById('datosPersonalesContainer');
 
   const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-  // Obtener URL de imagen usando la variable global SUPABASE_URL
   function getImageUrl(fileName) {
     if (!fileName) return '';
     const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
@@ -296,6 +289,7 @@
   }
 
   function capitalize(str) {
+    if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   }
 
@@ -395,19 +389,23 @@
     totalCarritoElem.textContent = formatMoney(total);
   }
 
-  // Modal formulario
+  // LOGICA IMPORTANTE: DETECTAR USUARIO
   async function mostrarFormulario() {
     document.getElementById('negocio').value = '';
+    
+    // Limpiamos los inputs por seguridad
     document.getElementById('nombre').value = '';
     document.getElementById('apellido').value = '';
     document.getElementById('telefono').value = '';
 
-    // ⚠️ USO DE 'supabaseClient' AQUÍ
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session && session.user && session.user.user_metadata) {
-      if(session.user.user_metadata.full_name) {
-          document.getElementById('nombre').value = session.user.user_metadata.full_name;
-      }
+    
+    if (session) {
+      // SI ESTÁ LOGUEADO: Ocultamos los datos personales
+      datosPersonalesContainer.style.display = 'none';
+    } else {
+      // SI NO ESTÁ LOGUEADO: Mostramos todo
+      datosPersonalesContainer.style.display = 'block';
     }
 
     formOverlay.style.display = 'flex';
@@ -424,23 +422,44 @@
   formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
   btnConfirmar.addEventListener('click', async () => {
+      // 1. Obtener sesión actual
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const userId = session ? session.user.id : null;
+
+      // 2. Obtener datos del formulario
       const negocioInput = document.getElementById('negocio').value.trim();
-      const nombreInput = document.getElementById('nombre').value.trim();
-      const apellidoInput = document.getElementById('apellido').value.trim();
-      const telefono = document.getElementById('telefono').value.trim();
       
-      if (!negocioInput || !nombreInput || !apellidoInput || !telefono) {
-          alert('Por favor, completa todos los campos (Negocio, Nombre, Apellido, Teléfono).');
-          return;
+      let finalFullName = '';
+      let finalPhone = '';
+
+      if (session) {
+        // --- ESCENARIO USUARIO REGISTRADO ---
+        if (!negocioInput) {
+            alert('Por favor, ingresa el Nombre del Negocio.');
+            return;
+        }
+        // Tomamos el nombre de la cuenta (Metadata)
+        const meta = session.user.user_metadata || {};
+        finalFullName = meta.full_name || session.user.email || 'Usuario Registrado';
+        finalPhone = meta.phone || 'Registrado'; // Si no tiene tel, ponemos un default
+      } else {
+        // --- ESCENARIO INVITADO (NO REGISTRADO) ---
+        const nombreInput = document.getElementById('nombre').value.trim();
+        const apellidoInput = document.getElementById('apellido').value.trim();
+        const telefonoInput = document.getElementById('telefono').value.trim();
+
+        if (!negocioInput || !nombreInput || !apellidoInput || !telefonoInput) {
+            alert('Por favor, completa todos los campos para poder contactarte.');
+            return;
+        }
+        finalFullName = `${capitalize(nombreInput)} ${capitalize(apellidoInput)}`.trim();
+        finalPhone = telefonoInput;
       }
-      
-      const nombre = capitalize(nombreInput);
-      const apellido = capitalize(apellidoInput);
-      const fullName = `${nombre} ${apellido}`.trim();
       
       btnConfirmar.disabled = true;
       btnConfirmar.textContent = 'Enviando...';
       
+      // Preparar productos con precio +10%
       const nuevosCarrito = [];
       let total = 0;
       const productosClon = productos.map(p => ({...p}));
@@ -462,18 +481,14 @@
           btnConfirmar.textContent = 'Enviar Pedido';
           return;
       }
-      
-      // ⚠️ USO DE 'supabaseClient' AQUÍ
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const userId = session ? session.user.id : null;
 
       try {
           const res = await fetch(`${apiBase}/Enviar-Peticion`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                  nombre: fullName,
-                  telefono: telefono,
+                  nombre: finalFullName,  // Enviamos el nombre recuperado (sesión o input)
+                  telefono: finalPhone,   // Enviamos el tel recuperado
                   items: nuevosCarrito,
                   total: total,
                   user_id: userId,
@@ -494,7 +509,7 @@
           
           setTimeout(() => { 
               if(userId) window.location.href = 'mi-cuenta.html';
-              else window.location.href = 'Index.html'; 
+              else window.location.href = 'IndexEllos.html'; 
           }, 500);
           
       } catch (err) {
