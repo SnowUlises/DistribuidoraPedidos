@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Pedidos - Distribuidora Funaz</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #2E7D32; --bg: #f5f5f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+        
+        header { background: var(--primary); color: white; padding: 1rem; display: flex; align-items: center; justify-content: space-between; }
+        header h1 { margin: 0; font-size: 1.2rem; }
+        .back-btn { color: white; text-decoration: none; font-weight: bold; }
+
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        
+        .pedido-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
+        
+        .header-card { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .fecha { font-size: 0.85em; color: #666; }
+        .estado { padding: 4px 10px; border-radius: 15px; font-size: 0.8em; font-weight: bold; color: white; }
+        
+        .negocio { font-weight: bold; color: #333; margin-bottom: 5px; display: block; }
+        
+        .items-list { list-style: none; padding: 0; margin: 10px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding-top: 10px; }
+        .item-row { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px; }
+        
+        .total { text-align: right; font-weight: bold; font-size: 1.1em; color: var(--primary); margin-top: 10px; }
+
+        .loading { text-align: center; margin-top: 50px; color: #666; }
+        
+        .logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="IndexEllos.html" class="back-btn">← Tienda</a>
+    <h1>Mis Pedidos</h1>
+    <button onclick="logout()" class="logout-btn">Salir</button>
+</header>
+
+<div class="container">
+    <div id="loading" class="loading">Cargando historial...</div>
+    <div id="listaPedidos"></div>
+</div>
+
+<script>
+    // ⚠️ REEMPLAZA CON TUS CLAVES
+    const SUPABASE_URL = 'TU_SUPABASE_URL';
+    const SUPABASE_KEY = 'TU_SUPABASE_ANON_KEY';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function cargarHistorial() {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const userId = session.user.id;
+        // Llamamos a TU backend que unifica peticiones y pedidos
+        try {
+            const res = await fetch(`https://distribuidorafunaz-a2o6.onrender.com/api/mis-pedidos?uid=${userId}`);
+            if(!res.ok) throw new Error('Error de red');
+            
+            const historial = await res.json();
+            renderizar(historial);
+        } catch (err) {
+            document.getElementById('loading').innerText = "Error cargando pedidos.";
+            console.error(err);
+        }
+    }
+
+    function renderizar(lista) {
+        const cont = document.getElementById('listaPedidos');
+        const loader = document.getElementById('loading');
+        loader.style.display = 'none';
+        cont.innerHTML = '';
+
+        if(lista.length === 0) {
+            cont.innerHTML = '<p style="text-align:center; color:#999;">Aún no tienes pedidos registrados.</p>';
+            return;
+        }
+
+        lista.forEach(p => {
+            const fecha = new Date(p.fecha).toLocaleString();
+            // Si el backend no devuelve items (caso raro), poner array vacio
+            const items = p.items || [];
+            
+            // Construir HTML de items
+            let itemsHtml = '';
+            items.forEach(it => {
+                itemsHtml += `<li class="item-row">
+                    <span>${it.cantidad}x ${it.nombre}</span>
+                    <span>$${it.subtotal || (it.cantidad * it.precio_unitario)}</span>
+                </li>`;
+            });
+
+            const card = document.createElement('div');
+            card.className = 'pedido-card';
+            card.style.borderLeftColor = p.color_estado; // Color dinámico (Naranja o Verde)
+
+            card.innerHTML = `
+                <div class="header-card">
+                    <span class="fecha">${fecha}</span>
+                    <span class="estado" style="background:${p.color_estado}">${p.estado_etiqueta}</span>
+                </div>
+                ${p.nombre_negocio ? `<span class="negocio">🏠 ${p.nombre_negocio}</span>` : ''}
+                
+                <ul class="items-list">${itemsHtml}</ul>
+                
+                <div class="total">Total: $${p.total}</div>
+                ${p.tipo === 'pedido' ? `<div style="text-align:right; margin-top:5px;"><small>✅ Aprobado</small></div>` : ''}
+            `;
+            cont.appendChild(card);
+        });
+    }
+
+    async function logout() {
+        await supabase.auth.signOut();
+        localStorage.removeItem('session'); // Limpiar backup local
+        window.location.href = 'login.html';
+    }
+
+    cargarHistorial();
+</script>
+
+</body>
+</html>
