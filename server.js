@@ -33,7 +33,47 @@ app.get('/api/productos', async (req, res) => {
 });
 
 /* -----------------------------
- 📦 LISTAR PEDIDOS
+ 📦 HISTORIAL DE USUARIO (NUEVO)
+----------------------------- */
+app.get('/api/mis-pedidos', async (req, res) => {
+  try {
+    const userId = req.query.uid;
+    if (!userId) return res.status(400).json({ error: 'Falta User ID' });
+
+    // 1. Buscar en Peticiones (Pendientes)
+    const { data: peticiones, error: errPet } = await supabase
+      .from('Peticiones')
+      .select('*')
+      .eq('user_id', userId);
+    if (errPet) throw errPet;
+
+    // 2. Buscar en Pedidos (Aprobados)
+    const { data: pedidos, error: errPed } = await supabase
+      .from('pedidos')
+      .select('*')
+      .eq('user_id', userId);
+    if (errPed) throw errPed;
+
+    // 3. Unificar y etiquetar
+    const listaPeticiones = (peticiones || []).map(p => ({
+      ...p, tipo: 'peticion', estado_etiqueta: '⏳ Pendiente', color_estado: '#FF9800'
+    }));
+    const listaPedidos = (pedidos || []).map(p => ({
+      ...p, tipo: 'pedido', estado_etiqueta: '✅ Preparado', color_estado: '#4CAF50'
+    }));
+
+    // Ordenar por fecha (más reciente primero)
+    const historial = [...listaPeticiones, ...listaPedidos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    res.json(historial);
+  } catch (err) {
+    console.error('❌ Error cargando historial:', err);
+    res.status(500).json({ error: 'Error al obtener historial' });
+  }
+});
+
+/* -----------------------------
+ 📦 LISTAR PEDIDOS (ADMIN)
 ----------------------------- */
 app.get('/api/pedidos', async (req, res) => {
   try {
@@ -63,7 +103,6 @@ app.get('/api/peticiones', async (req, res) => {
   }
 });
 
-
 app.get('/api/pedidos/:id/pdf', async (req, res) => {
   try {
     const pedidoId = req.params.id;
@@ -88,7 +127,7 @@ app.get('/api/pedidos/:id/pdf', async (req, res) => {
       });
     if (uploadErr) return res.status(500).json({ error: 'No se pudo subir el PDF' });
 
-    // Intentar URL pública (si el bucket es público)
+    // Intentar URL pública
     const { data: publicUrlData } = supabase
       .storage
       .from('pedidos-pdf')
@@ -114,9 +153,6 @@ app.get('/api/pedidos/:id/pdf', async (req, res) => {
 });
 
 
-
-
-
 /* -----------------------------
  📦 GUARDAR PEDIDOS
 ----------------------------- */
@@ -124,6 +160,11 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   try {
     const pedidoItems = req.body.pedido;
     const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
+    
+    // --- NUEVO: Recibimos ID y Negocio ---
+    const userId = req.body.user_id || null;
+    const nombreNegocio = req.body.nombre_negocio || null;
+    // -------------------------------------
 
     if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
       return res.status(400).json({ error: 'Pedido inválido' });
@@ -171,9 +212,19 @@ app.post('/api/guardar-pedidos', async (req, res) => {
       return res.status(400).json({ error: 'No hay items válidos para el pedido' });
 
     const id = Date.now().toString();
-   const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
-    const payload = { id, user: usuarioPedido, fecha: fechaLocal, items, total };
+    // --- MODIFICADO: Agregamos user_id y nombre_negocio al payload ---
+    const payload = { 
+        id, 
+        user: usuarioPedido, 
+        fecha: fechaLocal, 
+        items, 
+        total,
+        user_id: userId,          
+        nombre_negocio: nombreNegocio 
+    };
+    // ----------------------------------------------------------------
 
     console.log('💾 Guardando pedido:', payload);
 
@@ -203,13 +254,19 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   }
 });
 
+/* -----------------------------
+ 📦 ENVIAR PETICION
+----------------------------- */
 app.post('/api/Enviar-Peticion', async (req, res) => {
     try {
         console.log('Received payload:', JSON.stringify(req.body, null, 2)); // Log payload for debugging
-        let { nombre, telefono, items: pedidoItems, total: providedTotal } = req.body;
+        
+        // --- MODIFICADO: Extraemos user_id y nombre_negocio ---
+        let { nombre, telefono, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
+        // ------------------------------------------------------
 
         // Remove "Nombre: " prefix if present
-        if (nombre.startsWith('Nombre: ')) {
+        if (nombre && nombre.startsWith('Nombre: ')) {
             nombre = nombre.slice('Nombre: '.length).trim();
         }
 
@@ -275,13 +332,18 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
         const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
         // Insert into Peticiones table
+        // --- MODIFICADO: Agregamos user_id y nombre_negocio al payload ---
         const payload = {
             nombre,
             telefono: telefonoNum,
             items: processedItems,
             total: totalInt,
-            fecha: fechaLocal
+            fecha: fechaLocal,
+            user_id: user_id || null,             
+            nombre_negocio: nombre_negocio || null 
         };
+        // ----------------------------------------------------------------
+        
         console.log('💾 Guardando petición:', payload);
 
         const { data, error } = await supabase
@@ -342,6 +404,13 @@ async function generarPDF(pedido) {
     doc.font('Helvetica').fontSize(14);
     doc.text(`Dirección: Calle Colon 1740 Norte`);
     doc.text(`Factura N°: ${pedido.id || ''}`);
+    
+    // --- NUEVO: Mostrar el negocio en el PDF ---
+    if(pedido.nombre_negocio) {
+        doc.text(`Negocio: ${pedido.nombre_negocio}`);
+    }
+    // -------------------------------------------
+    
     doc.text(`Pedidos: 2645583761`);
     doc.text(`Consultas: 2645156933`);
     doc.moveDown(1.5);
@@ -383,10 +452,6 @@ async function generarPDF(pedido) {
     doc.end();
   });
 }
-
-
-
-
 
 /* -----------------------------
  ❌ ELIMINAR PEDIDO
