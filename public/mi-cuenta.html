@@ -44,34 +44,54 @@
             font-size: 1.1rem;
             font-weight: 600;
             letter-spacing: 0.5px;
+            /* Ocultamos el titulo en moviles muy pequeños si choca con los botones */
+            display: none; 
+        }
+        
+        @media (min-width: 450px) {
+            header h1 { display: block; }
         }
 
+        /* --- BOTÓN VOLVER (MODIFICADO) --- */
         .back-btn {
+            background-color: rgba(255, 255, 255, 0.2); /* Fondo semitransparente */
             color: white;
             text-decoration: none;
-            font-size: 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 14px;      /* Relleno para darle forma de botón */
+            border-radius: 8px;     /* Bordes redondeados */
             display: flex;
             align-items: center;
-            opacity: 0.9;
-            transition: opacity 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Borde sutil */
+            transition: all 0.2s ease;
         }
-        .back-btn:hover { opacity: 1; }
 
+        .back-btn:hover { 
+            background-color: rgba(255, 255, 255, 0.35); 
+            transform: translateY(-1px);
+        }
+
+        .back-btn svg {
+            margin-right: 6px; /* Espacio entre icono y texto */
+        }
+
+        /* --- BOTÓN LOGOUT (MODIFICADO) --- */
         .logout-btn {
-            background: rgba(255,255,255,0.15);
+            background: rgba(0, 0, 0, 0.2); /* Un poco más oscuro para diferenciar */
             border: 1px solid rgba(255,255,255,0.2);
             color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.85rem;
             font-weight: 500;
             transition: background 0.2s;
         }
-        .logout-btn:hover { background: rgba(255,255,255,0.25); }
+        .logout-btn:hover { background: rgba(0, 0, 0, 0.3); }
 
         .container {
-            max-width: 600px; /* Más angosto para lectura más fácil */
+            max-width: 600px; 
             margin: 24px auto;
             padding: 0 16px;
         }
@@ -192,11 +212,13 @@
 
 <header>
     <a href="index.html" class="back-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        &nbsp;Tienda
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Volver a tienda
     </a>
+    
     <h1>Mis Pedidos</h1>
-    <button onclick="logout()" class="logout-btn">Salir</button>
+    
+    <button onclick="logout()" class="logout-btn">Cerrar Sesión</button>
 </header>
 
 <div class="container">
@@ -212,7 +234,7 @@
     const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     window.supabase = _sb;
 
-    // --- FUNCIONES DE FORMATO (NUEVAS) ---
+    // --- FUNCIONES DE FORMATO ---
 
     // 1. Formato Moneda: Argentina (1.000,00)
     const formatearDinero = (monto) => {
