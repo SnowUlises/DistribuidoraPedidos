@@ -182,14 +182,17 @@
       transition: background 0.2s;
     }
     .btn-carrito:active { transform: scale(0.96); }
+    
+    /* Estilo cuando ya hay items en el carrito */
+    .btn-carrito.tiene-items {
+        background: var(--primary-green);
+        border: 1px solid var(--primary-green);
+    }
+
     /* Clase para feedback visual al hacer click */
     .btn-carrito.agregado {
-      background: var(--primary-green);
-      position: relative;
-    }
-    .btn-carrito.agregado::after {
-      content: "✓";
-      margin-left: 5px;
+      background: #1b5e20; /* Verde más oscuro momentaneo */
+      transform: scale(0.98);
     }
 
     .sin-stock {
@@ -217,13 +220,13 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: #333;
+      background: #263238; /* Gris oscuro casi negro */
       color: white;
       padding: 12px 24px;
       border-radius: 50px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       font-weight: 500;
-      font-size: 0.95em;
+      font-size: 0.9em;
       z-index: 2000;
       opacity: 0;
       pointer-events: none;
@@ -231,6 +234,9 @@
       width: max-content;
       max-width: 90%;
       text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     #mensajeCarrito.visible {
       opacity: 1;
@@ -277,16 +283,16 @@
       aside h2 { display: none; } /* Ocultar titulo 'Categorias' en movil */
       
       aside ul { display: flex; gap: 10px; }
-      aside li {
-        margin: 0;
-        padding: 6px 16px;
-        background: #f5f5f5;
-        border-radius: 20px;
-        font-size: 0.9em;
+      aside li { 
+        margin: 0; 
+        padding: 6px 16px; 
+        background: #f5f5f5; 
+        border-radius: 20px; 
+        font-size: 0.9em; 
         border: 1px solid transparent;
       }
-      aside li.active {
-        background: var(--soft-green);
+      aside li.active { 
+        background: var(--soft-green); 
         border: 1px solid var(--primary-green);
         border-left: 1px solid var(--primary-green); /* Reset del estilo desktop */
       }
@@ -298,7 +304,7 @@
       input[type="search"] { width: 100%; margin-left: 0 !important; margin-top: 5px; }
       
       /* Grid Forzado a 2 Columnas en Móvil */
-      .productos {
+      .productos { 
         grid-template-columns: repeat(2, 1fr) !important; 
         gap: 10px;
       }
@@ -308,7 +314,7 @@
       .producto h3 { font-size: 0.85em; }
       
       /* Botones más grandes para dedos */
-      .btn-carrito { padding: 12px 5px; font-size: 0.9em; }
+      .btn-carrito { padding: 12px 5px; font-size: 0.85em; }
 
       /* Carrito en pantalla completa o flotante centrado */
       #carritoContainer {
@@ -431,20 +437,16 @@ let terminoBusqueda = '';
 // --- NUEVA LÓGICA DE USUARIO ---
 async function checkUser() {
     const btn = document.getElementById('btnUsuario');
-    // Ahora "supabase" ya funciona correctamente gracias a la corrección de arriba
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-        // Usuario logueado
         btn.innerHTML = '👤 <span>Mi Cuenta</span>';
         btn.href = 'mi-cuenta.html';
     } else {
-        // Usuario invitado
         btn.innerHTML = '👤 <span>Ingresar</span>';
         btn.href = 'login.html';
     }
 }
-// ---------------------------------
 
 function toggleCarrito() {
   const c = document.getElementById('carritoContainer');
@@ -503,6 +505,7 @@ function getImageUrl(fileName) {
   return `https://slroycxifwezthdomkny.supabase.co/storage/v1/object/public/imagenes/${cleanFileName}`;
 }
 
+// FUNCION RENDER ACTUALIZADA: REVISA EL CARRITO ANTES DE DIBUJAR
 function renderProductos() {
   const cont = document.querySelector('.productos');
   cont.innerHTML = '';
@@ -536,10 +539,22 @@ function renderProductos() {
     div.className = 'producto';
     let accionHTML = '';
     
+    // VERIFICAR SI ESTA EN CARRITO
+    const itemEnCarrito = carrito.find(i => String(i.id) === String(p.id));
+    const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+    
+    // DEFINIR TEXTO Y CLASE DEL BOTON
+    let btnTexto = "Agregar +";
+    let btnClaseExtra = "";
+    if(cantidadEnCarrito > 0) {
+        btnTexto = `En carrito (${cantidadEnCarrito}) +`;
+        btnClaseExtra = "tiene-items";
+    }
+
     if (p.stock <= -99) {
       accionHTML = '<div class="sin-stock">AGOTADO</div>';
     } else {
-      accionHTML = `<button class="btn-carrito" onclick="agregarAlCarrito(${p.id}, 1, false, this)">Agregar +</button>`;
+      accionHTML = `<button class="btn-carrito ${btnClaseExtra}" onclick="agregarAlCarrito(${p.id}, 1, false, this)">${btnTexto}</button>`;
     }
     
     const img = document.createElement('img');
@@ -591,6 +606,7 @@ function paginaSiguiente() {
   }
 }
 
+// FUNCION AGREGAR ACTUALIZADA: ACTUALIZA EL TEXTO DEL BOTON EN VIVO
 function agregarAlCarrito(id, cantidad = 1, silent = false, btnElement = null) {
   const producto = productos.find(p => String(p.id) === String(id));
 
@@ -605,20 +621,29 @@ function agregarAlCarrito(id, cantidad = 1, silent = false, btnElement = null) {
   }
   
   const item = carrito.find(i => i.id === id);
-  if (item) item.cantidad += cantidad;
-  else carrito.push({ id, cantidad });
+  let nuevaCantidad = cantidad;
+
+  if (item) {
+      item.cantidad += cantidad;
+      nuevaCantidad = item.cantidad;
+  } else {
+      carrito.push({ id, cantidad });
+      nuevaCantidad = cantidad;
+  }
   
   localStorage.setItem('carrito', JSON.stringify(carrito));
   
+  // Actualizar visualmente el botón que se presionó
   if (btnElement) {
-    const originalText = btnElement.innerText;
-    btnElement.innerText = "¡Agregado!";
-    btnElement.classList.add('agregado');
+    btnElement.innerText = `En carrito (${nuevaCantidad}) +`;
+    btnElement.classList.add('agregado'); // Feedback visual (flash)
+    btnElement.classList.add('tiene-items'); // Color permanente
+    
     if (navigator.vibrate) navigator.vibrate(50);
+    
     setTimeout(() => {
-        btnElement.innerText = originalText;
         btnElement.classList.remove('agregado');
-    }, 1000);
+    }, 300);
   }
   
   const totalItems = carrito.reduce((acc, i) => acc + i.cantidad, 0);
@@ -629,7 +654,8 @@ function agregarAlCarrito(id, cantidad = 1, silent = false, btnElement = null) {
   setTimeout(() => btnHeader.classList.remove('bump'), 300);
 
   if (!silent) {
-    mostrarMensaje(`+ ${producto.nombre} agregado`);
+    // MENSAJE PERSONALIZADO CON CANTIDAD TOTAL
+    mostrarMensaje(`<b>${producto.nombre}</b>: Llevas ${nuevaCantidad} un.`);
   }
   renderCarrito();
 }
@@ -665,6 +691,10 @@ function eliminarDelCarrito(id) {
   localStorage.setItem('carrito', JSON.stringify(carrito));
   actualizarContadorCarrito();
   renderCarrito();
+  // Al eliminar, lo ideal seria re-renderizar los productos para que se actualicen los botones
+  // pero para no recargar todo, simplemente si el usuario sigue en la pagina, al volver a buscar o cambiar pagina se arregla solo.
+  // O podemos llamar a renderProductos() aqui si quieres que se actualice al instante el boton de "En carrito".
+  renderProductos(); 
 }
 
 function vaciarCarrito() {
@@ -673,6 +703,7 @@ function vaciarCarrito() {
     localStorage.setItem('carrito', JSON.stringify(carrito));
     actualizarContadorCarrito();
     renderCarrito();
+    renderProductos(); // Resetea los botones
     toggleCarrito();
   }
 }
@@ -680,14 +711,14 @@ function vaciarCarrito() {
 let mensajeTimeout = null;
 function mostrarMensaje(texto, error = false) {
   const m = document.getElementById('mensajeCarrito');
-  m.textContent = texto;
-  m.style.background = error ? '#e53935' : '#333';
+  m.innerHTML = texto; // Usamos innerHTML para permitir negritas
+  m.style.background = error ? '#e53935' : '#263238';
   m.classList.add('visible');
   if (mensajeTimeout) clearTimeout(mensajeTimeout);
   mensajeTimeout = setTimeout(() => {
     m.classList.remove('visible');
     mensajeTimeout = null;
-  }, 2000);
+  }, 2500); // Un poco mas de tiempo para leer
 }
 
 function keepAlive() { console.log(""); }
@@ -709,4 +740,5 @@ if (buscadorInput) {
 const logoImg = document.getElementById('logoImg');
 logoImg.src = getImageUrl('logo.png');
 </script>
-
+</body>
+</html>
