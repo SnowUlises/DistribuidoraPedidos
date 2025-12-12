@@ -414,10 +414,12 @@
   </footer>
 
 <script>
-// ⚠️ REEMPLAZA CON TUS CLAVES AQUI
+// 1. CONFIGURACIÓN
 const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8'; 
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+window.supabase = _sb;
 
 let productos = [];
 let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
@@ -429,6 +431,7 @@ let terminoBusqueda = '';
 // --- NUEVA LÓGICA DE USUARIO ---
 async function checkUser() {
     const btn = document.getElementById('btnUsuario');
+    // Ahora "supabase" ya funciona correctamente gracias a la corrección de arriba
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
@@ -453,7 +456,7 @@ function verCarrito() {
   if (carrito.length === 0) {
     alert('El carrito está vacío.');
   } else {
-    location.href = 'carrito.html'; // Aquí es donde completarán el pedido
+    location.href = 'carrito.html'; 
   }
 }
 
@@ -693,7 +696,7 @@ setInterval(keepAlive, 30000);
 // Inicializar
 actualizarContadorCarrito();
 cargarProductos();
-checkUser(); // Chequea login al iniciar
+checkUser(); 
 
 const buscadorInput = document.getElementById('buscador');
 if (buscadorInput) {
@@ -706,5 +709,4 @@ if (buscadorInput) {
 const logoImg = document.getElementById('logoImg');
 logoImg.src = getImageUrl('logo.png');
 </script>
-</body>
-</html>
+
