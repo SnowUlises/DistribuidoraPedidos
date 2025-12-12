@@ -71,7 +71,7 @@
             localStorage.setItem('session', JSON.stringify(data.session));
             
             // Redirigir al inicio
-            window.location.href = 'IndexEllos.html';
+            window.location.href = 'Index.html';
 
         } catch (err) {
             mostrarError(traducirError(err.message));
@@ -94,7 +94,7 @@
     // Si ya está logueado, sacar de aquí
     async function checkSession() {
         const { data } = await supabase.auth.getSession();
-        if(data.session) window.location.href = 'IndexEllos.html';
+        if(data.session) window.location.href = 'Index.html';
     }
     checkSession();
 </script>
