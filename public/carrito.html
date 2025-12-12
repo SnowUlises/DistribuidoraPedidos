@@ -237,8 +237,7 @@
       <div id="datosPersonalesContainer">
         <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)">
         <input type="text" id="apellido" placeholder="Tu Apellido">
-        <input type="tel" id="telefono" placeholder="Teléfono">
-      </div>
+        </div>
       
       <button class="enviar" id="confirmarEnvio">Enviar Pedido</button>
       <div id="postActions"></div>
@@ -249,7 +248,6 @@
   const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
 
-  // Usamos 'supabaseClient' para evitar conflictos
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let productos = [];
@@ -389,22 +387,18 @@
     totalCarritoElem.textContent = formatMoney(total);
   }
 
-  // LOGICA IMPORTANTE: DETECTAR USUARIO
   async function mostrarFormulario() {
     document.getElementById('negocio').value = '';
-    
-    // Limpiamos los inputs por seguridad
     document.getElementById('nombre').value = '';
     document.getElementById('apellido').value = '';
-    document.getElementById('telefono').value = '';
+    
+    // No reseteamos teléfono porque ya no existe
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     
     if (session) {
-      // SI ESTÁ LOGUEADO: Ocultamos los datos personales
       datosPersonalesContainer.style.display = 'none';
     } else {
-      // SI NO ESTÁ LOGUEADO: Mostramos todo
       datosPersonalesContainer.style.display = 'block';
     }
 
@@ -422,44 +416,39 @@
   formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
 
   btnConfirmar.addEventListener('click', async () => {
-      // 1. Obtener sesión actual
       const { data: { session } } = await supabaseClient.auth.getSession();
       const userId = session ? session.user.id : null;
 
-      // 2. Obtener datos del formulario
       const negocioInput = document.getElementById('negocio').value.trim();
       
       let finalFullName = '';
-      let finalPhone = '';
+      
+      // ⚠️ FIX: Enviamos un texto fijo para que el backend no tire error 400
+      let finalPhone = 'No solicitado'; 
 
       if (session) {
-        // --- ESCENARIO USUARIO REGISTRADO ---
         if (!negocioInput) {
             alert('Por favor, ingresa el Nombre del Negocio.');
             return;
         }
-        // Tomamos el nombre de la cuenta (Metadata)
         const meta = session.user.user_metadata || {};
         finalFullName = meta.full_name || session.user.email || 'Usuario Registrado';
-        finalPhone = meta.phone || 'Registrado'; // Si no tiene tel, ponemos un default
+        // Ya no leemos el telefono del usuario
       } else {
-        // --- ESCENARIO INVITADO (NO REGISTRADO) ---
         const nombreInput = document.getElementById('nombre').value.trim();
         const apellidoInput = document.getElementById('apellido').value.trim();
-        const telefonoInput = document.getElementById('telefono').value.trim();
-
-        if (!negocioInput || !nombreInput || !apellidoInput || !telefonoInput) {
-            alert('Por favor, completa todos los campos para poder contactarte.');
+        
+        // Ya no validamos teléfono
+        if (!negocioInput || !nombreInput || !apellidoInput) {
+            alert('Por favor, completa Nombre, Apellido y Negocio.');
             return;
         }
         finalFullName = `${capitalize(nombreInput)} ${capitalize(apellidoInput)}`.trim();
-        finalPhone = telefonoInput;
       }
       
       btnConfirmar.disabled = true;
       btnConfirmar.textContent = 'Enviando...';
       
-      // Preparar productos con precio +10%
       const nuevosCarrito = [];
       let total = 0;
       const productosClon = productos.map(p => ({...p}));
@@ -487,8 +476,8 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                  nombre: finalFullName,  // Enviamos el nombre recuperado (sesión o input)
-                  telefono: finalPhone,   // Enviamos el tel recuperado
+                  nombre: finalFullName,
+                  telefono: finalPhone, // Enviamos "No solicitado"
                   items: nuevosCarrito,
                   total: total,
                   user_id: userId,
@@ -527,4 +516,3 @@
 </script>
 </body>
 </html>
-
