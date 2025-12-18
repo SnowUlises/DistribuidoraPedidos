@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Estado de Cuenta - Funaz</title>
+    <title>Mi Cuenta - Distribuidora Funaz</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -19,257 +18,296 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; }
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; padding-bottom: 80px; }
         .mono-num { font-family: 'JetBrains Mono', monospace; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        [v-cloak] { display: none !important; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <div id="app" v-cloak class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
+    <div class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
         
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <div class="bg-brand-400 p-2 rounded-xl text-brand-900 shadow-sm">
-                    <i data-lucide="package" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-gray-900 leading-none">Distribuidora Funaz</h1>
-                    <p class="text-xs text-gray-400 font-medium tracking-wide mt-1">ESTADO DE CUENTA</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                <a href="/index.html" class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-gray-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                    Volver a Pedidos
-                </a>
-                <button @click="logout" class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Cerrar Sesión">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
-                </button>
-            </div>
+        <header class="flex items-center justify-between mb-8">
+            <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 font-bold text-sm bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 shadow-sm transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                Ir a la Tienda
+            </a>
+            <h1 class="text-xl font-bold tracking-tight text-gray-900">Mi Perfil</h1>
+            <div class="w-8"></div>
         </header>
 
-        <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-300">
-            <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2 text-brand-500"></i>
-            <span class="text-xs font-medium uppercase tracking-widest">Cargando información...</span>
+        <div id="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <div class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando perfil...</span>
         </div>
 
-        <div v-else-if="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm my-4">
-            <p class="text-red-700 font-bold text-sm">No pudimos cargar tu cuenta.</p>
-            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
-        </div>
-
-        <div v-else>
+        <div id="main-content" class="hidden">
             
-            <div class="bg-gray-900 text-white rounded-2xl p-6 md:p-10 mb-8 shadow-xl shadow-gray-200 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-32 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
-                <div class="relative z-10">
-                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total a Pagar</p>
-                    <div class="text-5xl md:text-6xl font-bold tracking-tighter mono-num flex items-start gap-1">
-                        <span class="text-2xl mt-2 text-brand-400">$</span>
-                        {{ formatMoney(totalDebt) }}
+            <div class="bg-gray-900 text-white rounded-2xl p-6 mb-8 shadow-xl shadow-gray-200 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-24 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
+                <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div id="user-initials" class="w-12 h-12 rounded-full bg-brand-500 text-brand-900 flex items-center justify-center font-bold text-xl shadow-lg">
+                            --
+                        </div>
+                        <div>
+                            <h2 id="user-name" class="text-lg font-bold leading-tight">Cargando...</h2>
+                            <p id="user-email" class="text-xs text-gray-400">...</p>
+                        </div>
                     </div>
-                    <div class="mt-4 flex items-center gap-2 text-sm text-gray-400">
-                        <div class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></div>
-                        Hola, <span class="text-white font-bold">{{ clientName }}</span>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <a href="deudas.html" class="flex-1 md:flex-none bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors border border-white/10">
+                            Estado de Cuenta
+                        </a>
+                        <button onclick="logout()" class="flex-1 md:flex-none bg-red-500/20 hover:bg-red-500/30 text-red-200 px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors border border-red-500/20">
+                            Salir
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-                
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> Pendientes
-                    </h3>
-
-                    <div v-if="pendingItems.length === 0" class="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                        <i data-lucide="check-circle-2" class="w-10 h-10 text-brand-500 mx-auto mb-2 opacity-50"></i>
-                        <p class="text-sm text-gray-500 font-medium">¡Estás al día!</p>
-                        <p class="text-xs text-gray-400">No tienes deudas pendientes.</p>
-                    </div>
-
-                    <div class="space-y-3">
-                        <div v-for="item in pendingItems" :key="item.id" class="group bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-brand-200">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="text-2xl font-bold text-gray-800 mono-num tracking-tight">${{ formatMoney(item.amount) }}</div>
-                                <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                                    {{ formatDateShort(item.date) }}
-                                </span>
-                            </div>
-                            
-                            <div v-if="item.paid > 0" class="mb-3">
-                                <div class="flex justify-between text-[10px] uppercase font-bold text-gray-400 mb-1">
-                                    <span>Pagado: ${{formatMoney(item.paid)}}</span>
-                                    <span class="text-brand-600">Restan: ${{formatMoney(item.amount - item.paid)}}</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                    <div class="bg-brand-500 h-full rounded-full" :style="{ width: (item.paid / item.amount * 100) + '%' }"></div>
-                                </div>
-                            </div>
-
-                            <p class="text-sm text-gray-600 leading-relaxed font-medium">
-                                {{ item.notes || 'Pedido sin detalles' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border-t lg:border-t-0 lg:border-l border-gray-100 pt-8 lg:pt-0 lg:pl-12">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Historial de Movimientos
-                    </h3>
-                    
-                    <div class="relative pl-4 space-y-6 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-px before:bg-gray-200">
-                        
-                        <div v-for="(log, idx) in visibleHistory" :key="idx" class="relative group">
-                            <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm"
-                                 :class="getActionColor(log.action)"></div>
-                            
-                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
-                                <div>
-                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-0.5">
-                                        {{ formatDateLong(log.timestamp) }}
-                                    </span>
-                                    <span class="text-sm font-bold text-gray-800 block">
-                                        {{ formatActionText(log.action) }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div v-if="fullHistory.length > displayLimit" class="pt-2">
-                            <button @click="loadMore" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-lg w-full transition-colors flex items-center justify-center gap-2">
-                                <i data-lucide="arrow-down" class="w-3 h-3"></i>
-                                Cargar más movimientos
-                            </button>
-                        </div>
-
-                        <div v-if="fullHistory.length === 0" class="text-sm text-gray-400 italic">No hay historial disponible.</div>
-
-                        <div class="relative pt-4" v-else-if="fullHistory.length <= displayLimit">
-                            <div class="absolute -left-[20px] top-6 w-2 h-2 rounded-full bg-gray-200"></div>
-                            <p class="text-xs text-gray-400 italic">Inicio del registro</p>
-                        </div>
-
-                    </div>
-                </div>
-
+            <div class="flex border-b border-gray-200 mb-6">
+                <button id="tab-pedidos" class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600" onclick="cambiarTab('pedidos')">
+                    Mis Pedidos
+                </button>
+                <button id="tab-historial" class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600" onclick="cambiarTab('historial')">
+                    Historial
+                </button>
             </div>
+
+            <div id="empty-state" class="hidden text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <div class="text-4xl mb-3">📦</div>
+                <p class="text-sm text-gray-500 font-medium">No hay registros aquí.</p>
+                <a href="index.html" class="text-xs text-brand-600 font-bold hover:underline mt-2 inline-block">Realizar un pedido</a>
+            </div>
+
+            <div id="orders-list" class="space-y-4">
+                </div>
 
         </div>
     </div>
 
     <script>
+        // CONFIGURACIÓN
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
-        const API_BASE = '/api'; 
+        const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-        const { createApp } = Vue;
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // VARIABLES GLOBALES
+        let currentUser = null;
+        let todosLosPedidos = [];
+        let productosCache = [];
+        let tabActual = 'pedidos'; // 'pedidos' o 'historial'
 
-        createApp({
-            data() {
-                return {
-                    loading: true,
-                    error: null,
-                    clientName: '',
-                    items: [],       
-                    fullHistory: [], 
-                    displayLimit: 10
-                }
-            },
-            computed: {
-                totalDebt() {
-                    return this.items.reduce((acc, item) => {
-                        if (item.type === 'divider' || item.type === 'payment') return acc;
-                        return acc + (item.amount - (item.paid || 0));
-                    }, 0);
-                },
-                pendingItems() {
-                    return this.items.filter(i => i.type === 'debt' && (i.amount - (i.paid || 0)) > 0);
-                },
-                visibleHistory() {
-                    return this.fullHistory.slice(0, this.displayLimit);
-                }
-            },
-            async mounted() {
-                try {
-                    const { data: { session }, error } = await supabase.auth.getSession();
-                    if (session) {
-                        this.fetchDebtData(session.user.id);
-                    } else {
-                        window.location.href = '/index.html';
+        // INICIO
+        document.addEventListener('DOMContentLoaded', async () => {
+            await iniciarApp();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+
+        async function iniciarApp() {
+            // Inicializar Supabase manualmente
+            let supabase = null;
+            if(window.supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            try {
+                // 1. Auth
+                if(supabase) {
+                    const { data } = await supabase.auth.getSession();
+                    if (!data || !data.session) {
+                        window.location.href = 'login.html';
+                        return;
                     }
-                } catch (err) {
-                    window.location.href = '/index.html';
+                    currentUser = data.session.user;
+                    renderizarPerfil();
+
+                    // 2. Cargar Datos en paralelo
+                    await Promise.all([
+                        cargarPedidos(currentUser.id),
+                        cargarProductos()
+                    ]);
+                } else {
+                    console.error("Error cargando librería Supabase");
                 }
-                if(typeof lucide !== 'undefined') lucide.createIcons();
-            },
-            updated() {
-                if(typeof lucide !== 'undefined') lucide.createIcons();
-            },
-            methods: {
-                async fetchDebtData(uid) {
-                    try {
-                        const res = await fetch(`${API_BASE}/mi-estado-cuenta?uid=${uid}`);
-                        if (!res.ok) {
-                            if (res.status === 404) throw new Error("Tu usuario no está vinculado a una cuenta de cliente.");
-                            throw new Error("Error al obtener datos.");
-                        }
-                        const data = await res.json();
-                        this.clientName = data.name;
-                        this.items = data.items || [];
-                        this.fullHistory = data.history || [];
-                    } catch (e) {
-                        this.error = e.message;
-                    } finally {
-                        this.loading = false;
-                    }
-                },
-                
-                getActionColor(actionStr) {
-                    if (!actionStr) return 'bg-gray-400';
-                    if (actionStr.includes('Pago')) return 'bg-green-500';
-                    if (actionStr.includes('Nueva Deuda')) return 'bg-red-500';
-                    if (actionStr.includes('Eliminado')) return 'bg-gray-400';
-                    if (actionStr.includes('Editado')) return 'bg-yellow-500';
-                    return 'bg-brand-500';
-                },
 
-                formatActionText(text) {
-                    if(!text) return 'Movimiento';
-                    return text.replace('Pago Global', 'Pago');
-                },
+                // 3. Mostrar UI
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                renderizarLista();
 
-                formatMoney(v) {
-                    return (v || 0).toLocaleString('es-AR', {minimumFractionDigits:0});
-                },
-                
-                formatDateShort(iso) {
-                    if(!iso) return '';
-                    const d = new Date(iso);
-                    return d.toLocaleDateString('es-AR', {day:'numeric', month:'short'});
-                },
-
-                formatDateLong(ts) {
-                    if(!ts) return '';
-                    const d = new Date(ts);
-                    return d.toLocaleDateString('es-AR', {weekday: 'short', day:'numeric', month:'long'}) + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-                },
-
-                loadMore() { this.displayLimit += 10; },
-
-                async logout() {
-                    if(!confirm("¿Cerrar sesión?")) return;
-                    await supabase.auth.signOut();
-                    window.location.href = '/index.html';
-                }
+            } catch (e) {
+                console.error("Error crítico:", e);
+                alert("Error al cargar perfil. Revisa tu conexión.");
             }
-        }).mount('#app');
+        }
+
+        function renderizarPerfil() {
+            const meta = currentUser.user_metadata || {};
+            const nombre = meta.full_name || meta.name || currentUser.email.split('@')[0];
+            const email = currentUser.email;
+            const iniciales = nombre.substring(0, 2).toUpperCase();
+
+            document.getElementById('user-name').textContent = nombre;
+            document.getElementById('user-email').textContent = email;
+            document.getElementById('user-initials').textContent = iniciales;
+        }
+
+        async function cargarPedidos(uid) {
+            try {
+                const res = await fetch(`${API_BASE}/mis-pedidos?uid=${uid}`);
+                if (res.ok) {
+                    todosLosPedidos = await res.json();
+                }
+            } catch (e) { console.error("Error pedidos", e); }
+        }
+
+        async function cargarProductos() {
+            try {
+                const res = await fetch(`${API_BASE}/productos`);
+                if (res.ok) {
+                    productosCache = await res.json();
+                }
+            } catch (e) { console.error("Error productos", e); }
+        }
+
+        function cambiarTab(nuevoTab) {
+            tabActual = nuevoTab;
+            
+            // Actualizar estilos botones
+            const btnP = document.getElementById('tab-pedidos');
+            const btnH = document.getElementById('tab-historial');
+            
+            if (tabActual === 'pedidos') {
+                btnP.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600";
+                btnH.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600";
+            } else {
+                btnP.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600";
+                btnH.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600";
+            }
+
+            renderizarLista();
+        }
+
+        function renderizarLista() {
+            const contenedor = document.getElementById('orders-list');
+            contenedor.innerHTML = ''; // Limpiar
+
+            // Filtrar
+            const listaFiltrada = todosLosPedidos.filter(p => {
+                const estado = (p.estado || 'Pendiente').toLowerCase();
+                if (tabActual === 'pedidos') {
+                    // Muestra pendientes, en proceso, etc.
+                    return estado === 'pendiente' || estado === 'en proceso' || estado === 'confirmado';
+                } else {
+                    // Muestra completados y cancelados
+                    return estado === 'completado' || estado === 'entregado' || estado === 'cancelado';
+                }
+            });
+
+            // Estado vacío
+            if (listaFiltrada.length === 0) {
+                document.getElementById('empty-state').classList.remove('hidden');
+                return;
+            } else {
+                document.getElementById('empty-state').classList.add('hidden');
+            }
+
+            // Generar HTML
+            listaFiltrada.forEach(pedido => {
+                const estadoClass = getEstadoClass(pedido.estado);
+                const fecha = formatDate(pedido.fecha);
+                const total = formatMoney(pedido.total);
+                const itemsCount = (pedido.items || []).length;
+                const negocio = pedido.negocio || 'Pedido Personal';
+                
+                // Generar HTML de productos (oculto por defecto)
+                let productosHTML = '';
+                (pedido.items || []).forEach(prod => {
+                    const nombre = getNombreProducto(prod);
+                    const subtotal = formatMoney(prod.precio * prod.cantidad);
+                    productosHTML += `
+                        <div class="flex justify-between text-sm mb-1 text-gray-600">
+                            <div class="truncate pr-4">
+                                <span class="font-bold text-gray-900">x${prod.cantidad}</span> ${nombre}
+                            </div>
+                            <div class="font-medium mono-num">${subtotal}</div>
+                        </div>
+                    `;
+                });
+
+                const cardHTML = `
+                    <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${estadoClass}">
+                                        ${pedido.estado || 'Pendiente'}
+                                    </span>
+                                    <span class="text-xs text-gray-400">${fecha}</span>
+                                </div>
+                                <div class="text-sm font-bold text-gray-800">${negocio}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-gray-900 mono-num">${total}</div>
+                                <div class="text-[10px] text-gray-400">${itemsCount} productos</div>
+                            </div>
+                        </div>
+
+                        <button onclick="toggleDetalle('${pedido.id}')" class="w-full text-center py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-bold text-gray-500 transition-colors">
+                            Ver Detalles
+                        </button>
+
+                        <div id="detalle-${pedido.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
+                            ${productosHTML}
+                        </div>
+                    </div>
+                `;
+                contenedor.insertAdjacentHTML('beforeend', cardHTML);
+            });
+            
+            // Re-ejecutar iconos si es necesario
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // --- UTILIDADES ---
+
+        function toggleDetalle(id) {
+            const el = document.getElementById(`detalle-${id}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        function getNombreProducto(item) {
+            if (item.nombre) return item.nombre;
+            const prod = productosCache.find(p => String(p.id) === String(item.id));
+            return prod ? prod.nombre : 'Producto #' + item.id;
+        }
+
+        function getEstadoClass(estado) {
+            const st = (estado || 'pendiente').toLowerCase();
+            if (st === 'pendiente') return 'bg-yellow-100 text-yellow-700';
+            if (st === 'confirmado' || st === 'en proceso') return 'bg-blue-100 text-blue-700';
+            if (st === 'entregado' || st === 'completado') return 'bg-green-100 text-green-700';
+            if (st === 'cancelado') return 'bg-red-100 text-red-700';
+            return 'bg-gray-100 text-gray-600';
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatMoney(val) {
+            return '$' + (Number(val) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+        }
+
+        async function logout() {
+            if (confirm("¿Cerrar sesión?")) {
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                await supabase.auth.signOut();
+                window.location.href = 'index.html';
+            }
+        }
     </script>
 </body>
 </html>
