@@ -499,7 +499,43 @@ app.delete('/api/eliminar-pedido/:id', async (req, res) => {
   }
 });
 
+
+app.get('/api/mi-estado-cuenta', async (req, res) => {
+    try {
+        const userId = req.query.uid;
+        if (!userId) return res.status(400).json({ error: 'Usuario no identificado' });
+
+        // 1. Buscamos al cliente en la tabla clients_v2 que coincida con el user_id de Supabase
+        // NOTA: Debes agregar la columna "user_id" (tipo uuid) a tu tabla clients_v2 en Supabase
+        const { data, error } = await supabase
+            .from('clients_v2')
+            .select('*')
+            .eq('user_id', userId) 
+            .single();
+
+        if (error || !data) {
+            // Si no encuentra por ID, podrías intentar buscar por email o nombre temporalmente
+            // Pero por seguridad, lo ideal es el user_id.
+            return res.status(404).json({ error: 'Cliente no vinculado' });
+        }
+
+        // 2. Limpiamos la data para el frontend (Solo lo necesario)
+        const clienteLimpio = {
+            name: data.name,
+            items: data.data.items || [],
+            // No enviamos history técnico, ni order, ni configs internas
+        };
+
+        res.json(clienteLimpio);
+
+    } catch (err) {
+        console.error('❌ Error cargando cuenta:', err);
+        res.status(500).json({ error: 'Error del servidor' });
+    }
+});
+
 // ⚠️ PUERTO CONFIGURADO PARA RENDER
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
