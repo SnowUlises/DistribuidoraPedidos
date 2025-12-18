@@ -1,518 +1,320 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Carrito - Distribuidora Funaz</title>
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    :root {
-      --primary-green: #2E7D32;
-      --light-green: #4CAF50;
-      --bg-color: #fcfdfc;
-      --white: #ffffff;
-      --danger: #e57373;
-      --text-dark: #333;
-      --text-grey: #666;
-    }
-
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-    body { 
-      font-family: 'Segoe UI', 'Roboto', Helvetica, sans-serif; 
-      margin: 0; 
-      background: var(--bg-color); 
-      color: var(--text-dark); 
-      padding-bottom: 140px; 
-    }
-
-    header {
-      background: var(--primary-green);
-      color: var(--white);
-      padding: 1em;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    header h1 { margin: 0; font-size: 1.2em; font-weight: 600; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito - Distribuidora Funaz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    .btn-volver {
-      background: rgba(255,255,255,0.2);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 0.9em;
-      font-weight: 500;
-      display: flex; align-items: center; gap: 5px;
-      border: none; cursor: pointer;
-    }
-
-    main { max-width: 800px; margin: auto; padding: 1.5em; }
-
-    #listaCarrito { display: flex; flex-direction: column; gap: 1em; }
-
-    .producto-carrito {
-      background: var(--white);
-      border-radius: 16px;
-      padding: 1em;
-      display: flex;
-      gap: 1em;
-      align-items: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-      border: 1px solid #f0f0f0;
-      transition: transform 0.2s;
-    }
-    
-    .producto-carrito img {
-      width: 80px; height: 80px;
-      object-fit: cover;
-      border-radius: 12px;
-      background: #f9f9f9;
-      flex-shrink: 0;
-    }
-
-    .producto-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-    .producto-info h3 { margin: 0 0 5px 0; font-size: 1em; color: var(--text-dark); }
-    .producto-info .precio-unit { font-size: 0.85em; color: var(--text-grey); }
-    .producto-info .subtotal { font-weight: bold; color: var(--primary-green); margin-top: 4px; }
-
-    .controles-cantidad {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 10px;
-    }
-    
-    .stepper {
-      display: flex;
-      align-items: center;
-      background: #f5f5f5;
-      border-radius: 8px;
-      padding: 3px;
-    }
-    .stepper button {
-      width: 30px; height: 30px;
-      background: var(--white); border: none;
-      border-radius: 6px;
-      font-weight: bold; color: var(--primary-green);
-      cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .stepper span {
-      width: 30px; text-align: center;
-      font-weight: 600; font-size: 0.9em;
-    }
-
-    .btn-eliminar {
-      background: none; border: none;
-      color: #e57373; font-size: 0.85em;
-      font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; gap: 4px;
-      padding: 5px;
-    }
-    .btn-eliminar:hover { color: #c62828; }
-
-    .resumen-fixed {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--white);
-      padding: 1.5em;
-      border-top: 1px solid #eee;
-      box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
-      z-index: 90;
-      display: flex; flex-direction: column; gap: 10px;
-      max-width: 800px; margin: 0 auto; 
-    }
-
-    .total-row {
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 1.2em; font-weight: bold; color: var(--text-dark);
-    }
-    .total-price { color: var(--primary-green); font-size: 1.3em; }
-
-    button.enviar {
-      background: var(--primary-green);
-      color: white;
-      border: none;
-      padding: 14px;
-      border-radius: 12px;
-      font-size: 1.1em;
-      font-weight: bold;
-      cursor: pointer;
-      width: 100%;
-      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
-      transition: background 0.2s;
-    }
-    button.enviar:hover { background: #1b5e20; }
-    button.enviar:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
-
-    #formOverlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-      display: none; justify-content: center; align-items: center;
-      z-index: 10000;
-      animation: fadeIn 0.2s ease;
-    }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    #formDatos {
-      background: var(--white);
-      padding: 2em;
-      border-radius: 20px;
-      max-width: 400px; width: 90%;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      position: relative;
-      text-align: center;
-    }
-    
-    #formDatos h3 { margin-top: 0; color: var(--primary-green); }
-    
-    #formDatos input {
-      width: 100%; padding: 12px 15px; margin-bottom: 12px;
-      border: 1px solid #ddd; border-radius: 10px;
-      background: #f9f9f9; outline: none; transition: border 0.2s;
-      font-size: 1em;
-    }
-    #formDatos input:focus { border-color: var(--light-green); background: white; }
-
-    #btnCerrarFormulario {
-      position: absolute; top: 15px; right: 15px;
-      background: #f5f5f5; border: none;
-      color: #666; border-radius: 50%;
-      width: 32px; height: 32px;
-      font-size: 1.2em; cursor: pointer;
-    }
-    
-    .hidden { display: none; }
-
-    .empty-cart {
-      text-align: center;
-      padding: 3em 1em;
-      color: #999;
-    }
-
-    @media (min-width: 800px) {
-      .resumen-fixed {
-        position: static;
-        border: 1px solid #eee; border-radius: 16px;
-        margin-top: 2em;
-        padding: 2em;
-      }
-      body { padding-bottom: 0; }
-    }
-  </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' }, // Lima
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; padding-bottom: 120px; }
+        .mono-num { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Animaciones */
+        .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease, opacity 0.3s ease; }
+        .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
+        
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+    </style>
 </head>
-<body>
-  
-  <header>
-    <button onclick="location.href='index.html'" class="btn-volver">⬅ Seguir comprando</button>
-    <h1>Mi Pedido</h1>
-    <div style="width:20px;"></div> </header>
+<body class="min-h-screen flex flex-col">
 
-  <main>
-    <div id="listaCarrito"></div>
-  </main>
-
-  <div class="resumen-fixed">
-    <div class="total-row">
-      <span>Total:</span>
-      <span class="total-price" id="totalCarrito">$0.00</span>
-    </div>
-    <button id="btnMostrarFormulario" class="enviar">Confirmar Pedido</button>
-  </div>
-
-  <div id="formOverlay">
-    <div id="formDatos">
-      <button type="button" id="btnCerrarFormulario">&times;</button>
-      <h3>Datos de Envío</h3>
-      <p style="color:#666; font-size:0.9em; margin-bottom:1.5em;">Completa los datos para finalizar</p>
-      
-      <input type="text" id="negocio" placeholder="Nombre del Negocio (Ej: Kiosko Pepe)" required>
-      
-      <div id="datosPersonalesContainer">
-        <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)">
-        <input type="text" id="apellido" placeholder="Tu Apellido">
-        </div>
-      
-      <button class="enviar" id="confirmarEnvio">Enviar Pedido</button>
-      <div id="postActions"></div>
-    </div>
-  </div>
-
-<script>
-  const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
-
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  let productos = [];
-  let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-
-  const lista = document.getElementById('listaCarrito');
-  const totalCarritoElem = document.getElementById('totalCarrito');
-  const formOverlay = document.getElementById('formOverlay');
-  const btnMostrarFormulario = document.getElementById('btnMostrarFormulario');
-  const btnCerrarFormulario = document.getElementById('btnCerrarFormulario');
-  const btnConfirmar = document.getElementById('confirmarEnvio');
-  const postActions = document.getElementById('postActions');
-  const datosPersonalesContainer = document.getElementById('datosPersonalesContainer');
-
-  const apiBase = 'https://distribuidorafunaz-a2o6.onrender.com/api';
-
-  function getImageUrl(fileName) {
-    if (!fileName) return '';
-    const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
-    return `${SUPABASE_URL}/storage/v1/object/public/imagenes/${cleanFileName}`;
-  }
-
-  async function cargarProductos() {
-    try {
-      const r = await fetch(`${apiBase}/productos`);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      productos = await r.json();
-      renderizarCarrito();
-    } catch (err) {
-      lista.innerHTML = '<p class="empty-cart">Error cargando productos. Intente recargar.</p>';
-      console.error(err);
-    }
-  }
-
-  function guardarCarrito() {
-    localStorage.setItem('carrito', JSON.stringify(carrito));
-  }
-
-  function capitalize(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  }
-
-  function formatMoney(n) {
-    try { return new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(n); }
-    catch(e){ return '$' + Number(n).toFixed(2); }
-  }
-
-  function renderizarCarrito() {
-    lista.innerHTML = '';
-    postActions.innerHTML = '';
-
-    if (carrito.length === 0) {
-      lista.innerHTML = '<div class="empty-cart">🛒<br><br>Tu carrito está vacío</div>';
-      btnMostrarFormulario.disabled = true;
-      btnMostrarFormulario.style.opacity = "0.5";
-      totalCarritoElem.textContent = '$0.00';
-      ocultarFormulario();
-      return;
-    }
-    
-    btnMostrarFormulario.disabled = false;
-    btnMostrarFormulario.style.opacity = "1";
-
-    let total = 0;
-
-    carrito.forEach((item, i) => {
-      const p = productos.find(prod => prod.id == item.id);
-      if (!p) return;
-
-      const precioPublico = (Number(p.precio || 0) * 1.10);
-      const subtotal = precioPublico * item.cantidad;
-      total += subtotal;
-
-      const div = document.createElement('div');
-      div.className = 'producto-carrito';
-      
-      const img = document.createElement('img');
-      img.alt = p.nombre;
-      img.src = getImageUrl('placeholder.png');
-      if (p.imagen) {
-        const publicUrl = getImageUrl(p.imagen);
-        if (publicUrl) {
-          const realImg = new Image();
-          realImg.src = publicUrl;
-          realImg.onload = () => { img.src = publicUrl; };
-        }
-      }
-      
-      div.innerHTML = `
-        <div class="producto-info">
-          <h3>${p.nombre}</h3>
-          <div class="precio-unit">${formatMoney(precioPublico)} c/u</div>
-          <div class="subtotal">${formatMoney(subtotal)}</div>
-        </div>
+    <div id="app" class="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
         
-        <div class="controles-cantidad">
-          <div class="stepper">
-              <button class="btn-reducir">-</button>
-              <span class="cantidad-display">${item.cantidad}</span>
-              <button class="btn-aumentar">+</button>
-          </div>
-          <button class="btn-eliminar">Eliminar</button>
+        <header class="flex items-center justify-between mb-8">
+            <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Seguir comprando
+            </a>
+            <h1 class="text-xl font-bold tracking-tight text-gray-900">Mi Carrito</h1>
+            <div class="w-8"></div> </header>
+
+        <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-brand-500"></i>
+            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando productos...</span>
         </div>
-      `;
-      div.insertBefore(img, div.firstChild);
 
-      const btnAumentar = div.querySelector('.btn-aumentar');
-      const btnReducir = div.querySelector('.btn-reducir');
-      const btnEliminar = div.querySelector('.btn-eliminar');
+        <div v-else-if="carrito.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+            <div class="bg-gray-100 p-6 rounded-full mb-4">
+                <i data-lucide="shopping-cart" class="w-12 h-12 text-gray-400"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Tu carrito está vacío</h2>
+            <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Parece que aún no has agregado nada. Explora nuestros productos y encuentra lo que necesitas.</p>
+            <a href="index.html" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-brand-200 transition-all hover:-translate-y-1">
+                Ir a la Tienda
+            </a>
+        </div>
 
-      btnAumentar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        carrito[i].cantidad++;
-        guardarCarrito();
-        renderizarCarrito();
-      });
+        <div v-else class="space-y-4 pb-24">
+            
+            <div v-for="(item, index) in itemsConDetalle" :key="item.id" class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden group">
+                
+                <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
+                    <img :src="item.imagenUrl" class="w-full h-full object-contain" alt="Producto">
+                </div>
 
-      btnReducir.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (carrito[i].cantidad > 1) carrito[i].cantidad--;
-        else carrito.splice(i, 1);
-        guardarCarrito();
-        renderizarCarrito();
-      });
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">{{ item.nombre }}</h3>
+                    <div class="text-xs text-gray-500 mb-2">{{ formatMoney(item.precioUnitario) }} c/u</div>
+                    <div class="font-bold text-brand-600 mono-num">{{ formatMoney(item.subtotal) }}</div>
+                </div>
 
-      btnEliminar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        carrito.splice(i, 1);
-        guardarCarrito();
-        renderizarCarrito();
-      });
+                <div class="flex flex-col items-end gap-2">
+                    <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
+                        <button @click="restar(index)" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-white hover:shadow-sm rounded-md transition-all font-bold">-</button>
+                        <span class="w-8 text-center font-bold text-sm text-gray-800">{{ item.cantidad }}</span>
+                        <button @click="sumar(index)" class="w-8 h-8 flex items-center justify-center text-brand-600 hover:bg-white hover:shadow-sm rounded-md transition-all font-bold">+</button>
+                    </div>
+                    <button @click="eliminar(index)" class="text-xs text-red-400 hover:text-red-600 font-medium flex items-center gap-1 p-1">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> Eliminar
+                    </button>
+                </div>
+            </div>
 
-      lista.appendChild(div);
-    });
+        </div>
 
-    totalCarritoElem.textContent = formatMoney(total);
-  }
+        <transition name="slide-up">
+            <div v-if="carrito.length > 0" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40">
+                <div class="max-w-3xl mx-auto flex flex-col gap-3">
+                    <div class="flex justify-between items-end px-1">
+                        <span class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total a Pagar</span>
+                        <span class="text-2xl font-black text-gray-900 mono-num tracking-tight">{{ formatMoney(totalGeneral) }}</span>
+                    </div>
+                    <button @click="abrirModal" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-brand-200 transition-all hover:-translate-y-0.5 active:scale-95 flex justify-center items-center gap-2">
+                        Confirmar Pedido <i data-lucide="check" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </transition>
 
-  async function mostrarFormulario() {
-    document.getElementById('negocio').value = '';
-    document.getElementById('nombre').value = '';
-    document.getElementById('apellido').value = '';
-    
-    // No reseteamos teléfono porque ya no existe
+        <transition name="fade">
+            <div v-if="modalAbierto" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative" @click.stop>
+                    
+                    <button @click="cerrarModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
 
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    
-    if (session) {
-      datosPersonalesContainer.style.display = 'none';
-    } else {
-      datosPersonalesContainer.style.display = 'block';
-    }
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Datos de Envío</h3>
+                    <p class="text-sm text-gray-500 mb-6">Completa la información para finalizar.</p>
 
-    formOverlay.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
+                    <form @submit.prevent="confirmarPedido" class="space-y-4">
+                        
+                        <div v-if="!sesionActiva" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
+                                <input v-model="form.nombre" type="text" placeholder="Ej: Juan" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-all" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Apellido</label>
+                                <input v-model="form.apellido" type="text" placeholder="Ej: Pérez" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-all" required>
+                            </div>
+                        </div>
 
-  function ocultarFormulario() {
-    formOverlay.style.display = 'none';
-    document.body.style.overflow = '';
-  }
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Negocio</label>
+                            <input v-model="form.negocio" type="text" placeholder="Ej: Kiosco El Paso" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-all" required>
+                        </div>
 
-  btnMostrarFormulario.addEventListener('click', mostrarFormulario);
-  btnCerrarFormulario.addEventListener('click', ocultarFormulario);
-  formOverlay.addEventListener('click', e => { if (e.target === formOverlay) ocultarFormulario(); });
+                        <button type="submit" :disabled="enviando" class="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-gray-300 disabled:text-gray-500 text-white py-3 rounded-xl font-bold shadow-md transition-all mt-4 flex justify-center items-center gap-2">
+                            <span v-if="enviando">Enviando...</span>
+                            <span v-else>Enviar Pedido</span>
+                            <i v-if="!enviando" data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </form>
 
-  btnConfirmar.addEventListener('click', async () => {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const userId = session ? session.user.id : null;
+                </div>
+            </div>
+        </transition>
 
-      const negocioInput = document.getElementById('negocio').value.trim();
-      
-      let finalFullName = '';
-      
-      // ⚠️ FIX: Enviamos un texto fijo para que el backend no tire error 400
-      let finalPhone = 'No solicitado'; 
+    </div>
 
-      if (session) {
-        if (!negocioInput) {
-            alert('Por favor, ingresa el Nombre del Negocio.');
-            return;
-        }
-        const meta = session.user.user_metadata || {};
-        finalFullName = meta.full_name || session.user.email || 'Usuario Registrado';
-        // Ya no leemos el telefono del usuario
-      } else {
-        const nombreInput = document.getElementById('nombre').value.trim();
-        const apellidoInput = document.getElementById('apellido').value.trim();
-        
-        // Ya no validamos teléfono
-        if (!negocioInput || !nombreInput || !apellidoInput) {
-            alert('Por favor, completa Nombre, Apellido y Negocio.');
-            return;
-        }
-        finalFullName = `${capitalize(nombreInput)} ${capitalize(apellidoInput)}`.trim();
-      }
-      
-      btnConfirmar.disabled = true;
-      btnConfirmar.textContent = 'Enviando...';
-      
-      const nuevosCarrito = [];
-      let total = 0;
-      const productosClon = productos.map(p => ({...p}));
-      
-      for (const item of carrito) {
-          const producto = productosClon.find(p => p.id == item.id);
-          if (!producto) continue;
-          const precioConRecargo = Number(producto.precio) * 1.10;
-          nuevosCarrito.push({
-              ...item,
-              precio: precioConRecargo
-          });
-          total += item.cantidad * precioConRecargo;
-      }
-      
-      if (nuevosCarrito.length === 0) {
-          alert('No hay productos disponibles.');
-          btnConfirmar.disabled = false;
-          btnConfirmar.textContent = 'Enviar Pedido';
-          return;
-      }
+    <script>
+        const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+        const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-      try {
-          const res = await fetch(`${apiBase}/Enviar-Peticion`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  nombre: finalFullName,
-                  telefono: finalPhone, // Enviamos "No solicitado"
-                  items: nuevosCarrito,
-                  total: total,
-                  user_id: userId,
-                  nombre_negocio: negocioInput
-              })
-          });
-          
-          if (!res.ok) {
-              const txt = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-              throw new Error(txt.error || `HTTP ${res.status}`);
-          }
-          
-          alert('¡Pedido enviado con éxito!');
-          carrito = [];
-          guardarCarrito();
-          ocultarFormulario();
-          renderizarCarrito();
-          
-          setTimeout(() => { 
-              if(userId) window.location.href = 'mi-cuenta.html';
-              else window.location.href = 'index.html'; 
-          }, 500);
-          
-      } catch (err) {
-          console.error('Error enviando pedido:', err);
-          alert(`Error al enviar: ${err.message}`);
-      } finally {
-          btnConfirmar.disabled = false;
-          btnConfirmar.textContent = 'Enviar Pedido';
-      }
-  });
+        const { createApp, ref, computed, onMounted } = Vue;
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  (async function init(){
-    await cargarProductos();
-  })();
-</script>
+        createApp({
+            setup() {
+                const loading = ref(true);
+                const productos = ref([]);
+                const carrito = ref(JSON.parse(localStorage.getItem('carrito')) || []);
+                const modalAbierto = ref(false);
+                const enviando = ref(false);
+                const sesionActiva = ref(false);
+                const userId = ref(null);
+
+                const form = ref({
+                    nombre: '',
+                    apellido: '',
+                    negocio: ''
+                });
+
+                // Cargar Productos para tener precios y nombres
+                const cargarProductos = async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/productos`);
+                        if (!res.ok) throw new Error("Error API");
+                        productos.value = await res.json();
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                // Verificar Sesión
+                onMounted(async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        sesionActiva.value = true;
+                        userId.value = session.user.id;
+                    }
+                    await cargarProductos();
+                    lucide.createIcons();
+                });
+
+                // Computed: Cruzar carrito con productos
+                const itemsConDetalle = computed(() => {
+                    return carrito.value.map(item => {
+                        const prod = productos.value.find(p => String(p.id) === String(item.id));
+                        if (!prod) return null;
+                        
+                        const precioUnitario = Number(prod.precio) * 1.10; // +10%
+                        const imagenUrl = prod.imagen 
+                            ? `${SUPABASE_URL}/storage/v1/object/public/imagenes/${prod.imagen.replace(/^imagenes\//, '')}`
+                            : `${SUPABASE_URL}/storage/v1/object/public/imagenes/placeholder.png`;
+
+                        return {
+                            ...item,
+                            nombre: prod.nombre,
+                            precioUnitario: precioUnitario,
+                            subtotal: precioUnitario * item.cantidad,
+                            imagenUrl: imagenUrl
+                        };
+                    }).filter(Boolean); // Eliminar nulos
+                });
+
+                const totalGeneral = computed(() => {
+                    return itemsConDetalle.value.reduce((acc, item) => acc + item.subtotal, 0);
+                });
+
+                // Acciones Carrito
+                const guardarCarrito = () => {
+                    localStorage.setItem('carrito', JSON.stringify(carrito.value));
+                };
+
+                const sumar = (index) => {
+                    carrito.value[index].cantidad++;
+                    guardarCarrito();
+                };
+
+                const restar = (index) => {
+                    if (carrito.value[index].cantidad > 1) {
+                        carrito.value[index].cantidad--;
+                    } else {
+                        eliminar(index);
+                    }
+                    guardarCarrito();
+                };
+
+                const eliminar = (index) => {
+                    carrito.value.splice(index, 1);
+                    guardarCarrito();
+                };
+
+                // Modal
+                const abrirModal = () => { modalAbierto.value = true; };
+                const cerrarModal = () => { modalAbierto.value = false; };
+
+                // Enviar Pedido
+                const confirmarPedido = async () => {
+                    enviando.value = true;
+                    
+                    try {
+                        let finalName = '';
+                        if (sesionActiva.value) {
+                            // Si hay sesión, el nombre lo saca el backend o usamos placeholder
+                            finalName = 'Usuario Registrado'; 
+                        } else {
+                            finalName = `${form.value.nombre} ${form.value.apellido}`.trim();
+                        }
+
+                        // Construir items con precio final
+                        const itemsEnviar = itemsConDetalle.value.map(item => ({
+                            id: item.id,
+                            cantidad: item.cantidad,
+                            precio: item.precioUnitario // Enviamos el precio ya con el 10%
+                        }));
+
+                        const payload = {
+                            nombre: finalName,
+                            telefono: 'No solicitado',
+                            items: itemsEnviar,
+                            total: totalGeneral.value,
+                            user_id: userId.value,
+                            nombre_negocio: form.value.negocio
+                        };
+
+                        const res = await fetch(`${API_BASE}/Enviar-Peticion`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!res.ok) throw new Error("Error al enviar");
+
+                        // Éxito
+                        carrito.value = [];
+                        guardarCarrito();
+                        cerrarModal();
+                        alert("¡Pedido enviado con éxito!");
+                        
+                        // Redirección inteligente
+                        if (sesionActiva.value) window.location.href = 'mi-cuenta.html';
+                        else window.location.href = 'index.html';
+
+                    } catch (e) {
+                        alert("Error: " + e.message);
+                    } finally {
+                        enviando.value = false;
+                    }
+                };
+
+                // Utils
+                const formatMoney = (v) => (v || 0).toLocaleString('es-AR', {style:'currency', currency:'ARS'});
+
+                return {
+                    loading, carrito, itemsConDetalle, totalGeneral,
+                    modalAbierto, abrirModal, cerrarModal,
+                    sumar, restar, eliminar,
+                    form, confirmarPedido, enviando, sesionActiva,
+                    formatMoney
+                };
+            },
+            updated() { lucide.createIcons(); }
+        }).mount('#app');
+    </script>
 </body>
 </html>
