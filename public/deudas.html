@@ -169,15 +169,24 @@
     </div>
 
     <script>
-        // CONFIGURA TUS CREDENCIALES DE SUPABASE AQUI (PUBLICAS)
+        // CONFIGURA TUS CREDENCIALES
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
         
-        // URL DEL BACKEND (Si es el mismo dominio, dejar relativo)
         const API_BASE = '/api'; 
 
         const { createApp, ref, onMounted, computed } = Vue;
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // 1. CAMBIO IMPORTANTE: Configuración explícita de persistencia
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                persistSession: true, // Obliga a guardar sesión
+                storageKey: 'funaz-auth-token', // Nombre único para tu app
+                storage: window.localStorage, // Usa LocalStorage (dura aunque cierres el navegador)
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
 
         createApp({
             setup() {
@@ -203,23 +212,26 @@
                     }
                 };
 
-                onMounted(async () => {
-                    // Verificar Sesión
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session) {
-                        // Redirigir al login si no hay sesión (Ajusta la URL a tu login real)
-                        window.location.href = '/index.html'; 
-                        return;
-                    }
-
-                    // Cargar datos
-                    await fetchDebtData(session.user.id);
-                    lucide.createIcons();
+                onMounted(() => {
+                    // 2. CAMBIO IMPORTANTE: Usar onAuthStateChange en lugar de getSession directo
+                    // Esto espera a que el navegador recupere la sesión guardada
+                    supabase.auth.onAuthStateChange((event, session) => {
+                        
+                        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                            if (session) {
+                                // Si hay sesión, cargamos
+                                fetchDebtData(session.user.id);
+                            } else {
+                                // Si terminó de cargar y no hay sesión, al login
+                                window.location.href = '/index.html'; 
+                            }
+                        } else if (event === 'SIGNED_OUT') {
+                            window.location.href = '/index.html';
+                        }
+                    });
                 });
 
-                // --- COMPUTADAS ---
-                
-                // Total Deuda Real
+                // --- COMPUTADAS (Igual que antes) ---
                 const totalDebt = computed(() => {
                     return items.value.reduce((acc, item) => {
                         if (item.type === 'divider') return acc;
@@ -227,13 +239,10 @@
                     }, 0);
                 });
 
-                // Items Pendientes (Solo los que se deben)
                 const pendingItems = computed(() => {
                     return items.value.filter(i => i.type !== 'divider' && (i.amount - (i.paid || 0)) > 0);
                 });
 
-                // Historial (Todo, ordenado por fecha descendente si no lo está ya)
-                // Nota: Tu sistema guarda lo nuevo al principio (unshift), así que ya está en orden cronológico inverso.
                 const historyItems = computed(() => {
                     return items.value; 
                 });
