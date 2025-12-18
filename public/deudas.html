@@ -169,7 +169,6 @@
     </div>
 
     <script>
-        // CONFIGURA TUS CREDENCIALES
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
         
@@ -177,16 +176,9 @@
 
         const { createApp, ref, onMounted, computed } = Vue;
         
-        // 1. CAMBIO IMPORTANTE: Configuración explícita de persistencia
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: {
-                persistSession: true, // Obliga a guardar sesión
-                storageKey: 'funaz-auth-token', // Nombre único para tu app
-                storage: window.localStorage, // Usa LocalStorage (dura aunque cierres el navegador)
-                autoRefreshToken: true,
-                detectSessionInUrl: true
-            }
-        });
+        // 1. CAMBIO CRÍTICO: Inicialización estándar (sin configs raras)
+        // Esto asegura que lea la MISMA sesión que tu página de pedidos.
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         createApp({
             setup() {
@@ -212,26 +204,30 @@
                     }
                 };
 
-                onMounted(() => {
-                    // 2. CAMBIO IMPORTANTE: Usar onAuthStateChange en lugar de getSession directo
-                    // Esto espera a que el navegador recupere la sesión guardada
+                onMounted(async () => {
+                    // 2. MÉTODO SEGURO:
+                    // getSession() lee la memoria local. Si ya te logueaste en index.html, esto devolverá la sesión.
+                    const { data: { session }, error } = await supabase.auth.getSession();
+
+                    if (session) {
+                        // Si hay sesión, cargamos los datos
+                        console.log("Sesión encontrada:", session.user.id);
+                        fetchDebtData(session.user.id);
+                    } else {
+                        // Si NO hay sesión, entonces sí redirigimos
+                        console.warn("No hay sesión activa. Redirigiendo...");
+                        window.location.href = '/index.html'; // O la URL de tu login
+                    }
+
+                    // Escuchar si cierran sesión en otra pestaña
                     supabase.auth.onAuthStateChange((event, session) => {
-                        
-                        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                            if (session) {
-                                // Si hay sesión, cargamos
-                                fetchDebtData(session.user.id);
-                            } else {
-                                // Si terminó de cargar y no hay sesión, al login
-                                window.location.href = '/index.html'; 
-                            }
-                        } else if (event === 'SIGNED_OUT') {
+                        if (event === 'SIGNED_OUT') {
                             window.location.href = '/index.html';
                         }
                     });
                 });
 
-                // --- COMPUTADAS (Igual que antes) ---
+                // --- COMPUTADAS ---
                 const totalDebt = computed(() => {
                     return items.value.reduce((acc, item) => {
                         if (item.type === 'divider') return acc;
