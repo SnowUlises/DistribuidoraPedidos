@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrito - Distribuidora Funaz</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -27,6 +28,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; padding-bottom: 120px; }
         .mono-num { font-family: 'JetBrains Mono', monospace; }
+        
+        /* 2. TRUCO ANTI-PARPADEO (v-cloak) */
+        /* Esto oculta las llaves {{ }} hasta que Vue esté listo */
+        [v-cloak] { display: none !important; }
+
         .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease, opacity 0.3s ease; }
         .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
@@ -35,7 +41,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <div id="app" class="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
+    <div id="app" v-cloak class="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
         
         <header class="flex items-center justify-between mb-8">
             <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
@@ -64,7 +70,7 @@
         <div v-else class="space-y-4 pb-24">
             <div v-for="(item, index) in itemsConDetalle" :key="item.id" class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden group">
                 <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
-                    <img :src="item.imagenUrl" class="w-full h-full object-contain" alt="Producto">
+                    <img :src="item.imagenUrl" class="w-full h-full object-contain" alt="Producto" onerror="this.src='https://placehold.co/100x100?text=No+Img'">
                 </div>
                 <div class="flex-1 min-w-0">
                     <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">{{ item.nombre }}</h3>
@@ -154,6 +160,12 @@
         const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
         const { createApp, ref, computed, onMounted } = Vue;
+        
+        // 3. ASEGURAR CARGA DE LIBRERÍA
+        if (typeof window.supabase === 'undefined') {
+            alert("Error: No se pudo cargar el sistema. Por favor recarga la página.");
+        }
+        
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         createApp({
@@ -165,7 +177,7 @@
                 const enviando = ref(false);
                 const sesionActiva = ref(false);
                 const userId = ref(null);
-                const currentUserData = ref(null); // Guardamos todo el objeto user
+                const currentUserData = ref(null);
 
                 const form = ref({ nombre: '', apellido: '', negocio: '' });
 
@@ -178,14 +190,17 @@
                 };
 
                 onMounted(async () => {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session) {
-                        sesionActiva.value = true;
-                        userId.value = session.user.id;
-                        currentUserData.value = session.user; // Guardamos datos del usuario
-                    }
+                    try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session) {
+                            sesionActiva.value = true;
+                            userId.value = session.user.id;
+                            currentUserData.value = session.user;
+                        }
+                    } catch(e) { console.error("Error sesión", e); }
+                    
                     await cargarProductos();
-                    lucide.createIcons();
+                    if(typeof lucide !== 'undefined') lucide.createIcons();
                 });
 
                 const itemsConDetalle = computed(() => {
@@ -202,7 +217,6 @@
 
                 const totalGeneral = computed(() => itemsConDetalle.value.reduce((acc, item) => acc + item.subtotal, 0));
 
-                // Helper para mostrar nombre bonito en el formulario
                 const nombreUsuarioSesion = computed(() => {
                     if (!currentUserData.value) return '';
                     const meta = currentUserData.value.user_metadata || {};
@@ -220,11 +234,8 @@
                     enviando.value = true;
                     try {
                         let finalName = '';
-                        
-                        // LOGICA CORREGIDA: Usar datos reales de Supabase
                         if (sesionActiva.value && currentUserData.value) {
                             const meta = currentUserData.value.user_metadata || {};
-                            // Prioridad: Metadata > Email > Fallback
                             finalName = meta.full_name || meta.name || currentUserData.value.email || 'Usuario Registrado';
                         } else {
                             finalName = `${form.value.nombre} ${form.value.apellido}`.trim();
@@ -272,7 +283,7 @@
                     loading, carrito, itemsConDetalle, totalGeneral, modalAbierto, abrirModal, cerrarModal, sumar, restar, eliminar, form, confirmarPedido, enviando, sesionActiva, formatMoney, nombreUsuarioSesion
                 };
             },
-            updated() { lucide.createIcons(); }
+            updated() { if(typeof lucide !== 'undefined') lucide.createIcons(); }
         }).mount('#app');
     </script>
 </body>
