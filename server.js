@@ -257,24 +257,23 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 /* -----------------------------
  📦 ENVIAR PETICION (MODIFICADO: SIN TELÉFONO)
 ----------------------------- */
+/* -----------------------------
+ 📦 ENVIAR PETICION (CORREGIDO: CON TELÉFONO)
+----------------------------- */
 app.post('/api/Enviar-Peticion', async (req, res) => {
     try {
         console.log('Received payload:', JSON.stringify(req.body, null, 2));
         
-        // ⚠️ CAMBIO: Ya no leemos 'telefono'
-        let { nombre, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
+        // 1. AQUI AGREGAMOS 'telefono' para leerlo del frontend
+        let { nombre, telefono, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
         
-        // Remove "Nombre: " prefix if present
         if (nombre && nombre.startsWith('Nombre: ')) {
             nombre = nombre.slice('Nombre: '.length).trim();
         }
 
-        // ⚠️ CAMBIO: Eliminada la validación de telefono
         if (!nombre || !Array.isArray(pedidoItems) || pedidoItems.length === 0) {
             return res.status(400).json({ error: 'Petición inválida: nombre o items faltantes' });
         }
-
-        // ⚠️ CAMBIO: Eliminado el bloque de parsing de telefono
 
         let total = 0;
         const processedItems = [];
@@ -282,28 +281,18 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
         // Process each item
         for (const it of pedidoItems) {
             const prodId = it.id;
-            if (!prodId) {
-                console.warn(`⚠️ Item sin ID: ${JSON.stringify(it)}`);
-                continue;
-            }
+            if (!prodId) continue;
 
-            // Fetch product
             const { data: prod, error: prodError } = await supabase
                 .from('productos')
                 .select('*')
                 .eq('id', prodId)
                 .single();
 
-            if (prodError || !prod) {
-                console.warn(`⚠️ Producto no encontrado para ID ${prodId}:`, prodError?.message || 'No product');
-                continue;
-            }
+            if (prodError || !prod) continue;
 
             const cantidadFinal = Number(it.cantidad) || 0;
-            if (cantidadFinal <= 0) {
-                console.warn(`⚠️ Cantidad inválida para producto ${prodId}: ${it.cantidad}`);
-                continue;
-            }
+            if (cantidadFinal <= 0) continue;
 
             const precioUnitario = Number(it.precio ?? prod.precio) || 0;
             const subtotal = cantidadFinal * precioUnitario;
@@ -322,14 +311,13 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
             return res.status(400).json({ error: 'No hay items válidos para la petición' });
         }
 
-        // Round total to integer for int8 column
         const totalInt = Math.round(total);
         const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
-        // ⚠️ CAMBIO: Payload SIN teléfono
+        // 2. AQUI AGREGAMOS 'telefono' AL PAYLOAD PARA SUPABASE
         const payload = {
             nombre,
-            // telefono: ELIMINADO
+            telefono: telefono || null, // <--- AHORA SE GUARDA
             items: processedItems,
             total: totalInt,
             fecha: fechaLocal,
@@ -534,5 +522,6 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
