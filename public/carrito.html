@@ -14,7 +14,7 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' }, // Lima
+                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' },
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -27,11 +27,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; padding-bottom: 120px; }
         .mono-num { font-family: 'JetBrains Mono', monospace; }
-        
-        /* Animaciones */
         .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease, opacity 0.3s ease; }
         .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
-        
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
@@ -45,7 +42,8 @@
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Seguir comprando
             </a>
             <h1 class="text-xl font-bold tracking-tight text-gray-900">Mi Carrito</h1>
-            <div class="w-8"></div> </header>
+            <div class="w-8"></div> 
+        </header>
 
         <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
             <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-brand-500"></i>
@@ -57,26 +55,22 @@
                 <i data-lucide="shopping-cart" class="w-12 h-12 text-gray-400"></i>
             </div>
             <h2 class="text-xl font-bold text-gray-900 mb-2">Tu carrito está vacío</h2>
-            <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Parece que aún no has agregado nada. Explora nuestros productos y encuentra lo que necesitas.</p>
+            <p class="text-gray-500 text-sm mb-6 max-w-xs mx-auto">Parece que aún no has agregado nada.</p>
             <a href="index.html" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-brand-200 transition-all hover:-translate-y-1">
                 Ir a la Tienda
             </a>
         </div>
 
         <div v-else class="space-y-4 pb-24">
-            
             <div v-for="(item, index) in itemsConDetalle" :key="item.id" class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden group">
-                
                 <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
                     <img :src="item.imagenUrl" class="w-full h-full object-contain" alt="Producto">
                 </div>
-
                 <div class="flex-1 min-w-0">
                     <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">{{ item.nombre }}</h3>
                     <div class="text-xs text-gray-500 mb-2">{{ formatMoney(item.precioUnitario) }} c/u</div>
                     <div class="font-bold text-brand-600 mono-num">{{ formatMoney(item.subtotal) }}</div>
                 </div>
-
                 <div class="flex flex-col items-end gap-2">
                     <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
                         <button @click="restar(index)" class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-white hover:shadow-sm rounded-md transition-all font-bold">-</button>
@@ -88,7 +82,6 @@
                     </button>
                 </div>
             </div>
-
         </div>
 
         <transition name="slide-up">
@@ -108,7 +101,6 @@
         <transition name="fade">
             <div v-if="modalAbierto" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative" @click.stop>
-                    
                     <button @click="cerrarModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1">
                         <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
@@ -118,6 +110,16 @@
 
                     <form @submit.prevent="confirmarPedido" class="space-y-4">
                         
+                        <div v-if="sesionActiva" class="bg-brand-50 border border-brand-200 rounded-xl p-3 mb-4 flex items-center gap-3">
+                            <div class="bg-brand-200 p-2 rounded-full text-brand-700">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-brand-600 font-bold uppercase tracking-wider">Enviando como</div>
+                                <div class="text-sm font-bold text-gray-800">{{ nombreUsuarioSesion }}</div>
+                            </div>
+                        </div>
+
                         <div v-if="!sesionActiva" class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
@@ -140,7 +142,6 @@
                             <i v-if="!enviando" data-lucide="send" class="w-4 h-4"></i>
                         </button>
                     </form>
-
                 </div>
             </div>
         </transition>
@@ -149,7 +150,7 @@
 
     <script>
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
         const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
         const { createApp, ref, computed, onMounted } = Vue;
@@ -164,108 +165,73 @@
                 const enviando = ref(false);
                 const sesionActiva = ref(false);
                 const userId = ref(null);
+                const currentUserData = ref(null); // Guardamos todo el objeto user
 
-                const form = ref({
-                    nombre: '',
-                    apellido: '',
-                    negocio: ''
-                });
+                const form = ref({ nombre: '', apellido: '', negocio: '' });
 
-                // Cargar Productos para tener precios y nombres
                 const cargarProductos = async () => {
                     try {
                         const res = await fetch(`${API_BASE}/productos`);
                         if (!res.ok) throw new Error("Error API");
                         productos.value = await res.json();
-                    } catch (e) {
-                        console.error(e);
-                    } finally {
-                        loading.value = false;
-                    }
+                    } catch (e) { console.error(e); } finally { loading.value = false; }
                 };
 
-                // Verificar Sesión
                 onMounted(async () => {
                     const { data: { session } } = await supabase.auth.getSession();
                     if (session) {
                         sesionActiva.value = true;
                         userId.value = session.user.id;
+                        currentUserData.value = session.user; // Guardamos datos del usuario
                     }
                     await cargarProductos();
                     lucide.createIcons();
                 });
 
-                // Computed: Cruzar carrito con productos
                 const itemsConDetalle = computed(() => {
                     return carrito.value.map(item => {
                         const prod = productos.value.find(p => String(p.id) === String(item.id));
                         if (!prod) return null;
-                        
-                        const precioUnitario = Number(prod.precio) * 1.10; // +10%
+                        const precioUnitario = Number(prod.precio) * 1.10;
                         const imagenUrl = prod.imagen 
                             ? `${SUPABASE_URL}/storage/v1/object/public/imagenes/${prod.imagen.replace(/^imagenes\//, '')}`
                             : `${SUPABASE_URL}/storage/v1/object/public/imagenes/placeholder.png`;
-
-                        return {
-                            ...item,
-                            nombre: prod.nombre,
-                            precioUnitario: precioUnitario,
-                            subtotal: precioUnitario * item.cantidad,
-                            imagenUrl: imagenUrl
-                        };
-                    }).filter(Boolean); // Eliminar nulos
+                        return { ...item, nombre: prod.nombre, precioUnitario, subtotal: precioUnitario * item.cantidad, imagenUrl };
+                    }).filter(Boolean);
                 });
 
-                const totalGeneral = computed(() => {
-                    return itemsConDetalle.value.reduce((acc, item) => acc + item.subtotal, 0);
+                const totalGeneral = computed(() => itemsConDetalle.value.reduce((acc, item) => acc + item.subtotal, 0));
+
+                // Helper para mostrar nombre bonito en el formulario
+                const nombreUsuarioSesion = computed(() => {
+                    if (!currentUserData.value) return '';
+                    const meta = currentUserData.value.user_metadata || {};
+                    return meta.full_name || meta.name || currentUserData.value.email;
                 });
 
-                // Acciones Carrito
-                const guardarCarrito = () => {
-                    localStorage.setItem('carrito', JSON.stringify(carrito.value));
-                };
-
-                const sumar = (index) => {
-                    carrito.value[index].cantidad++;
-                    guardarCarrito();
-                };
-
-                const restar = (index) => {
-                    if (carrito.value[index].cantidad > 1) {
-                        carrito.value[index].cantidad--;
-                    } else {
-                        eliminar(index);
-                    }
-                    guardarCarrito();
-                };
-
-                const eliminar = (index) => {
-                    carrito.value.splice(index, 1);
-                    guardarCarrito();
-                };
-
-                // Modal
+                const guardarCarrito = () => localStorage.setItem('carrito', JSON.stringify(carrito.value));
+                const sumar = (index) => { carrito.value[index].cantidad++; guardarCarrito(); };
+                const restar = (index) => { if (carrito.value[index].cantidad > 1) carrito.value[index].cantidad--; else eliminar(index); guardarCarrito(); };
+                const eliminar = (index) => { carrito.value.splice(index, 1); guardarCarrito(); };
                 const abrirModal = () => { modalAbierto.value = true; };
                 const cerrarModal = () => { modalAbierto.value = false; };
 
-                // Enviar Pedido
                 const confirmarPedido = async () => {
                     enviando.value = true;
-                    
                     try {
                         let finalName = '';
-                        if (sesionActiva.value) {
-                            // Si hay sesión, el nombre lo saca el backend o usamos placeholder
-                            finalName = 'Usuario Registrado'; 
+                        
+                        // LOGICA CORREGIDA: Usar datos reales de Supabase
+                        if (sesionActiva.value && currentUserData.value) {
+                            const meta = currentUserData.value.user_metadata || {};
+                            // Prioridad: Metadata > Email > Fallback
+                            finalName = meta.full_name || meta.name || currentUserData.value.email || 'Usuario Registrado';
                         } else {
                             finalName = `${form.value.nombre} ${form.value.apellido}`.trim();
                         }
 
-                        // Construir items con precio final
                         const itemsEnviar = itemsConDetalle.value.map(item => ({
-                            id: item.id,
-                            cantidad: item.cantidad,
-                            precio: item.precioUnitario // Enviamos el precio ya con el 10%
+                            id: item.id, cantidad: item.cantidad, precio: item.precioUnitario
                         }));
 
                         const payload = {
@@ -285,13 +251,11 @@
 
                         if (!res.ok) throw new Error("Error al enviar");
 
-                        // Éxito
                         carrito.value = [];
                         guardarCarrito();
                         cerrarModal();
                         alert("¡Pedido enviado con éxito!");
                         
-                        // Redirección inteligente
                         if (sesionActiva.value) window.location.href = 'mi-cuenta.html';
                         else window.location.href = 'index.html';
 
@@ -302,15 +266,10 @@
                     }
                 };
 
-                // Utils
                 const formatMoney = (v) => (v || 0).toLocaleString('es-AR', {style:'currency', currency:'ARS'});
 
                 return {
-                    loading, carrito, itemsConDetalle, totalGeneral,
-                    modalAbierto, abrirModal, cerrarModal,
-                    sumar, restar, eliminar,
-                    form, confirmarPedido, enviando, sesionActiva,
-                    formatMoney
+                    loading, carrito, itemsConDetalle, totalGeneral, modalAbierto, abrirModal, cerrarModal, sumar, restar, eliminar, form, confirmarPedido, enviando, sesionActiva, formatMoney, nombreUsuarioSesion
                 };
             },
             updated() { lucide.createIcons(); }
