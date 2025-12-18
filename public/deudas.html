@@ -4,22 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Estado de Cuenta - Funaz</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    colors: {
-                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' },
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
+                extend: { colors: { brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' } } }
             }
         }
     </script>
@@ -29,11 +23,12 @@
         .mono-num { font-family: 'JetBrains Mono', monospace; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        [v-cloak] { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <div id="app" class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
+    <div id="app" v-cloak class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
         
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div class="flex items-center gap-3 w-full md:w-auto">
@@ -88,12 +83,13 @@
                 
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> Deudas Pendientes
+                        <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> Pendientes
                     </h3>
 
                     <div v-if="pendingItems.length === 0" class="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                         <i data-lucide="check-circle-2" class="w-10 h-10 text-brand-500 mx-auto mb-2 opacity-50"></i>
                         <p class="text-sm text-gray-500 font-medium">¡Estás al día!</p>
+                        <p class="text-xs text-gray-400">No tienes deudas pendientes.</p>
                     </div>
 
                     <div class="space-y-3">
@@ -104,6 +100,7 @@
                                     {{ formatDateShort(item.date) }}
                                 </span>
                             </div>
+                            
                             <div v-if="item.paid > 0" class="mb-3">
                                 <div class="flex justify-between text-[10px] uppercase font-bold text-gray-400 mb-1">
                                     <span>Pagado: ${{formatMoney(item.paid)}}</span>
@@ -113,6 +110,7 @@
                                     <div class="bg-brand-500 h-full rounded-full" :style="{ width: (item.paid / item.amount * 100) + '%' }"></div>
                                 </div>
                             </div>
+
                             <p class="text-sm text-gray-600 leading-relaxed font-medium">
                                 {{ item.notes || 'Pedido sin detalles' }}
                             </p>
@@ -137,7 +135,7 @@
                                         {{ formatDateLong(log.timestamp) }}
                                     </span>
                                     <span class="text-sm font-bold text-gray-800 block">
-                                        {{ log.action || 'Movimiento registrado' }}
+                                        {{ formatActionText(log.action) }}
                                     </span>
                                 </div>
                             </div>
@@ -168,22 +166,54 @@
     <script>
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
-        
         const API_BASE = '/api'; 
 
-        const { createApp, ref, onMounted, computed } = Vue;
+        const { createApp } = Vue;
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         createApp({
-            setup() {
-                const loading = ref(true);
-                const error = ref(null);
-                const clientName = ref('');
-                const items = ref([]);       // Items actuales (Pendientes)
-                const fullHistory = ref([]); // Historial completo (Acciones)
-                const displayLimit = ref(10);
-                
-                const fetchDebtData = async (uid) => {
+            data() {
+                return {
+                    loading: true,
+                    error: null,
+                    clientName: '',
+                    items: [],       
+                    fullHistory: [], 
+                    displayLimit: 10
+                }
+            },
+            computed: {
+                totalDebt() {
+                    return this.items.reduce((acc, item) => {
+                        if (item.type === 'divider' || item.type === 'payment') return acc;
+                        return acc + (item.amount - (item.paid || 0));
+                    }, 0);
+                },
+                pendingItems() {
+                    return this.items.filter(i => i.type === 'debt' && (i.amount - (i.paid || 0)) > 0);
+                },
+                visibleHistory() {
+                    return this.fullHistory.slice(0, this.displayLimit);
+                }
+            },
+            async mounted() {
+                try {
+                    const { data: { session }, error } = await supabase.auth.getSession();
+                    if (session) {
+                        this.fetchDebtData(session.user.id);
+                    } else {
+                        window.location.href = '/index.html';
+                    }
+                } catch (err) {
+                    window.location.href = '/index.html';
+                }
+                if(typeof lucide !== 'undefined') lucide.createIcons();
+            },
+            updated() {
+                if(typeof lucide !== 'undefined') lucide.createIcons();
+            },
+            methods: {
+                async fetchDebtData(uid) {
                     try {
                         const res = await fetch(`${API_BASE}/mi-estado-cuenta?uid=${uid}`);
                         if (!res.ok) {
@@ -191,83 +221,54 @@
                             throw new Error("Error al obtener datos.");
                         }
                         const data = await res.json();
-                        clientName.value = data.name;
-                        items.value = data.items || [];
-                        fullHistory.value = data.history || []; // Cargamos el historial real
+                        this.clientName = data.name;
+                        this.items = data.items || [];
+                        this.fullHistory = data.history || [];
                     } catch (e) {
-                        error.value = e.message;
+                        this.error = e.message;
                     } finally {
-                        loading.value = false;
+                        this.loading = false;
                     }
-                };
-
-                onMounted(async () => {
-                    try {
-                        const { data: { session }, error } = await supabase.auth.getSession();
-                        if (session) fetchDebtData(session.user.id);
-                        else window.location.href = '/index.html';
-                    } catch (err) {
-                        window.location.href = '/index.html';
-                    }
-                    lucide.createIcons();
-                });
-
-                const totalDebt = computed(() => {
-                    return items.value.reduce((acc, item) => {
-                        if (item.type === 'divider') return acc;
-                        return acc + (item.amount - (item.paid || 0));
-                    }, 0);
-                });
-
-                const pendingItems = computed(() => {
-                    // Filtramos solo deudas que tienen saldo pendiente
-                    return items.value.filter(i => i.type === 'debt' && (i.amount - (i.paid || 0)) > 0);
-                });
-
-                const visibleHistory = computed(() => {
-                    // El historial suele venir ordenado (nuevo a viejo). Si no, usar .sort
-                    return fullHistory.value.slice(0, displayLimit.value);
-                });
-
-                // Helpers visuales
-                const getActionColor = (actionStr) => {
+                },
+                
+                getActionColor(actionStr) {
                     if (!actionStr) return 'bg-gray-400';
                     if (actionStr.includes('Pago')) return 'bg-green-500';
                     if (actionStr.includes('Nueva Deuda')) return 'bg-red-500';
                     if (actionStr.includes('Eliminado')) return 'bg-gray-400';
                     if (actionStr.includes('Editado')) return 'bg-yellow-500';
                     return 'bg-brand-500';
-                };
+                },
 
-                const formatMoney = (v) => (v || 0).toLocaleString('es-AR', {minimumFractionDigits:0});
+                formatActionText(text) {
+                    if(!text) return 'Movimiento';
+                    return text.replace('Pago Global', 'Pago');
+                },
+
+                formatMoney(v) {
+                    return (v || 0).toLocaleString('es-AR', {minimumFractionDigits:0});
+                },
                 
-                const formatDateShort = (iso) => {
+                formatDateShort(iso) {
                     if(!iso) return '';
                     const d = new Date(iso);
                     return d.toLocaleDateString('es-AR', {day:'numeric', month:'short'});
-                };
+                },
 
-                const formatDateLong = (ts) => {
+                formatDateLong(ts) {
                     if(!ts) return '';
-                    const d = new Date(ts); // timestamp puede ser number o string
+                    const d = new Date(ts);
                     return d.toLocaleDateString('es-AR', {weekday: 'short', day:'numeric', month:'long'}) + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-                };
+                },
 
-                const loadMore = () => { displayLimit.value += 10; };
+                loadMore() { this.displayLimit += 10; },
 
-                const logout = async () => {
+                async logout() {
                     if(!confirm("¿Cerrar sesión?")) return;
                     await supabase.auth.signOut();
                     window.location.href = '/index.html';
-                };
-
-                return {
-                    loading, error, clientName, totalDebt, 
-                    pendingItems, fullHistory, visibleHistory, displayLimit,
-                    formatMoney, formatDateShort, formatDateLong, loadMore, logout, getActionColor
-                };
-            },
-            updated() { lucide.createIcons(); }
+                }
+            }
         }).mount('#app');
     </script>
 </body>
