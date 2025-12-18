@@ -4,352 +4,215 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Pedidos - Distribuidora Funaz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' }, // Lima
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --primary: #2E7D32;
-            --primary-dark: #1B5E20;
-            --bg: #f4f6f8;
-            --text-main: #333;
-            --text-secondary: #666;
-            --card-bg: #ffffff;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding-bottom: 60px;
-            -webkit-font-smoothing: antialiased;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; }
+        .mono-num { font-family: 'JetBrains Mono', monospace; }
         
-        header {
-            background: var(--primary);
-            color: white;
-            padding: 1rem 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            /* Ocultamos el titulo en moviles muy pequeños si choca con los botones */
-            display: none; 
-        }
-        
-        @media (min-width: 450px) {
-            header h1 { display: block; }
-        }
-
-        /* --- BOTÓN VOLVER (MODIFICADO) --- */
-        .back-btn {
-            background-color: rgba(255, 255, 255, 0.2); /* Fondo semitransparente */
-            color: white;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            padding: 8px 14px;      /* Relleno para darle forma de botón */
-            border-radius: 8px;     /* Bordes redondeados */
-            display: flex;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.3); /* Borde sutil */
-            transition: all 0.2s ease;
-        }
-
-        .back-btn:hover { 
-            background-color: rgba(255, 255, 255, 0.35); 
-            transform: translateY(-1px);
-        }
-
-        .back-btn svg {
-            margin-right: 6px; /* Espacio entre icono y texto */
-        }
-
-        /* --- BOTÓN LOGOUT (MODIFICADO) --- */
-        .logout-btn {
-            background: rgba(0, 0, 0, 0.2); /* Un poco más oscuro para diferenciar */
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white;
-            padding: 8px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        .logout-btn:hover { background: rgba(0, 0, 0, 0.3); }
-
-        .container {
-            max-width: 600px; 
-            margin: 24px auto;
-            padding: 0 16px;
-        }
-        
-        .loading {
-            text-align: center;
-            margin-top: 60px;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* Tarjeta de Pedido */
-        .pedido-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-            border-left: 5px solid #ccc;
-            transition: transform 0.2s;
-        }
-
-        /* Encabezado de la tarjeta */
-        .header-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 12px;
-        }
-
-        .fecha-container {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .fecha {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .negocio {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-top: 4px;
-        }
-
-        .estado {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        /* Lista de items */
-        .items-list {
-            list-style: none;
-            padding: 0;
-            margin: 16px 0;
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
-        }
-
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.95rem;
-            padding: 10px 0;
-            border-bottom: 1px dashed #f0f0f0;
-        }
-        .item-row:last-child { border-bottom: none; }
-        
-        .item-nombre { color: var(--text-main); }
-        .item-precio { font-weight: 500; color: #444; }
-
-        /* Total y Pie */
-        .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-        }
-
-        .total-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .total-amount {
-            font-weight: 800;
-            font-size: 1.25rem;
-            color: var(--primary);
-        }
-
-        .check-aprobado {
-            text-align: right;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            color: var(--primary);
-            font-weight: 600;
-        }
-
-        /* Estado vacío */
-        .empty-state {
-            text-align: center;
-            color: #999;
-            margin-top: 40px;
-            padding: 20px;
-        }
+        /* Animación suave para las tarjetas */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-<header>
-    <a href="index.html" class="back-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        Volver a tienda
-    </a>
-    
-    <h1>Mis Pedidos</h1>
-    
-    <button onclick="logout()" class="logout-btn">Cerrar Sesión</button>
-</header>
-
-<div class="container">
-    <div id="loading" class="loading">Cargando historial...</div>
-    <div id="listaPedidos"></div>
-</div>
-
-<script>
-    // 1. CONFIGURACIÓN
-    const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
-
-    const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    window.supabase = _sb;
-
-    // --- FUNCIONES DE FORMATO ---
-
-    // 1. Formato Moneda: Argentina (1.000,00)
-    const formatearDinero = (monto) => {
-        return new Intl.NumberFormat('es-AR', {
-            style: 'decimal',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(monto);
-    };
-
-    // 2. Formato Fecha: DD/MM/AAAA HH:MM (Zona horaria Argentina)
-    const formatearFecha = (fechaISO) => {
-        try {
-            const fecha = new Date(fechaISO);
-            return new Intl.DateTimeFormat('es-AR', {
-                timeZone: 'America/Argentina/Buenos_Aires',
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).format(fecha);
-        } catch (e) {
-            return fechaISO; // Fallback por si acaso
-        }
-    };
-
-    // -------------------------------------
-
-    async function cargarHistorial() {
-        const { data: { session } } = await supabase.auth.getSession();
+    <div id="app" class="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
         
-        if (!session) {
-            window.location.href = 'login.html';
-            return;
-        }
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-brand-400 p-2 rounded-xl text-brand-900 shadow-sm">
+                    <i data-lucide="package-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-900 leading-none">Mis Pedidos</h1>
+                    <p class="text-xs text-gray-400 font-medium tracking-wide mt-1">HISTORIAL DE COMPRAS</p>
+                </div>
+            </div>
 
-        const userId = session.user.id;
-        
-        try {
-            const res = await fetch(`https://distribuidorafunaz-a2o6.onrender.com/api/mis-pedidos?uid=${userId}`);
-            if(!res.ok) throw new Error('Error de red');
+            <div class="flex flex-col items-end gap-3 w-full md:w-auto">
+                <div v-if="userEmail" class="text-xs text-gray-500 font-medium bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></div>
+                    {{ userEmail }}
+                </div>
+                
+                <div class="flex flex-wrap gap-2 w-full md:w-auto mt-1">
+                    <a href="/deudas.html" class="flex-1 md:flex-none bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex justify-center items-center gap-2 shadow-sm transition-transform hover:-translate-y-0.5">
+                        <i data-lucide="wallet" class="w-4 h-4"></i>
+                        Ver Deuda
+                    </a>
+                    <a href="/index.html" class="flex-1 md:flex-none bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold flex justify-center items-center gap-2 border border-gray-200 shadow-sm transition-transform hover:-translate-y-0.5">
+                        <i data-lucide="store" class="w-4 h-4"></i>
+                        Tienda
+                    </a>
+                    <button @click="logout" class="bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 p-2 rounded-lg border border-gray-200 transition-colors" title="Cerrar Sesión">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-brand-500"></i>
+            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando historial...</span>
+        </div>
+
+        <div v-else class="space-y-5 pb-20">
             
-            const historial = await res.json();
-            renderizar(historial);
-        } catch (err) {
-            document.getElementById('loading').innerHTML = "<span style='color:red'>Error cargando pedidos. Intente nuevamente.</span>";
-            console.error(err);
-        }
-    }
+            <div v-if="pedidos.length === 0" class="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-300 shadow-sm">
+                <div class="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="shopping-bag" class="w-8 h-8 text-gray-300"></i>
+                </div>
+                <h3 class="text-gray-900 font-bold mb-1">Aún no tienes pedidos</h3>
+                <p class="text-gray-500 text-sm mb-4">Tus compras aparecerán aquí.</p>
+                <a href="/index.html" class="text-brand-600 font-bold text-sm hover:underline">Ir a comprar &rarr;</a>
+            </div>
 
-    function renderizar(lista) {
-        const cont = document.getElementById('listaPedidos');
-        const loader = document.getElementById('loading');
-        loader.style.display = 'none';
-        cont.innerHTML = '';
-
-        if(lista.length === 0) {
-            cont.innerHTML = '<div class="empty-state">📦<br>Aún no tienes pedidos registrados.</div>';
-            return;
-        }
-
-        lista.forEach(p => {
-            // Usamos las nuevas funciones de formato
-            const fechaStr = formatearFecha(p.fecha);
-            const items = p.items || [];
-            
-            let itemsHtml = '';
-            items.forEach(it => {
-                const precioRaw = it.subtotal || (it.cantidad * it.precio_unitario);
-                const precioFormateado = formatearDinero(precioRaw);
-
-                itemsHtml += `<li class="item-row">
-                    <span class="item-nombre"><b>${it.cantidad}x</b> ${it.nombre}</span>
-                    <span class="item-precio">$${precioFormateado}</span>
-                </li>`;
-            });
-
-            // Formatear el total general
-            const totalFormateado = formatearDinero(p.total);
-
-            const card = document.createElement('div');
-            card.className = 'pedido-card';
-            card.style.borderLeftColor = p.color_estado; 
-
-            card.innerHTML = `
-                <div class="header-card">
-                    <div class="fecha-container">
-                        <span class="fecha">${fechaStr} hs</span>
-                        ${p.nombre_negocio ? `<span class="negocio">🏠 ${p.nombre_negocio}</span>` : ''}
+            <transition-group name="fade">
+                <div v-for="p in pedidos" :key="p.id" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group">
+                    
+                    <div class="px-5 py-4 bg-gray-50/50 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-white p-2 rounded-lg border border-gray-100 shadow-sm text-gray-400 group-hover:text-brand-500 transition-colors">
+                                <i data-lucide="calendar" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Fecha del pedido</div>
+                                <div class="text-sm font-bold text-gray-800 flex flex-wrap items-center gap-2">
+                                    {{ formatDate(p.fecha) }}
+                                    
+                                    <span v-if="p.nombre_negocio" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100">
+                                        <i data-lucide="store" class="w-3 h-3"></i> {{ p.nombre_negocio }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide text-white shadow-sm flex items-center gap-1.5"
+                                  :style="{ backgroundColor: p.color_estado }">
+                                <span v-if="p.tipo === 'pedido'">✓</span>
+                                <span v-else>⏳</span>
+                                {{ p.estado_etiqueta }}
+                            </span>
+                        </div>
                     </div>
-                    <span class="estado" style="background:${p.color_estado}">${p.estado_etiqueta}</span>
+
+                    <div class="p-5">
+                        <ul class="divide-y divide-gray-50 border border-gray-50 rounded-lg">
+                            <li v-for="it in p.items" :key="it.id" class="py-3 px-3 flex justify-between items-center text-sm hover:bg-gray-50/50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <span class="font-bold text-brand-700 bg-brand-100 px-2 py-1 rounded-md text-xs min-w-[2.5rem] text-center">
+                                        {{ it.cantidad }}x
+                                    </span>
+                                    <span class="text-gray-700 font-medium">{{ it.nombre }}</span>
+                                </div>
+                                <span class="font-medium text-gray-500 mono-num">${{ formatMoney(calcularPrecioItem(it)) }}</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Final</span>
+                        <span class="text-2xl font-bold text-gray-900 mono-num tracking-tight">${{ formatMoney(p.total) }}</span>
+                    </div>
                 </div>
+            </transition-group>
+
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN SUPABASE (Pública)
+        const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
+        
+        // URL API (Relativa)
+        const API_BASE = '/api'; 
+
+        const { createApp, ref, onMounted } = Vue;
+        // Inicialización estándar para compartir sesión
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        createApp({
+            setup() {
+                const loading = ref(true);
+                const pedidos = ref([]);
+                const userEmail = ref('');
+
+                const fetchPedidos = async (uid) => {
+                    try {
+                        const res = await fetch(`${API_BASE}/mis-pedidos?uid=${uid}`);
+                        if (!res.ok) throw new Error("Error al cargar");
+                        pedidos.value = await res.json();
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                onMounted(async () => {
+                    // Verificación pasiva de sesión
+                    try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session) {
+                            userEmail.value = session.user.email; // Mostrar email
+                            fetchPedidos(session.user.id);
+                        } else {
+                            window.location.href = '/login.html';
+                        }
+                    } catch (err) {
+                        window.location.href = '/login.html';
+                    }
+                    // Inicializar iconos
+                    lucide.createIcons();
+                });
+
+                // Helpers
+                const formatMoney = (v) => (v || 0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
                 
-                <ul class="items-list">${itemsHtml}</ul>
-                
-                <div class="card-footer">
-                    <span class="total-label">Total del pedido</span>
-                    <span class="total-amount">$${totalFormateado}</span>
-                </div>
-                ${p.tipo === 'pedido' ? `<div class="check-aprobado">✅ Aprobado por sistema</div>` : ''}
-            `;
-            cont.appendChild(card);
-        });
-    }
+                const formatDate = (iso) => {
+                    if(!iso) return '';
+                    const d = new Date(iso);
+                    // Formato: 10 ene, 14:30 hs
+                    return d.toLocaleDateString('es-AR', {day:'numeric', month:'short'}) + ', ' + 
+                           d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}) + ' hs';
+                };
 
-    async function logout() {
-        await supabase.auth.signOut();
-        localStorage.removeItem('session'); 
-        window.location.href = 'login.html';
-    }
+                const calcularPrecioItem = (it) => {
+                    return it.subtotal || (it.cantidad * it.precio_unitario);
+                };
 
-    cargarHistorial();
-</script>
+                const logout = async () => {
+                    await supabase.auth.signOut();
+                    window.location.href = '/login.html';
+                };
 
+                return {
+                    loading, pedidos, userEmail,
+                    formatMoney, formatDate, calcularPrecioItem, logout
+                };
+            }
+        }).mount('#app');
+    </script>
 </body>
 </html>
