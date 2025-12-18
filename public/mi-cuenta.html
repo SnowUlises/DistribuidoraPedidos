@@ -3,214 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Pedidos - Distribuidora Funaz</title>
+    <title>Mi Cuenta - Distribuidora Funaz</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    colors: {
-                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' }, // Lima
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
+                extend: { colors: { brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' } } }
             }
         }
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; }
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; padding-bottom: 80px; }
         .mono-num { font-family: 'JetBrains Mono', monospace; }
-        
-        /* Animación suave para las tarjetas */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <div id="app" class="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
+    <div class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
         
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-brand-400 p-2 rounded-xl text-brand-900 shadow-sm">
-                    <i data-lucide="package-check" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-gray-900 leading-none">Mis Pedidos</h1>
-                    <p class="text-xs text-gray-400 font-medium tracking-wide mt-1">HISTORIAL DE COMPRAS</p>
-                </div>
-            </div>
-
-            <div class="flex flex-col items-end gap-3 w-full md:w-auto">
-                <div v-if="userEmail" class="text-xs text-gray-500 font-medium bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></div>
-                    {{ userEmail }}
-                </div>
-                
-                <div class="flex flex-wrap gap-2 w-full md:w-auto mt-1">
-                    <a href="/deudas.html" class="flex-1 md:flex-none bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex justify-center items-center gap-2 shadow-sm transition-transform hover:-translate-y-0.5">
-                        <i data-lucide="wallet" class="w-4 h-4"></i>
-                        Ver Deuda
-                    </a>
-                    <a href="/index.html" class="flex-1 md:flex-none bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold flex justify-center items-center gap-2 border border-gray-200 shadow-sm transition-transform hover:-translate-y-0.5">
-                        <i data-lucide="store" class="w-4 h-4"></i>
-                        Tienda
-                    </a>
-                    <button @click="logout" class="bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 p-2 rounded-lg border border-gray-200 transition-colors" title="Cerrar Sesión">
-                        <i data-lucide="log-out" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
+        <header class="flex items-center justify-between mb-8">
+            <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 font-bold text-sm bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 shadow-sm transition-colors">
+                ⬅ Ir a la Tienda
+            </a>
+            <h1 class="text-xl font-bold tracking-tight text-gray-900">Mi Perfil</h1>
+            <div class="w-8"></div>
         </header>
 
-        <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
-            <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-brand-500"></i>
-            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando historial...</span>
+        <div id="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <div class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando perfil...</span>
         </div>
 
-        <div v-else class="space-y-5 pb-20">
+        <div id="main-content" class="hidden">
             
-            <div v-if="pedidos.length === 0" class="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-300 shadow-sm">
-                <div class="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i data-lucide="shopping-bag" class="w-8 h-8 text-gray-300"></i>
+            <div class="bg-gray-900 text-white rounded-2xl p-6 mb-8 shadow-xl shadow-gray-200 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-24 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
+                <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div id="user-initials" class="w-12 h-12 rounded-full bg-brand-500 text-brand-900 flex items-center justify-center font-bold text-xl shadow-lg">
+                            --
+                        </div>
+                        <div>
+                            <h2 id="user-name" class="text-lg font-bold leading-tight">Cargando...</h2>
+                            <p id="user-email" class="text-xs text-gray-400">...</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <a href="deudas.html" class="flex-1 md:flex-none bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors border border-white/10">
+                            Estado de Cuenta
+                        </a>
+                        <button onclick="logout()" class="flex-1 md:flex-none bg-red-500/20 hover:bg-red-500/30 text-red-200 px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors border border-red-500/20">
+                            Salir
+                        </button>
+                    </div>
                 </div>
-                <h3 class="text-gray-900 font-bold mb-1">Aún no tienes pedidos</h3>
-                <p class="text-gray-500 text-sm mb-4">Tus compras aparecerán aquí.</p>
-                <a href="/index.html" class="text-brand-600 font-bold text-sm hover:underline">Ir a comprar &rarr;</a>
             </div>
 
-            <transition-group name="fade">
-                <div v-for="p in pedidos" :key="p.id" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group">
-                    
-                    <div class="px-5 py-4 bg-gray-50/50 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                        <div class="flex items-start gap-3">
-                            <div class="bg-white p-2 rounded-lg border border-gray-100 shadow-sm text-gray-400 group-hover:text-brand-500 transition-colors">
-                                <i data-lucide="calendar" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Fecha del pedido</div>
-                                <div class="text-sm font-bold text-gray-800 flex flex-wrap items-center gap-2">
-                                    {{ formatDate(p.fecha) }}
-                                    
-                                    <span v-if="p.nombre_negocio" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100">
-                                        <i data-lucide="store" class="w-3 h-3"></i> {{ p.nombre_negocio }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
-                            <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide text-white shadow-sm flex items-center gap-1.5"
-                                  :style="{ backgroundColor: p.color_estado }">
-                                <span v-if="p.tipo === 'pedido'">✓</span>
-                                <span v-else>⏳</span>
-                                {{ p.estado_etiqueta }}
-                            </span>
-                        </div>
-                    </div>
+            <div class="flex border-b border-gray-200 mb-6">
+                <button id="tab-pedidos" class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600" onclick="cambiarTab('pedidos')">
+                    Mis Pedidos
+                </button>
+                <button id="tab-historial" class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600" onclick="cambiarTab('historial')">
+                    Historial
+                </button>
+            </div>
 
-                    <div class="p-5">
-                        <ul class="divide-y divide-gray-50 border border-gray-50 rounded-lg">
-                            <li v-for="it in p.items" :key="it.id" class="py-3 px-3 flex justify-between items-center text-sm hover:bg-gray-50/50 transition-colors">
-                                <div class="flex items-center gap-3">
-                                    <span class="font-bold text-brand-700 bg-brand-100 px-2 py-1 rounded-md text-xs min-w-[2.5rem] text-center">
-                                        {{ it.cantidad }}x
-                                    </span>
-                                    <span class="text-gray-700 font-medium">{{ it.nombre }}</span>
-                                </div>
-                                <span class="font-medium text-gray-500 mono-num">${{ formatMoney(calcularPrecioItem(it)) }}</span>
-                            </li>
-                        </ul>
-                    </div>
+            <div id="empty-state" class="hidden text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <div class="text-4xl mb-3">📦</div>
+                <p class="text-sm text-gray-500 font-medium">No hay registros aquí.</p>
+                <a href="index.html" class="text-xs text-brand-600 font-bold hover:underline mt-2 inline-block">Realizar un pedido</a>
+            </div>
 
-                    <div class="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Final</span>
-                        <span class="text-2xl font-bold text-gray-900 mono-num tracking-tight">${{ formatMoney(p.total) }}</span>
-                    </div>
+            <div id="orders-list" class="space-y-4">
                 </div>
-            </transition-group>
 
         </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN SUPABASE
+        // CONFIGURACIÓN
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
-        
-        // URL API
-        const API_BASE = '/api'; 
+        const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-        const { createApp, ref, onMounted } = Vue;
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // VARIABLES GLOBALES
+        let currentUser = null;
+        let todosLosPedidos = [];
+        let productosCache = [];
+        let tabActual = 'pedidos'; // 'pedidos' o 'historial'
 
-        createApp({
-            setup() {
-                const loading = ref(true);
-                const pedidos = ref([]);
-                const userEmail = ref('');
+        // INICIO
+        document.addEventListener('DOMContentLoaded', async () => {
+            await iniciarApp();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
 
-                const fetchPedidos = async (uid) => {
-                    try {
-                        const res = await fetch(`${API_BASE}/mis-pedidos?uid=${uid}`);
-                        if (!res.ok) throw new Error("Error al cargar");
-                        pedidos.value = await res.json();
-                    } catch (e) {
-                        console.error(e);
-                    } finally {
-                        loading.value = false;
-                    }
-                };
+        async function iniciarApp() {
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            try {
+                // 1. Auth
+                const { data } = await supabase.auth.getSession();
+                if (!data || !data.session) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                currentUser = data.session.user;
+                renderizarPerfil();
 
-                onMounted(async () => {
-                    try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (session) {
-                            userEmail.value = session.user.email;
-                            fetchPedidos(session.user.id);
-                        } else {
-                            window.location.href = '/login.html';
-                        }
-                    } catch (err) {
-                        window.location.href = '/login.html';
-                    }
-                    lucide.createIcons();
+                // 2. Cargar Datos en paralelo
+                await Promise.all([
+                    cargarPedidos(currentUser.id),
+                    cargarProductos()
+                ]);
+
+                // 3. Mostrar UI
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                renderizarLista();
+
+            } catch (e) {
+                console.error("Error crítico:", e);
+                alert("Error al cargar perfil. Revisa tu conexión.");
+            }
+        }
+
+        function renderizarPerfil() {
+            const meta = currentUser.user_metadata || {};
+            const nombre = meta.full_name || meta.name || currentUser.email.split('@')[0];
+            const email = currentUser.email;
+            const iniciales = nombre.substring(0, 2).toUpperCase();
+
+            document.getElementById('user-name').textContent = nombre;
+            document.getElementById('user-email').textContent = email;
+            document.getElementById('user-initials').textContent = iniciales;
+        }
+
+        async function cargarPedidos(uid) {
+            try {
+                const res = await fetch(`${API_BASE}/mis-pedidos?uid=${uid}`);
+                if (res.ok) {
+                    todosLosPedidos = await res.json();
+                }
+            } catch (e) { console.error("Error pedidos", e); }
+        }
+
+        async function cargarProductos() {
+            try {
+                const res = await fetch(`${API_BASE}/productos`);
+                if (res.ok) {
+                    productosCache = await res.json();
+                }
+            } catch (e) { console.error("Error productos", e); }
+        }
+
+        function cambiarTab(nuevoTab) {
+            tabActual = nuevoTab;
+            
+            // Actualizar estilos botones
+            const btnP = document.getElementById('tab-pedidos');
+            const btnH = document.getElementById('tab-historial');
+            
+            if (tabActual === 'pedidos') {
+                btnP.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600";
+                btnH.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600";
+            } else {
+                btnP.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600";
+                btnH.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600";
+            }
+
+            renderizarLista();
+        }
+
+        function renderizarLista() {
+            const contenedor = document.getElementById('orders-list');
+            contenedor.innerHTML = ''; // Limpiar
+
+            // Filtrar
+            const listaFiltrada = todosLosPedidos.filter(p => {
+                const estado = (p.estado || 'Pendiente').toLowerCase();
+                if (tabActual === 'pedidos') {
+                    return estado === 'pendiente' || estado === 'en proceso' || estado === 'confirmado';
+                } else {
+                    return estado === 'completado' || estado === 'entregado' || estado === 'cancelado';
+                }
+            });
+
+            // Estado vacío
+            if (listaFiltrada.length === 0) {
+                document.getElementById('empty-state').classList.remove('hidden');
+                return;
+            } else {
+                document.getElementById('empty-state').classList.add('hidden');
+            }
+
+            // Generar HTML
+            listaFiltrada.forEach(pedido => {
+                const estadoClass = getEstadoClass(pedido.estado);
+                const fecha = formatDate(pedido.fecha);
+                const total = formatMoney(pedido.total);
+                const itemsCount = (pedido.items || []).length;
+                const negocio = pedido.negocio || 'Pedido Personal';
+                
+                // Generar HTML de productos (oculto por defecto)
+                let productosHTML = '';
+                (pedido.items || []).forEach(prod => {
+                    const nombre = getNombreProducto(prod);
+                    const subtotal = formatMoney(prod.precio * prod.cantidad);
+                    productosHTML += `
+                        <div class="flex justify-between text-sm mb-1">
+                            <div class="text-gray-600 truncate pr-4">
+                                <span class="font-bold text-gray-900">x${prod.cantidad}</span> ${nombre}
+                            </div>
+                            <div class="text-gray-900 font-medium mono-num">${subtotal}</div>
+                        </div>
+                    `;
                 });
 
-                // Helpers
-                const formatMoney = (v) => (v || 0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
-                
-                const formatDate = (iso) => {
-                    if(!iso) return '';
-                    const d = new Date(iso);
-                    return d.toLocaleDateString('es-AR', {day:'numeric', month:'short'}) + ', ' + 
-                           d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}) + ' hs';
-                };
+                const cardHTML = `
+                    <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${estadoClass}">
+                                        ${pedido.estado || 'Pendiente'}
+                                    </span>
+                                    <span class="text-xs text-gray-400">${fecha}</span>
+                                </div>
+                                <div class="text-sm font-bold text-gray-800">${negocio}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold text-gray-900 mono-num">${total}</div>
+                                <div class="text-[10px] text-gray-400">${itemsCount} productos</div>
+                            </div>
+                        </div>
 
-                const calcularPrecioItem = (it) => {
-                    return it.subtotal || (it.cantidad * it.precio_unitario);
-                };
+                        <button onclick="toggleDetalle('${pedido.id}')" class="w-full text-center py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-bold text-gray-500 transition-colors">
+                            Ver / Ocultar Productos
+                        </button>
 
-                // MODIFICADO: Logout con confirmación
-                const logout = async () => {
-                    if(!confirm("¿Estás seguro de que quieres cerrar sesión?")) return;
-                    await supabase.auth.signOut();
-                    window.location.href = '/login.html';
-                };
+                        <div id="detalle-${pedido.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
+                            ${productosHTML}
+                        </div>
+                    </div>
+                `;
+                contenedor.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
 
-                return {
-                    loading, pedidos, userEmail,
-                    formatMoney, formatDate, calcularPrecioItem, logout
-                };
+        // --- UTILIDADES ---
+
+        function toggleDetalle(id) {
+            const el = document.getElementById(`detalle-${id}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        function getNombreProducto(item) {
+            if (item.nombre) return item.nombre;
+            const prod = productosCache.find(p => String(p.id) === String(item.id));
+            return prod ? prod.nombre : 'Producto #' + item.id;
+        }
+
+        function getEstadoClass(estado) {
+            const st = (estado || 'pendiente').toLowerCase();
+            if (st === 'pendiente') return 'bg-yellow-100 text-yellow-700';
+            if (st === 'confirmado' || st === 'en proceso') return 'bg-blue-100 text-blue-700';
+            if (st === 'entregado' || st === 'completado') return 'bg-green-100 text-green-700';
+            if (st === 'cancelado') return 'bg-red-100 text-red-700';
+            return 'bg-gray-100 text-gray-600';
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatMoney(val) {
+            return '$' + (Number(val) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+        }
+
+        async function logout() {
+            if (confirm("¿Cerrar sesión?")) {
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                await supabase.auth.signOut();
+                window.location.href = 'index.html';
             }
-        }).mount('#app');
+        }
     </script>
 </body>
 </html>
