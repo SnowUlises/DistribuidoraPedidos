@@ -1,512 +1,305 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Detalle - Distribuidora Funaz</title>
-  <style>
-    :root {
-      --primary-green: #2E7D32;
-      --light-green: #4CAF50;
-      --soft-green: #E8F5E9;
-      --text-dark: #333;
-      --bg-color: #fcfdfc;
-      --white: #ffffff;
-      --danger: #e57373;
-    }
-
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-    body { 
-      font-family: 'Segoe UI', 'Roboto', Helvetica, sans-serif; 
-      background: var(--bg-color); 
-      color: var(--text-dark); 
-      margin: 0; 
-      min-height: 100vh; 
-      display: flex; 
-      flex-direction: column; 
-    }
-
-    /* HEADER */
-    header { 
-      background: var(--primary-green); 
-      color: var(--white); 
-      padding: 0.8em 1.5em; 
-      display: flex; 
-      align-items: center; 
-      justify-content: space-between;
-      gap: 1em; 
-      position: sticky; 
-      top: 0; 
-      z-index: 100;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle - Distribuidora Funaz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    header h1 { font-size: 1.2em; font-weight: 600; margin: 0; display: none; }
-    @media(min-width: 768px) { header h1 { display: block; } }
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' }, // Lima
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; }
+        .mono-num { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Animación Fade */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-    header button { 
-      padding: 8px 14px; 
-      border: none; 
-      border-radius: 20px; 
-      background: rgba(255,255,255,0.2); 
-      color: var(--white); 
-      font-weight: 600; 
-      cursor: pointer; 
-      font-size: 0.9em;
-      transition: background 0.2s;
-      display: flex; align-items: center; gap: 5px;
-    }
-    header button:hover { background: var(--white); color: var(--primary-green); }
-
-    /* MAIN CARD */
-    main { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 2em; }
-
-    .producto-card { 
-      background: var(--white); 
-      border-radius: 20px; 
-      box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-      max-width: 900px; 
-      width: 100%; 
-      display: flex; 
-      padding: 2.5em; 
-      gap: 3em; 
-      align-items: flex-start; 
-      border: 1px solid #f0f0f0;
-    }
-
-    /* IMAGEN */
-    .imagen-container { 
-      flex: 1; 
-      max-width: 400px;
-      display: flex; justify-content: center; align-items: center;
-      background: #f9f9f9;
-      border-radius: 16px;
-      padding: 1em;
-    }
-    .imagen-container img { 
-      width: 100%; height: auto; max-height: 400px; 
-      object-fit: contain; 
-      mix-blend-mode: multiply; 
-    }
-
-    /* DETALLES */
-    .detalle { flex: 1; display: flex; flex-direction: column; justify-content: center; height: 100%; }
-    
-    .nombre { 
-      font-size: 2em; 
-      font-weight: 700; 
-      margin-bottom: 0.2em; 
-      line-height: 1.2; 
-      color: var(--text-dark);
-    }
-    
-    .precio { 
-      font-size: 2.2em; 
-      color: var(--primary-green); 
-      font-weight: bold; 
-      margin-bottom: 1em; 
-    }
-
-    /* CONTROL DE CANTIDAD (STEPPER) */
-    .control-cantidad {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: #f5f5f5;
-      padding: 5px;
-      border-radius: 12px;
-      width: fit-content;
-      margin-bottom: 1.5em;
-      border: 1px solid transparent;
-      transition: border-color 0.2s;
-    }
-    .control-cantidad:focus-within {
-      border-color: var(--light-green);
-      background: white;
-    }
-
-    .control-cantidad button {
-      width: 45px; height: 45px;
-      border: none; background: var(--white);
-      border-radius: 8px;
-      font-size: 1.4em; font-weight: bold; color: var(--primary-green);
-      cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      transition: transform 0.1s, background 0.1s;
-    }
-    .control-cantidad button:active { transform: scale(0.9); background: var(--soft-green); }
-    
-    /* INPUT AHORA EDITABLE */
-    .control-cantidad input {
-      width: 70px; 
-      height: 45px;
-      text-align: center;
-      border: none; 
-      background: transparent;
-      font-size: 1.3em; 
-      font-weight: bold;
-      color: var(--text-dark);
-      outline: none;
-      -moz-appearance: textfield; /* Quita flechas default navegador */
-    }
-    /* Quita flechas default navegador en webkit */
-    .control-cantidad input::-webkit-outer-spin-button,
-    .control-cantidad input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    /* BOTON AGREGAR */
-    button.agregar { 
-      padding: 16px 32px; 
-      background: var(--light-green); 
-      border: none; 
-      border-radius: 12px; 
-      color: white; 
-      font-size: 1.1em;
-      font-weight: bold; 
-      cursor: pointer; 
-      transition: all 0.2s; 
-      width: 100%;
-      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-    }
-    button.agregar:hover:not(:disabled) { background: var(--primary-green); transform: translateY(-2px); }
-    button.agregar:active { transform: scale(0.98); }
-    
-    /* FEEDBACK AGREGADO */
-    button.agregar.agregado { background: var(--primary-green); }
-    button.agregar.agregado::after { content: " ✓"; }
-
-    .sin-stock { 
-      color: var(--danger); 
-      font-weight: bold; 
-      font-size: 1.2em; 
-      background: #ffebee; 
-      padding: 10px 20px; 
-      border-radius: 8px; 
-      display: inline-block;
-    }
-
-    /* CARRITO MODAL FLOTANTE */
-    #carritoDesplegable { 
-      position: fixed; top: 70px; right: 20px; width: 320px; max-height: 80vh; 
-      background: white; box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
-      border-radius: 16px; overflow-y: auto; padding: 1.5em; 
-      display: none; z-index: 1000; border: 1px solid #eee;
-    }
-    .item-carrito { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8em; border-bottom: 1px solid #f0f0f0; padding-bottom: 0.5em; }
-    .item-carrito button { background: #ffebee; color: var(--danger); border: none; border-radius: 6px; width: 25px; height: 25px; cursor: pointer; font-weight: bold; }
-    
-    #carritoAcciones { display: flex; gap: 10px; margin-top: 15px; }
-    #carritoAcciones button { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-    #verCarritoBtn { background: var(--primary-green); color: white; }
-    #vaciarCarritoBtn { background: var(--danger); color: white; }
-
-    /* TOAST NOTIFICATION */
-    #mensajeAgregado { 
-      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: #333; color: white; border-radius: 50px; 
-      box-shadow: 0 5px 20px rgba(0,0,0,0.3); 
-      padding: 12px 25px; font-weight: 500; text-align: center;
-      display: block; opacity: 0; pointer-events: none; z-index: 2000;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      min-width: auto; width: max-content;
-    }
-    #mensajeAgregado.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    /* --- RESPONSIVE MOBILE --- */
-    @media (max-width: 768px) {
-      body { background: var(--white); }
-      main { padding: 0; }
-      
-      header { padding: 10px 15px; }
-      header button span { display: none; } 
-
-      .producto-card {
-        flex-direction: column;
-        border-radius: 0;
-        box-shadow: none;
-        padding: 0;
-        gap: 0;
-        border: none;
-      }
-
-      .imagen-container {
-        width: 100%;
-        max-width: 100%;
-        height: 35vh;
-        border-radius: 0 0 20px 20px;
-        background: #f5f5f5;
-        margin-bottom: 20px;
-        padding: 20px;
-      }
-      .imagen-container img { height: 100%; max-height: none; }
-
-      .detalle { padding: 0 20px 40px 20px; width: 100%; display: block; }
-      
-      .nombre { font-size: 1.5em; }
-      .precio { font-size: 1.8em; margin-bottom: 0.8em; }
-
-      .acciones {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-      
-      .control-cantidad { width: 100%; justify-content: space-between; padding: 10px; border-radius: 16px; margin-bottom: 10px; background: #fafafa; border: 1px solid #eee; }
-      .control-cantidad button { width: 50px; height: 50px; border-radius: 12px; }
-      .control-cantidad input { font-size: 1.5em; } /* Texto mas grande en movil */
-      
-      button.agregar { padding: 18px; font-size: 1.2em; border-radius: 16px; position: sticky; bottom: 20px; box-shadow: 0 10px 20px rgba(76, 175, 80, 0.4); }
-
-      #carritoDesplegable { width: 90%; top: 50%; left: 50%; transform: translate(-50%, -50%); right: auto; }
-    }
-  </style>
+        /* Toast */
+        #mensajeAgregado {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: #1f2937; color: white; padding: 12px 24px; border-radius: 50px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); font-weight: 600; font-size: 0.9em;
+            z-index: 2000; opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 8px; width: max-content; max-width: 90%;
+        }
+        #mensajeAgregado.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
 </head>
-<body>
-  <header>
-    <button onclick="location.href='index.html'">⬅ Volver</button>
-    <h1>Detalle</h1>
-    <div style="display:flex; gap:10px;">
-        <button onclick="location.href='admin.html'">👤</button>
-        <button id="btnCarritoHeader" onclick="toggleCarrito()">🛒 (0)</button>
-    </div>
-  </header>
+<body class="min-h-screen flex flex-col">
 
-  <main>
-    <div class="producto-card" id="detalle">
-        <p style="padding:20px; width:100%; text-align:center;">Cargando producto...</p>
-    </div>
-  </main>
-
-  <div id="carritoDesplegable">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="margin:0; color:var(--primary-green);">Tu Carrito</h3>
-        <button onclick="toggleCarrito()" style="background:none; border:none; font-size:1.5em; color:#999;">&times;</button>
-    </div>
-    <div id="listaCarrito"></div>
-    <div id="carritoAcciones">
-      <button id="vaciarCarritoBtn" onclick="vaciarCarrito()">Vaciar</button>
-      <button id="verCarritoBtn" onclick="verCarrito()">Ver Carrito Completo</button>
-    </div>
-  </div>
-
-  <div id="mensajeAgregado"></div>
-
-  <script>
-    let carrito = [];
-    let producto = null;
-    let cantidadInput = null;
-    let productos = [];
-
-    function initCarrito() {
-      try {
-        const storedCarrito = localStorage.getItem('carrito');
-        carrito = storedCarrito ? JSON.parse(storedCarrito) : [];
-        if (!Array.isArray(carrito)) carrito = [];
-      } catch (err) {
-        carrito = [];
-      }
-      localStorage.setItem('carrito', JSON.stringify(carrito));
-    }
-
-    function actualizarContadorCarrito() {
-      const btnCarritoHeader = document.getElementById('btnCarritoHeader');
-      const total = carrito.reduce((acc, i) => acc + (i.cantidad || 0), 0);
-      btnCarritoHeader.textContent = `🛒 (${total})`;
-    }
-
-    function getImageUrl(fileName) {
-      if (!fileName) return '';
-      const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
-      return `https://slroycxifwezthdomkny.supabase.co/storage/v1/object/public/imagenes/${cleanFileName}`;
-    }
-
-    async function cargarProducto() {
-      const id = new URLSearchParams(location.search).get('id');
-      if (!id) return mostrarError('Producto no especificado.');
-
-      try {
-        const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos', { cache: 'no-store' });
-        if (!res.ok) throw new Error();
-        productos = await res.json();
-        producto = productos.find(p => String(p.id) === String(id));
+    <div id="app" class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
         
-        if (!producto) throw new Error("Producto no encontrado");
-
-        const existingItem = carrito.find(p => p.id == id);
-        const initialCantidad = existingItem ? existingItem.cantidad : 1;
-        
-        let accionesHTML = '';
-        if (producto.stock <= -99) {
-          accionesHTML = '<div class="sin-stock">🚫 SIN STOCK</div>';
-        } else {
-          // INPUT AHORA HABILITADO PARA ESCRITURA (onblur para validar al salir)
-          accionesHTML = `
-            <div class="acciones">
-              <div class="control-cantidad">
-                <button onclick="disminuirCantidad()">-</button>
-                <input type="number" id="cantidad" value="${initialCantidad}" min="1" onchange="validarInput(this)" />
-                <button onclick="aumentarCantidad()">+</button>
-              </div>
-              <button class="agregar" id="btnAgregar" onclick="agregarAlCarrito(this)">Agregar al Carrito</button>
+        <header class="flex items-center justify-between mb-8">
+            <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver
+            </a>
+            
+            <div class="flex items-center gap-2">
+                <a href="login.html" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </a>
+                <button @click="toggleCarrito" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95">
+                    <i data-lucide="shopping-cart" class="w-4 h-4"></i> <span>({{ cantidadTotalCarrito }})</span>
+                </button>
             </div>
-          `;
-        }
+        </header>
 
-        const detalleDiv = document.getElementById('detalle');
-        detalleDiv.innerHTML = `
-          <div class="imagen-container">
-            <img id="mainImage" src="${getImageUrl('placeholder.png')}" alt="${producto.nombre}">
-          </div>
-          <div class="detalle">
-            <div class="nombre">${producto.nombre}</div>
-            <div class="precio">$${(producto.precio * 1.1).toFixed(2)}</div>
-            <div style="flex-grow:1;"></div> 
-            ${accionesHTML}
-          </div>
-        `;
+        <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-brand-500"></i>
+            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando producto...</span>
+        </div>
 
-        if (producto.imagen) {
-            const publicUrl = getImageUrl(producto.imagen);
-            const img = document.getElementById('mainImage');
-            const realImg = new Image();
-            realImg.src = publicUrl;
-            realImg.onload = () => { img.src = publicUrl; };
-        }
+        <div v-else-if="error" class="text-center py-20">
+            <div class="bg-red-50 p-4 rounded-xl text-red-600 font-bold inline-block border border-red-100">
+                {{ error }}
+            </div>
+            <div class="mt-4">
+                <a href="index.html" class="text-gray-500 underline hover:text-gray-800 text-sm">Volver al inicio</a>
+            </div>
+        </div>
 
-        if (producto.stock > -99) {
-          cantidadInput = document.getElementById('cantidad');
-        }
-        
-        actualizarContadorCarrito();
-        actualizarCarrito();
+        <div v-else-if="producto" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row">
+            
+            <div class="w-full md:w-1/2 bg-gray-50 p-8 flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative">
+                <img :src="imagenUrl" :alt="producto.nombre" class="w-full h-auto max-h-[400px] object-contain mix-blend-multiply">
+                
+                <div v-if="producto.stock <= -99" class="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                    Agotado
+                </div>
+            </div>
 
-      } catch (err) {
-        mostrarError(`No se pudo cargar el producto.`);
-        console.error(err);
-      }
-    }
+            <div class="w-full md:w-1/2 p-6 md:p-10 flex flex-col justify-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">{{ producto.nombre }}</h1>
+                <div class="text-3xl font-bold text-brand-600 mb-6 mono-num">${{ formatMoney(precioFinal) }}</div>
 
-    // Funciones de cantidad
-    function aumentarCantidad() {
-        let val = parseInt(cantidadInput.value) || 0;
-        cantidadInput.value = val + 1;
-    }
+                <div v-if="producto.stock > -99" class="space-y-6">
+                    
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-bold text-gray-400 uppercase tracking-wider">Cantidad:</span>
+                        <div class="flex items-center bg-gray-50 rounded-xl border border-gray-200 p-1">
+                            <button @click="disminuir" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white hover:shadow-sm rounded-lg transition-all font-bold text-lg">-</button>
+                            <input type="number" v-model.number="cantidad" @change="validarInput" class="w-12 text-center bg-transparent font-bold text-gray-800 outline-none mono-num" min="1">
+                            <button @click="aumentar" class="w-10 h-10 flex items-center justify-center text-brand-600 hover:bg-white hover:shadow-sm rounded-lg transition-all font-bold text-lg">+</button>
+                        </div>
+                    </div>
 
-    function disminuirCantidad() {
-        let val = parseInt(cantidadInput.value) || 0;
-        if (val > 1) cantidadInput.value = val - 1;
-    }
+                    <button @click="agregarAlCarrito" 
+                            class="w-full bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-brand-200 transition-all hover:-translate-y-1 active:scale-95 flex justify-center items-center gap-2"
+                            :class="{'bg-green-600 scale-95': agregadoFeedback}">
+                        <span v-if="agregadoFeedback">¡Agregado!</span>
+                        <span v-else>Agregar al Carrito</span>
+                        <i v-if="!agregadoFeedback" data-lucide="shopping-bag" class="w-5 h-5"></i>
+                        <i v-else data-lucide="check" class="w-5 h-5"></i>
+                    </button>
 
-    // NUEVA FUNCION: Validar cuando el usuario escribe manualmente
-    function validarInput(input) {
-        let val = parseInt(input.value);
-        if (isNaN(val) || val < 1) {
-            input.value = 1; // Si borran todo o ponen negativos, vuelve a 1
-        }
-    }
+                </div>
 
-    function mostrarError(msg) {
-      document.getElementById('detalle').innerHTML = `<p style="color:#e53935;font-weight:bold;text-align:center;width:100%;padding:2em;">${msg}</p>`;
-    }
+                <div v-else class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center text-gray-500 font-medium text-sm">
+                    Este producto no está disponible por el momento.
+                </div>
+            </div>
+        </div>
 
-    function agregarAlCarrito(btnElement) {
-      if (!producto || (producto.stock <= -99)) return;
+        <div v-if="carritoAbierto" class="fixed inset-0 z-50 flex justify-end" @click.self="toggleCarrito">
+            <div class="w-full max-w-sm bg-white h-full shadow-2xl p-6 flex flex-col animate-slide-in-right" @click.stop>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-gray-900 text-lg">Tu Carrito</h3>
+                    <button @click="toggleCarrito" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto space-y-4 mb-4">
+                    <div v-if="carrito.length === 0" class="text-center text-gray-400 py-10">Vacío</div>
+                    <div v-for="item in carritoDetalle" :key="item.id" class="flex justify-between items-center border-b border-gray-50 pb-2">
+                        <div>
+                            <div class="text-sm font-bold text-gray-800">{{ item.nombre }}</div>
+                            <div class="text-xs text-gray-500">x{{ item.cantidad }}</div>
+                        </div>
+                        <button @click="eliminarDelCarrito(item.id)" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
 
-      let cantidad = parseInt(cantidadInput.value);
-      if (isNaN(cantidad) || cantidad < 1) {
-          cantidad = 1;
-          cantidadInput.value = 1;
-      }
+                <div class="flex gap-2">
+                    <button @click="vaciarCarrito" class="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold text-sm">Vaciar</button>
+                    <a href="carrito.html" class="flex-1 bg-brand-500 text-white py-3 rounded-xl font-bold text-sm text-center shadow-md">Ver Completo</a>
+                </div>
+            </div>
+        </div>
 
-      const existente = carrito.find(p => p.id === producto.id);
-      if (existente) existente.cantidad = cantidad;
-      else carrito.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad });
+        <div id="mensajeAgregado" :class="{'visible': toastVisible}">
+            <i data-lucide="check-circle" class="w-5 h-5 text-brand-400"></i>
+            <span>{{ toastMensaje }}</span>
+        </div>
 
-      localStorage.setItem('carrito', JSON.stringify(carrito));
-      
-      // Feedback Visual y Tactil
-      if(btnElement) {
-        const originalText = btnElement.innerText;
-        btnElement.innerText = "¡Listo!";
-        btnElement.classList.add('agregado');
-        if (navigator.vibrate) navigator.vibrate(50);
-        
-        setTimeout(() => {
-            btnElement.innerText = originalText;
-            btnElement.classList.remove('agregado');
-        }, 1500);
-      }
+    </div>
 
-      actualizarCarrito();
-      actualizarContadorCarrito();
-      mostrarMensajeToast(`${producto.nombre} (x${cantidad})`);
-    }
+    <script>
+        const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+        const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com/api/productos'; // Tu API
 
-    function mostrarMensajeToast(texto) {
-      const msg = document.getElementById('mensajeAgregado');
-      msg.textContent = `Guardado: ${texto}`;
-      msg.classList.add('visible');
-      if(msg.timeoutId) clearTimeout(msg.timeoutId);
-      msg.timeoutId = setTimeout(() => {
-        msg.classList.remove('visible');
-      }, 2500);
-    }
+        const { createApp, ref, computed, onMounted } = Vue;
 
-    function toggleCarrito() {
-      const c = document.getElementById('carritoDesplegable');
-      c.style.display = c.style.display === 'block' ? 'none' : 'block';
-      if (c.style.display === 'block') actualizarCarrito();
-    }
+        createApp({
+            setup() {
+                const loading = ref(true);
+                const error = ref(null);
+                const producto = ref(null);
+                const cantidad = ref(1);
+                const carrito = ref(JSON.parse(localStorage.getItem('carrito')) || []);
+                const carritoAbierto = ref(false);
+                const agregadoFeedback = ref(false);
+                const toastVisible = ref(false);
+                const toastMensaje = ref('');
+                let toastTimeout = null;
 
-    function actualizarCarrito() {
-      const lista = document.getElementById('listaCarrito');
-      lista.innerHTML = '';
-      if (carrito.length === 0) {
-        lista.innerHTML = '<p style="text-align:center;color:#888;">Carrito vacío.</p>';
-        return;
-      }
-      carrito.forEach(item => {
-        const prod = productos.find(p => p.id === item.id) || item;
-        const div = document.createElement('div');
-        div.className = 'item-carrito';
-        div.innerHTML = `
-          <span>${prod.nombre} <b>x${item.cantidad}</b></span>
-          <button onclick="removerDelCarrito(${item.id})">✕</button>
-        `;
-        lista.appendChild(div);
-      });
-    }
+                const cargarProducto = async () => {
+                    const id = new URLSearchParams(window.location.search).get('id');
+                    if (!id) {
+                        error.value = "Producto no especificado.";
+                        loading.value = false;
+                        return;
+                    }
 
-    function removerDelCarrito(id) {
-      const itemIndex = carrito.findIndex(i => i.id === id);
-      if (itemIndex > -1) {
-        carrito.splice(itemIndex, 1);
-        localStorage.setItem('carrito', JSON.stringify(carrito));
-        actualizarCarrito();
-        actualizarContadorCarrito();
-        if (producto && producto.id == id && cantidadInput) cantidadInput.value = 1;
-      }
-    }
+                    try {
+                        const res = await fetch(API_URL);
+                        if (!res.ok) throw new Error("Error API");
+                        const productos = await res.json();
+                        producto.value = productos.find(p => String(p.id) === String(id));
+                        
+                        if (!producto.value) throw new Error("Producto no encontrado.");
 
-    function verCarrito() { location.href = 'carrito.html'; }
-    
-    function vaciarCarrito() {
-      if (confirm('¿Vaciar todo?')) {
-        carrito = [];
-        localStorage.setItem('carrito', JSON.stringify(carrito));
-        actualizarCarrito();
-        actualizarContadorCarrito();
-        if (cantidadInput) cantidadInput.value = 1;
-      }
-    }
+                        // Cargar cantidad previa si ya estaba en carrito
+                        const existente = carrito.value.find(p => String(p.id) === String(id));
+                        if (existente) cantidad.value = existente.cantidad;
 
-    document.addEventListener('DOMContentLoaded', () => {
-      initCarrito();
-      actualizarContadorCarrito();
-      cargarProducto();
-    });
-  </script>
+                    } catch (e) {
+                        error.value = e.message;
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                onMounted(() => {
+                    cargarProducto();
+                    lucide.createIcons();
+                });
+
+                // Computed
+                const precioFinal = computed(() => {
+                    return producto.value ? Number(producto.value.precio) * 1.10 : 0;
+                });
+
+                const imagenUrl = computed(() => {
+                    if (!producto.value || !producto.value.imagen) return `${SUPABASE_URL}/storage/v1/object/public/imagenes/placeholder.png`;
+                    const clean = producto.value.imagen.replace(/^imagenes\//, '');
+                    return `${SUPABASE_URL}/storage/v1/object/public/imagenes/${clean}`;
+                });
+
+                const cantidadTotalCarrito = computed(() => {
+                    return carrito.value.reduce((acc, item) => acc + item.cantidad, 0);
+                });
+
+                const carritoDetalle = computed(() => {
+                    // Esto es básico, idealmente tendrías la lista de productos completa o guardada
+                    // Para el modal rápido usamos lo que hay en carrito + el producto actual si coincide
+                    return carrito.value.map(c => ({
+                        ...c,
+                        nombre: (producto.value && String(producto.value.id) === String(c.id)) ? producto.value.nombre : (c.nombre || 'Producto')
+                    }));
+                });
+
+                // Actions
+                const aumentar = () => { cantidad.value++; };
+                const disminuir = () => { if (cantidad.value > 1) cantidad.value--; };
+                
+                const validarInput = () => {
+                    if (cantidad.value < 1 || isNaN(cantidad.value)) cantidad.value = 1;
+                };
+
+                const agregarAlCarrito = () => {
+                    if (!producto.value) return;
+
+                    const existente = carrito.value.find(p => String(p.id) === String(producto.value.id));
+                    if (existente) {
+                        existente.cantidad = cantidad.value;
+                    } else {
+                        carrito.value.push({
+                            id: producto.value.id,
+                            nombre: producto.value.nombre, // Guardamos nombre por si acaso
+                            cantidad: cantidad.value
+                        });
+                    }
+
+                    localStorage.setItem('carrito', JSON.stringify(carrito.value));
+                    
+                    // Feedback Visual
+                    agregadoFeedback.value = true;
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    setTimeout(() => agregadoFeedback.value = false, 1500);
+
+                    // Toast
+                    mostrarToast(`${producto.value.nombre} (x${cantidad.value})`);
+                };
+
+                const mostrarToast = (msg) => {
+                    toastMensaje.value = "Guardado: " + msg;
+                    toastVisible.value = true;
+                    if(toastTimeout) clearTimeout(toastTimeout);
+                    toastTimeout = setTimeout(() => toastVisible.value = false, 2500);
+                };
+
+                const eliminarDelCarrito = (id) => {
+                    carrito.value = carrito.value.filter(i => String(i.id) !== String(id));
+                    localStorage.setItem('carrito', JSON.stringify(carrito.value));
+                    // Si borramos el actual, resetear cantidad visual a 1
+                    if (producto.value && String(producto.value.id) === String(id)) cantidad.value = 1;
+                };
+
+                const vaciarCarrito = () => {
+                    if(confirm("¿Vaciar carrito?")) {
+                        carrito.value = [];
+                        localStorage.setItem('carrito', JSON.stringify(carrito.value));
+                        cantidad.value = 1;
+                    }
+                };
+
+                const toggleCarrito = () => { carritoAbierto.value = !carritoAbierto.value; };
+
+                // Format Money
+                const formatMoney = (v) => (v || 0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+                return {
+                    loading, error, producto, cantidad,
+                    precioFinal, imagenUrl,
+                    aumentar, disminuir, validarInput,
+                    agregarAlCarrito, agregadoFeedback,
+                    carritoAbierto, toggleCarrito,
+                    cantidadTotalCarrito, carritoDetalle,
+                    eliminarDelCarrito, vaciarCarrito,
+                    toastVisible, toastMensaje,
+                    formatMoney
+                };
+            },
+            updated() { lucide.createIcons(); }
+        }).mount('#app');
+    </script>
 </body>
 </html>
