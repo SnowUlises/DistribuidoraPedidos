@@ -2,312 +2,393 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Cuenta - Distribuidora Funaz</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: { colors: { brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' } } }
-            }
-        }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#f4f6f8">
+    <title>Mis Deudas</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; padding-bottom: 80px; }
-        .mono-num { font-family: 'JetBrains Mono', monospace; }
-        .hidden { display: none !important; }
+        :root {
+            /* Variables de estilo nativo */
+            --primary-color: #007AFF; /* Azul iOS */
+            --danger-color: #FF3B30;
+            --success-color: #34C759;
+            --text-dark: #1C1C1E;
+            --text-gray: #8E8E93;
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --radius: 16px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent; /* Elimina flash gris en móvil */
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            padding-bottom: 90px; /* Espacio para el nav */
+            overscroll-behavior-y: none; /* Evita rebote elástico excesivo */
+        }
+
+        /* --- Header --- */
+        header {
+            background-color: var(--bg-color);
+            padding: 20px 20px 10px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px); /* Efecto vidrio */
+        }
+
+        h1 {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        /* --- Tarjeta Resumen Total --- */
+        .summary-card {
+            background: linear-gradient(135deg, #2c3e50, #000000);
+            color: white;
+            margin: 10px 20px 25px 20px;
+            padding: 25px;
+            border-radius: var(--radius);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .summary-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .progress-container {
+            margin-top: 15px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+
+        .progress-bar-bg {
+            background: rgba(255,255,255,0.2);
+            height: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background: var(--success-color);
+            height: 100%;
+            width: 0%; /* Se anima con JS */
+            border-radius: 10px;
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* --- Filtros / Chips --- */
+        .filter-scroller {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 0 20px;
+            margin-bottom: 20px;
+            scrollbar-width: none; /* Ocultar scrollbar Firefox */
+        }
+        .filter-scroller::-webkit-scrollbar { display: none; } /* Ocultar scrollbar Chrome */
+
+        .chip {
+            background: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-gray);
+            border: 1px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .chip.active {
+            background: var(--text-dark);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        /* --- Lista de Deudas --- */
+        .debt-list {
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-left: 5px;
+        }
+
+        .debt-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.1s;
+        }
+
+        .debt-card:active {
+            transform: scale(0.98); /* Efecto de toque nativo */
+        }
+
+        .debt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .debt-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .debt-status {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending { background: rgba(255, 59, 48, 0.1); color: var(--danger-color); }
+        .status-paid { background: rgba(52, 199, 89, 0.1); color: var(--success-color); }
+
+        .debt-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .debt-due {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+        }
+
+        .debt-amount {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .mini-bar {
+            margin-top: 12px;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            width: 100%;
+        }
+        .mini-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        /* --- Botón Flotante (FAB) --- */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            border: none;
+            cursor: pointer;
+            z-index: 50;
+        }
+
+        /* --- Barra de Navegación Inferior --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 25px 0; /* Extra padding para iPhone Home Indicator */
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-gray);
+            font-size: 0.7rem;
+            gap: 4px;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
 
-    <div class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
+    <header>
+        <h1>Deudas</h1>
+    </header>
+
+    <div class="summary-card">
+        <div class="summary-label">Total Pendiente</div>
+        <div class="summary-amount" id="total-debt-display">$0.00</div>
         
-        <header class="flex items-center justify-between mb-8">
-            <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 font-bold text-sm bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 shadow-sm transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                Ir a la Tienda
-            </a>
-            <h1 class="text-xl font-bold tracking-tight text-gray-900">Mi Perfil</h1>
-            <div class="w-8"></div>
-        </header>
-
-        <div id="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
-            <div class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando perfil...</span>
-        </div>
-
-        <div id="main-content" class="hidden">
-            
-            <div class="bg-gray-900 text-white rounded-2xl p-6 mb-8 shadow-xl shadow-gray-200 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-24 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
-                <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div class="flex items-center gap-4">
-                        <div id="user-initials" class="w-12 h-12 rounded-full bg-brand-500 text-brand-900 flex items-center justify-center font-bold text-xl shadow-lg">
-                            --
-                        </div>
-                        <div>
-                            <h2 id="user-name" class="text-lg font-bold leading-tight">Cargando...</h2>
-                            <p id="user-email" class="text-xs text-gray-400">...</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <a href="deudas.html" class="flex-1 md:flex-none bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors border border-white/10">
-                            Estado de Cuenta
-                        </a>
-                        <button onclick="logout()" class="flex-1 md:flex-none bg-red-500/20 hover:bg-red-500/30 text-red-200 px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors border border-red-500/20">
-                            Salir
-                        </button>
-                    </div>
-                </div>
+        <div class="progress-container">
+            <div class="progress-info">
+                <span id="paid-text">Pagado: $0</span>
+                <span id="percentage-text">0%</span>
             </div>
-
-            <div class="flex border-b border-gray-200 mb-6">
-                <button id="tab-pedidos" class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600" onclick="cambiarTab('pedidos')">
-                    Mis Pedidos
-                </button>
-                <button id="tab-historial" class="pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600" onclick="cambiarTab('historial')">
-                    Historial
-                </button>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="main-progress"></div>
             </div>
-
-            <div id="empty-state" class="hidden text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                <div class="text-4xl mb-3">📦</div>
-                <p class="text-sm text-gray-500 font-medium">No hay registros aquí.</p>
-                <a href="index.html" class="text-xs text-brand-600 font-bold hover:underline mt-2 inline-block">Realizar un pedido</a>
-            </div>
-
-            <div id="orders-list" class="space-y-4">
-                </div>
-
         </div>
     </div>
 
+    <div class="filter-scroller">
+        <div class="chip active">Todas</div>
+        <div class="chip">Urgentes</div>
+        <div class="chip">Banco</div>
+        <div class="chip">Personal</div>
+    </div>
+
+    <div class="debt-list" id="debt-container">
+        </div>
+
+    <button class="fab" onclick="alert('Abrir modal de nueva deuda')">+</button>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item active">
+            <span class="nav-icon">📉</span>
+            <span>Deudas</span>
+        </a>
+        <a href="ahorros.html" class="nav-item">
+            <span class="nav-icon">💰</span>
+            <span>Ahorros</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="nav-icon">⚙️</span>
+            <span>Ajustes</span>
+        </a>
+    </nav>
+
     <script>
-        // CONFIGURACIÓN
-        const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
-        const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
+        // Datos simulados (JSON)
+        const debts = [
+            { id: 1, name: "Tarjeta Visa", total: 1500, paid: 500, due: "2023-11-05", category: "Banco" },
+            { id: 2, name: "Préstamo Auto", total: 12000, paid: 8500, due: "2023-11-15", category: "Banco" },
+            { id: 3, name: "Dinero a Juan", total: 200, paid: 0, due: "2023-10-30", category: "Personal" },
+            { id: 4, name: "Mueblería", total: 800, paid: 750, due: "2023-11-01", category: "Hogar" }
+        ];
 
-        // VARIABLES GLOBALES
-        let currentUser = null;
-        let todosLosPedidos = [];
-        let productosCache = [];
-        let tabActual = 'pedidos'; // 'pedidos' o 'historial'
+        // Función para renderizar
+        function renderDebts() {
+            const container = document.getElementById('debt-container');
+            let totalDebt = 0;
+            let totalPaid = 0;
 
-        // INICIO
-        document.addEventListener('DOMContentLoaded', async () => {
-            await iniciarApp();
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        });
+            let htmlContent = '<div class="section-title">Próximos Vencimientos</div>';
 
-        async function iniciarApp() {
-            // Inicializar Supabase manualmente
-            let supabase = null;
-            if(window.supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            
-            try {
-                // 1. Auth
-                if(supabase) {
-                    const { data } = await supabase.auth.getSession();
-                    if (!data || !data.session) {
-                        window.location.href = 'login.html';
-                        return;
-                    }
-                    currentUser = data.session.user;
-                    renderizarPerfil();
-
-                    // 2. Cargar Datos en paralelo
-                    await Promise.all([
-                        cargarPedidos(currentUser.id),
-                        cargarProductos()
-                    ]);
-                } else {
-                    console.error("Error cargando librería Supabase");
-                }
-
-                // 3. Mostrar UI
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
-                renderizarLista();
-
-            } catch (e) {
-                console.error("Error crítico:", e);
-                alert("Error al cargar perfil. Revisa tu conexión.");
-            }
-        }
-
-        function renderizarPerfil() {
-            const meta = currentUser.user_metadata || {};
-            const nombre = meta.full_name || meta.name || currentUser.email.split('@')[0];
-            const email = currentUser.email;
-            const iniciales = nombre.substring(0, 2).toUpperCase();
-
-            document.getElementById('user-name').textContent = nombre;
-            document.getElementById('user-email').textContent = email;
-            document.getElementById('user-initials').textContent = iniciales;
-        }
-
-        async function cargarPedidos(uid) {
-            try {
-                const res = await fetch(`${API_BASE}/mis-pedidos?uid=${uid}`);
-                if (res.ok) {
-                    todosLosPedidos = await res.json();
-                }
-            } catch (e) { console.error("Error pedidos", e); }
-        }
-
-        async function cargarProductos() {
-            try {
-                const res = await fetch(`${API_BASE}/productos`);
-                if (res.ok) {
-                    productosCache = await res.json();
-                }
-            } catch (e) { console.error("Error productos", e); }
-        }
-
-        function cambiarTab(nuevoTab) {
-            tabActual = nuevoTab;
-            
-            // Actualizar estilos botones
-            const btnP = document.getElementById('tab-pedidos');
-            const btnH = document.getElementById('tab-historial');
-            
-            if (tabActual === 'pedidos') {
-                btnP.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600";
-                btnH.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600";
-            } else {
-                btnP.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-transparent text-gray-400 hover:text-gray-600";
-                btnH.className = "pb-3 px-4 text-sm font-bold border-b-2 transition-colors border-brand-500 text-brand-600";
-            }
-
-            renderizarLista();
-        }
-
-        function renderizarLista() {
-            const contenedor = document.getElementById('orders-list');
-            contenedor.innerHTML = ''; // Limpiar
-
-            // Filtrar
-            const listaFiltrada = todosLosPedidos.filter(p => {
-                const estado = (p.estado || 'Pendiente').toLowerCase();
-                if (tabActual === 'pedidos') {
-                    // Muestra pendientes, en proceso, etc.
-                    return estado === 'pendiente' || estado === 'en proceso' || estado === 'confirmado';
-                } else {
-                    // Muestra completados y cancelados
-                    return estado === 'completado' || estado === 'entregado' || estado === 'cancelado';
-                }
-            });
-
-            // Estado vacío
-            if (listaFiltrada.length === 0) {
-                document.getElementById('empty-state').classList.remove('hidden');
-                return;
-            } else {
-                document.getElementById('empty-state').classList.add('hidden');
-            }
-
-            // Generar HTML
-            listaFiltrada.forEach(pedido => {
-                const estadoClass = getEstadoClass(pedido.estado);
-                const fecha = formatDate(pedido.fecha);
-                const total = formatMoney(pedido.total);
-                const itemsCount = (pedido.items || []).length;
-                const negocio = pedido.negocio || 'Pedido Personal';
+            debts.forEach(debt => {
+                totalDebt += debt.total;
+                totalPaid += debt.paid;
                 
-                // Generar HTML de productos (oculto por defecto)
-                let productosHTML = '';
-                (pedido.items || []).forEach(prod => {
-                    const nombre = getNombreProducto(prod);
-                    const subtotal = formatMoney(prod.precio * prod.cantidad);
-                    productosHTML += `
-                        <div class="flex justify-between text-sm mb-1 text-gray-600">
-                            <div class="truncate pr-4">
-                                <span class="font-bold text-gray-900">x${prod.cantidad}</span> ${nombre}
-                            </div>
-                            <div class="font-medium mono-num">${subtotal}</div>
-                        </div>
-                    `;
-                });
+                // Calcular porcentaje individual
+                const percent = Math.round((debt.paid / debt.total) * 100);
+                const remaining = debt.total - debt.paid;
+                
+                // Estado
+                const isPaid = remaining <= 0;
+                const statusClass = isPaid ? 'status-paid' : 'status-pending';
+                const statusText = isPaid ? 'Pagado' : 'Pendiente';
 
-                const cardHTML = `
-                    <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${estadoClass}">
-                                        ${pedido.estado || 'Pendiente'}
-                                    </span>
-                                    <span class="text-xs text-gray-400">${fecha}</span>
-                                </div>
-                                <div class="text-sm font-bold text-gray-800">${negocio}</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-bold text-gray-900 mono-num">${total}</div>
-                                <div class="text-[10px] text-gray-400">${itemsCount} productos</div>
-                            </div>
-                        </div>
-
-                        <button onclick="toggleDetalle('${pedido.id}')" class="w-full text-center py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-bold text-gray-500 transition-colors">
-                            Ver Detalles
-                        </button>
-
-                        <div id="detalle-${pedido.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
-                            ${productosHTML}
-                        </div>
+                htmlContent += `
+                <div class="debt-card">
+                    <div class="debt-header">
+                        <div class="debt-name">${debt.name}</div>
+                        <div class="debt-status ${statusClass}">${statusText}</div>
                     </div>
+                    <div class="debt-details">
+                        <div class="debt-due">Vence: ${formatDate(debt.due)}</div>
+                        <div class="debt-amount">$${remaining.toLocaleString()}</div>
+                    </div>
+                    <div class="mini-bar">
+                        <div class="mini-fill" style="width: ${percent}%"></div>
+                    </div>
+                </div>
                 `;
-                contenedor.insertAdjacentHTML('beforeend', cardHTML);
             });
+
+            container.innerHTML = htmlContent;
+
+            // Actualizar Resumen Superior
+            const globalPercent = totalDebt === 0 ? 0 : Math.round((totalPaid / totalDebt) * 100);
+            const remainingGlobal = totalDebt - totalPaid;
+
+            document.getElementById('total-debt-display').innerText = `$${remainingGlobal.toLocaleString()}`;
+            document.getElementById('paid-text').innerText = `Pagado: $${totalPaid.toLocaleString()}`;
+            document.getElementById('percentage-text').innerText = `${globalPercent}%`;
             
-            // Re-ejecutar iconos si es necesario
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+            // Animación simple de la barra
+            setTimeout(() => {
+                document.getElementById('main-progress').style.width = `${globalPercent}%`;
+            }, 100);
         }
 
-        // --- UTILIDADES ---
-
-        function toggleDetalle(id) {
-            const el = document.getElementById(`detalle-${id}`);
-            if (el) el.classList.toggle('hidden');
+        // Utilidad fecha
+        function formatDate(dateString) {
+            const options = { day: 'numeric', month: 'short' };
+            return new Date(dateString).toLocaleDateString('es-ES', options);
         }
 
-        function getNombreProducto(item) {
-            if (item.nombre) return item.nombre;
-            const prod = productosCache.find(p => String(p.id) === String(item.id));
-            return prod ? prod.nombre : 'Producto #' + item.id;
-        }
-
-        function getEstadoClass(estado) {
-            const st = (estado || 'pendiente').toLowerCase();
-            if (st === 'pendiente') return 'bg-yellow-100 text-yellow-700';
-            if (st === 'confirmado' || st === 'en proceso') return 'bg-blue-100 text-blue-700';
-            if (st === 'entregado' || st === 'completado') return 'bg-green-100 text-green-700';
-            if (st === 'cancelado') return 'bg-red-100 text-red-700';
-            return 'bg-gray-100 text-gray-600';
-        }
-
-        function formatDate(iso) {
-            if (!iso) return '';
-            const d = new Date(iso);
-            return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-        }
-
-        function formatMoney(val) {
-            return '$' + (Number(val) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
-        }
-
-        async function logout() {
-            if (confirm("¿Cerrar sesión?")) {
-                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                await supabase.auth.signOut();
-                window.location.href = 'index.html';
-            }
-        }
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', renderDebts);
     </script>
 </body>
 </html>
