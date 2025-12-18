@@ -141,15 +141,14 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN SUPABASE (Pública)
+        // CONFIGURACIÓN SUPABASE
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
         
-        // URL API (Relativa)
+        // URL API
         const API_BASE = '/api'; 
 
         const { createApp, ref, onMounted } = Vue;
-        // Inicialización estándar para compartir sesión
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         createApp({
@@ -171,11 +170,10 @@
                 };
 
                 onMounted(async () => {
-                    // Verificación pasiva de sesión
                     try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (session) {
-                            userEmail.value = session.user.email; // Mostrar email
+                            userEmail.value = session.user.email;
                             fetchPedidos(session.user.id);
                         } else {
                             window.location.href = '/login.html';
@@ -183,7 +181,6 @@
                     } catch (err) {
                         window.location.href = '/login.html';
                     }
-                    // Inicializar iconos
                     lucide.createIcons();
                 });
 
@@ -193,7 +190,6 @@
                 const formatDate = (iso) => {
                     if(!iso) return '';
                     const d = new Date(iso);
-                    // Formato: 10 ene, 14:30 hs
                     return d.toLocaleDateString('es-AR', {day:'numeric', month:'short'}) + ', ' + 
                            d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}) + ' hs';
                 };
@@ -202,7 +198,9 @@
                     return it.subtotal || (it.cantidad * it.precio_unitario);
                 };
 
+                // MODIFICADO: Logout con confirmación
                 const logout = async () => {
+                    if(!confirm("¿Estás seguro de que quieres cerrar sesión?")) return;
                     await supabase.auth.signOut();
                     window.location.href = '/login.html';
                 };
