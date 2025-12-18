@@ -91,6 +91,11 @@
                     <input id="input-negocio" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" placeholder="Ej: Kiosco...">
                 </div>
 
+                <div class="mt-3">
+        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Teléfono / WhatsApp</label>
+        <input id="input-telefono" type="tel" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" placeholder="Ej: 264...">
+    </div>
+
                 <button id="btn-enviar" onclick="enviarPedido()" class="w-full bg-brand-500 text-white py-3 rounded-xl font-bold shadow-md mt-4 disabled:bg-gray-300">
                     Enviar Pedido
                 </button>
@@ -269,22 +274,35 @@
         async function enviarPedido() {
             const btn = document.getElementById('btn-enviar');
             const negocio = document.getElementById('input-negocio').value.trim();
+            
+            // Campos de invitado
             const nombre = document.getElementById('input-nombre').value.trim();
             const apellido = document.getElementById('input-apellido').value.trim();
+            const telefonoInput = document.getElementById('input-telefono').value.trim(); // Nuevo
 
             if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
-            if (!usuario && (!nombre || !apellido)) return alert('Por favor, completa tu nombre y apellido');
+
+            // VALIDACION ACTUALIZADA: Si no hay usuario, pide nombre, apellido Y TELEFONO
+            if (!usuario) {
+                if (!nombre || !apellido) return alert('Por favor, completa tu nombre y apellido');
+                if (!telefonoInput) return alert('Por favor, ingresa un número de teléfono para contactarte');
+            }
 
             btn.disabled = true;
             btn.textContent = 'Enviando...';
 
             try {
                 let nombreFinal = '';
+                let telefonoFinal = ''; // Variable para definir qué telefono enviar
+
                 if (usuario) {
                     const meta = usuario.user_metadata || {};
                     nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario Registrado';
+                    // Si el usuario está registrado, quizás ya tienes su teléfono o no hace falta pedirlo
+                    telefonoFinal = meta.phone || 'Usuario Registrado (Ver perfil)'; 
                 } else {
                     nombreFinal = `${nombre} ${apellido}`;
+                    telefonoFinal = telefonoInput; // Usamos el input del invitado
                 }
 
                 // Calcular total para enviar
@@ -292,7 +310,7 @@
 
                 const payload = {
                     nombre: nombreFinal,
-                    telefono: 'No solicitado',
+                    telefono: telefonoFinal, // Ahora enviamos el dato real
                     items: itemsDetalle,
                     total: total,
                     user_id: usuario ? usuario.id : null,
@@ -329,3 +347,4 @@
     </script>
 </body>
 </html>
+
