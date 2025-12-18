@@ -26,6 +26,9 @@
     <div id="successMsg" class="success"></div>
     
     <input type="text" id="nombre" placeholder="Tu Nombre (Ej: Juan)" required>
+    
+    <input type="tel" id="telefono" placeholder="Teléfono / WhatsApp (Ej: 264...)" required>
+
     <input type="email" id="email" placeholder="Correo electrónico" required>
     <input type="password" id="password" placeholder="Contraseña (mínimo 6 caracteres)" required>
     
@@ -41,19 +44,21 @@
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
 
-    // 2. CORRECCIÓN DE NOMBRE DE VARIABLE (Para evitar conflicto con la librería)
     const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    window.supabase = _sb; // Asignamos a la variable global
+    window.supabase = _sb; 
 
     async function registrar() {
         const nombre = document.getElementById('nombre').value;
+        const telefono = document.getElementById('telefono').value; // <--- CAPTURAR TELEFONO
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        
         const btn = document.querySelector('button');
         const errorDiv = document.getElementById('errorMsg');
         const successDiv = document.getElementById('successMsg');
 
-        if(!email || !password || !nombre) {
+        // Validamos que telefono no este vacio
+        if(!email || !password || !nombre || !telefono) {
             mostrarError('Completa todos los campos');
             return;
         }
@@ -67,12 +72,15 @@
         errorDiv.style.display = 'none';
 
         try {
-            // Creamos usuario y guardamos el "nombre" en la metadata del usuario
+            // Creamos usuario y guardamos nombre Y TELEFONO en la metadata
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: password,
                 options: {
-                    data: { full_name: nombre }
+                    data: { 
+                        full_name: nombre,
+                        phone: telefono  // <--- AQUI SE GUARDA EN LA NUBE
+                    }
                 }
             });
 
