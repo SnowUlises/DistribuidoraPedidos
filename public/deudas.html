@@ -26,8 +26,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; }
         .mono-num { font-family: 'JetBrains Mono', monospace; }
-        /* Clases utilitarias para manejo de estado */
         .hidden { display: none !important; }
+        
+        /* Animación suave para el botón de ayuda */
+        .fade-in { animation: fadeIn 0.5s ease-in forwards; opacity: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -46,7 +49,7 @@
             </div>
 
             <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                <a href="/index.html" class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-gray-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                <a href="index.html" class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-gray-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i>
                     Volver a Pedidos
                 </a>
@@ -57,14 +60,22 @@
             </div>
         </header>
 
-        <div id="view-loading" class="flex flex-col items-center justify-center py-20 text-gray-300">
+        <div id="view-loading" class="flex flex-col items-center justify-center py-20 text-gray-300 min-h-[300px]">
             <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2 text-brand-500"></i>
             <span class="text-xs font-medium uppercase tracking-widest">Cargando información...</span>
+
+            <div id="slow-network-help" class="hidden mt-8 text-center fade-in">
+                <p class="text-xs text-gray-400 mb-2">¿Tarda mucho?</p>
+                <button onclick="window.location.reload()" class="bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 mx-auto">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Recargar
+                </button>
+            </div>
         </div>
 
         <div id="view-error" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm my-4">
             <p class="text-red-700 font-bold text-sm">No pudimos cargar tu cuenta.</p>
             <p id="error-message" class="text-red-500 text-xs mt-1"></p>
+            <button onclick="window.location.reload()" class="mt-3 text-xs font-bold text-red-700 underline">Intentar de nuevo</button>
         </div>
 
         <div id="view-content" class="hidden">
@@ -139,7 +150,8 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
         const API_BASE = '/api'; 
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // USAMOS 'sb' PARA EVITAR CONFLICTOS
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- ESTADO GLOBAL ---
         const state = {
@@ -154,6 +166,7 @@
         // --- DOM ELEMENTS ---
         const els = {
             viewLoading: document.getElementById('view-loading'),
+            slowHelp: document.getElementById('slow-network-help'), // Nuevo elemento
             viewError: document.getElementById('view-error'),
             viewContent: document.getElementById('view-content'),
             errorMsg: document.getElementById('error-message'),
@@ -327,9 +340,10 @@
                 state.clientName = data.name;
                 state.items = data.items || [];
                 state.fullHistory = data.history || [];
+                state.loading = false;
+                render();
             } catch (e) {
                 state.error = e.message;
-            } finally {
                 state.loading = false;
                 render();
             }
@@ -337,14 +351,15 @@
 
         async function init() {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                // Usamos 'sb'
+                const { data: { session }, error } = await sb.auth.getSession();
                 if (session) {
                     fetchDebtData(session.user.id);
                 } else {
-                    window.location.href = '/index.html';
+                    window.location.href = 'index.html';
                 }
             } catch (err) {
-                window.location.href = '/index.html';
+                window.location.href = 'index.html';
             }
         }
 
@@ -357,14 +372,23 @@
 
         els.btnLogout.addEventListener('click', async () => {
             if(!confirm("¿Cerrar sesión?")) return;
-            await supabase.auth.signOut();
-            window.location.href = '/index.html';
+            await sb.auth.signOut();
+            window.location.href = 'index.html';
         });
 
         // --- INICIALIZACIÓN ---
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             init();
+
+            // --- SISTEMA PACÍFICO ---
+            // Si en 8 segundos sigue el loading, mostrar ayuda
+            setTimeout(() => {
+                if (!els.viewLoading.classList.contains('hidden')) {
+                    els.slowHelp.classList.remove('hidden');
+                    lucide.createIcons();
+                }
+            }, 8000);
         });
 
     </script>
