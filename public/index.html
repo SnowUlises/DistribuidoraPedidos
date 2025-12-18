@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Distribuidora Funaz</title>
   
+  <link id="faviconLink" rel="icon" type="image/png" href="" />
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -29,15 +31,12 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
     
-    /* Ocultar scrollbar en categorias */
     .hide-scroll::-webkit-scrollbar { display: none; }
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Animaciones */
     .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
     .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-    /* Toast */
     #mensajeCarrito {
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
         background: #1f2937; color: white; padding: 12px 24px; border-radius: 50px;
@@ -48,7 +47,6 @@
     }
     #mensajeCarrito.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* Carrito Modal Flotante */
     #carritoContainer {
         position: fixed; top: 70px; right: 20px; width: 320px; max-height: 80vh;
         background: #fff; border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
@@ -62,20 +60,18 @@
         }
     }
 
-    /* Estilos Específicos para Productos (Grid) */
     .productos-grid {
         display: grid; gap: 16px;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Responsive automático */
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
     }
     
     @media (max-width: 640px) {
-        .productos-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } /* 2 columnas en movil */
+        .productos-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     }
 
-    /* Estilo Activo Categorias */
     .cat-active {
-        background-color: #a3e635 !important; /* brand-400 */
-        color: #1a2e05 !important; /* brand-900 */
+        background-color: #a3e635 !important;
+        color: #1a2e05 !important;
         font-weight: 700;
         box-shadow: 0 4px 6px -1px rgba(163, 230, 53, 0.3);
     }
@@ -85,13 +81,8 @@
 
   <header class="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <div class="bg-brand-400 p-1.5 rounded-lg text-brand-900 shadow-sm">
-                <img id="logoImg" src="" alt="" class="w-6 h-6 object-contain" style="display:block;"> 
-            </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-tight text-gray-900 leading-none">Funaz</h1>
-            </div>
+        <div class="flex items-center">
+            <img id="logoImg" src="" alt="Distribuidora Funaz" class="h-16 w-auto object-contain block"> 
         </div>
 
         <div class="header-buttons flex items-center gap-2">
@@ -112,8 +103,7 @@
         <button onclick="toggleCarrito()" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     
-    <div id="itemsCarrito" class="space-y-2 mb-4 max-h-[40vh] overflow-y-auto">
-        </div>
+    <div id="itemsCarrito" class="space-y-2 mb-4 max-h-[40vh] overflow-y-auto"></div>
 
     <div class="flex gap-2">
       <button onclick="vaciarCarrito()" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-xs font-bold transition-colors">Vaciar</button>
@@ -123,7 +113,7 @@
 
   <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6 p-4">
     
-    <aside class="w-full md:w-64 flex-shrink-0 sticky top-[70px] z-40 bg-f8fafc md:bg-transparent pb-2 md:pb-0 overflow-x-auto hide-scroll -mx-4 px-4 md:mx-0 md:px-0">
+    <aside class="w-full md:w-64 flex-shrink-0 sticky top-[85px] z-40 bg-f8fafc md:bg-transparent pb-2 md:pb-0 overflow-x-auto hide-scroll -mx-4 px-4 md:mx-0 md:px-0">
       <h2 class="hidden md:block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">Categorías</h2>
       <ul id="listaCategorias" class="flex md:flex-col gap-2 md:gap-1">
         <li class="cat-active whitespace-nowrap cursor-pointer px-4 py-2 md:py-2.5 rounded-full md:rounded-lg text-sm bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all" onclick="filtrarCategoria('Todos', this)">Todos</li>
@@ -164,7 +154,6 @@
                     <option value="precioDesc">Precio: Mayor a Menor</option>
                 </select>
             </div>
-            
             <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-gray-400 uppercase hidden sm:inline">Ver:</span>
                 <select id="cantidadPagina" onchange="cambiarCantidadPagina()" class="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:border-brand-500 block p-2 outline-none">
@@ -198,7 +187,7 @@
   </footer>
 
 <script>
-// 1. CONFIGURACIÓN
+// CONFIGURACIÓN SUPABASE
 const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8'; 
 const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -212,22 +201,19 @@ let paginaActual = 1;
 let cantidadPorPagina = 9;
 let terminoBusqueda = '';
 
-// --- INICIALIZAR ICONOS LUCIDE ---
 lucide.createIcons();
 
-// --- NUEVA LÓGICA DE USUARIO ---
+// --- LÓGICA DE USUARIO ---
 async function checkUser() {
     const btn = document.getElementById('btnUsuario');
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-        // Estilo Logueado
         btn.innerHTML = '<i data-lucide="user-check" class="w-4 h-4 text-brand-600"></i> <span>Mi Cuenta</span>';
         btn.href = 'mi-cuenta.html';
         btn.classList.add('bg-brand-50', 'text-brand-700', 'border', 'border-brand-200');
         btn.classList.remove('bg-gray-100', 'text-gray-700');
     } else {
-        // Estilo Guest
         btn.innerHTML = '<i data-lucide="user" class="w-4 h-4"></i> <span>Ingresar</span>';
         btn.href = 'login.html';
     }
@@ -268,7 +254,6 @@ function filtrarCategoria(categoria, elemento) {
   document.querySelectorAll('#listaCategorias li').forEach(li => li.classList.remove('cat-active'));
   elemento.classList.add('cat-active');
   
-  // Scroll suave en movil al seleccionar
   if(window.innerWidth < 768) {
     elemento.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
@@ -281,8 +266,6 @@ function cambiarCantidadPagina() {
   const sel = document.getElementById('cantidadPagina');
   cantidadPorPagina = parseInt(sel.value);
   paginaActual = 1;
-  // const cols = Math.sqrt(cantidadPorPagina); // CSS Grid lo maneja auto ahora
-  // document.querySelector('.productos').style.setProperty('--cols', cols);
   renderProductos();
 }
 
@@ -292,7 +275,7 @@ function getImageUrl(fileName) {
   return `https://slroycxifwezthdomkny.supabase.co/storage/v1/object/public/imagenes/${cleanFileName}`;
 }
 
-// FUNCION RENDER ACTUALIZADA: REVISA EL CARRITO ANTES DE DIBUJAR
+// FUNCION RENDER PRODUCTOS
 function renderProductos() {
   const cont = document.querySelector('.productos');
   cont.innerHTML = '';
@@ -323,16 +306,13 @@ function renderProductos() {
   
   productosPagina.forEach(p => {
     const div = document.createElement('div');
-    // CLASES TAILWIND PARA TARJETA PRODUCTO
+    // CLASES TAILWIND TARJETA
     div.className = 'bg-white rounded-xl border border-gray-100 p-4 flex flex-col justify-between items-center shadow-sm hover:shadow-md transition-all h-full relative group';
     
     let accionHTML = '';
-    
-    // VERIFICAR SI ESTA EN CARRITO
     const itemEnCarrito = carrito.find(i => String(i.id) === String(p.id));
     const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
     
-    // DEFINIR TEXTO Y CLASE DEL BOTON
     let btnTexto = "Agregar";
     let btnClase = "bg-gray-900 hover:bg-black text-white w-full py-2 rounded-lg text-sm font-bold transition-all active:scale-95";
     
@@ -361,7 +341,6 @@ function renderProductos() {
       }
     }
     
-    // HTML INTERNO TARJETA
     div.innerHTML = `
       <h3 class="text-sm font-semibold text-gray-800 text-center mb-1 line-clamp-2 h-10 w-full leading-tight">${p.nombre}</h3>
       <div class="text-lg font-bold text-brand-600 mb-3">$${(p.precio * 1.10).toFixed(2)}</div>
@@ -402,10 +381,7 @@ function paginaSiguiente() {
 function agregarAlCarrito(id, cantidad = 1, silent = false, btnElement = null) {
   const producto = productos.find(p => String(p.id) === String(id));
 
-  if (!producto) {
-    console.error("Producto no encontrado ID:", id);
-    return;
-  }
+  if (!producto) { return; }
 
   if (producto.stock <= -99) {
     mostrarMensaje('Producto sin stock.', true);
@@ -425,20 +401,15 @@ function agregarAlCarrito(id, cantidad = 1, silent = false, btnElement = null) {
   
   localStorage.setItem('carrito', JSON.stringify(carrito));
   
-  // Actualizar boton
   if (btnElement) {
     btnElement.innerText = `En carrito (${nuevaCantidad})`;
-    // Cambiar clases a estilo "En carrito"
     btnElement.className = "btn-carrito bg-brand-500 text-white w-full py-2 rounded-lg text-sm font-bold transition-all border border-brand-500 shadow-sm shadow-brand-200 transform scale-95";
     
     if (navigator.vibrate) navigator.vibrate(50);
     
-    setTimeout(() => {
-        btnElement.classList.remove('scale-95');
-    }, 150);
+    setTimeout(() => { btnElement.classList.remove('scale-95'); }, 150);
   }
   
-  const totalItems = carrito.reduce((acc, i) => acc + i.cantidad, 0);
   actualizarContadorCarrito();
   
   const btnHeader = document.getElementById('btnCarrito');
@@ -474,7 +445,7 @@ function renderCarrito() {
     `;
     cont.appendChild(div);
   });
-  lucide.createIcons(); // Re-iniciar iconos borrados
+  lucide.createIcons();
 }
 
 function eliminarDelCarrito(id) {
@@ -499,16 +470,12 @@ function vaciarCarrito() {
 let mensajeTimeout = null;
 function mostrarMensaje(texto, error = false) {
   const m = document.getElementById('mensajeCarrito');
-  // Icono dinámico
   const icon = error ? '<i data-lucide="alert-circle" class="text-red-400 w-5 h-5"></i>' : '<i data-lucide="check-circle" class="text-brand-400 w-5 h-5"></i>';
   m.innerHTML = `${icon} <span>${texto}</span>`;
-  
-  if(error) m.style.background = "#7f1d1d"; // Red 900
-  else m.style.background = "#1f2937"; // Gray 800
-
+  if(error) m.style.background = "#7f1d1d";
+  else m.style.background = "#1f2937";
   m.classList.add('visible');
-  lucide.createIcons(); // Renderizar icono nuevo
-
+  lucide.createIcons();
   if (mensajeTimeout) clearTimeout(mensajeTimeout);
   mensajeTimeout = setTimeout(() => {
     m.classList.remove('visible');
@@ -519,7 +486,7 @@ function mostrarMensaje(texto, error = false) {
 function keepAlive() { console.log(""); }
 setInterval(keepAlive, 30000);
 
-// Inicializar
+// Init
 actualizarContadorCarrito();
 cargarProductos();
 checkUser(); 
@@ -534,6 +501,8 @@ if (buscadorInput) {
 }
 const logoImg = document.getElementById('logoImg');
 logoImg.src = getImageUrl('logo.png');
+const faviconLink = document.getElementById('faviconLink');
+faviconLink.href = getImageUrl('icono.png');
 </script>
 </body>
 </html>
