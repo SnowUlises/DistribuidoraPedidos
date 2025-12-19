@@ -190,8 +190,15 @@
 // CONFIGURACIÓN SUPABASE
 const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8'; 
-const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const options = {
+  auth: {
+    persistSession: true, // Guarda la sesión en localStorage
+    autoRefreshToken: true, // Renueva el token automáticamente antes de que expire
+    detectSessionInUrl: true // Detecta enlaces de login mágicos
+  }
+};
 
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
 window.supabase = _sb;
 
 let productos = [];
@@ -506,3 +513,4 @@ faviconLink.href = getImageUrl('icono.png');
 </script>
 </body>
 </html>
+
