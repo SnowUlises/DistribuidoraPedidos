@@ -35,18 +35,12 @@
 </div>
 
 <script>
+    // 1. TUS CREDENCIALES CORRECTAS
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
 
-    const options = {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    };
-
-    const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, options);
+    // 2. CORRECCIÓN DE NOMBRE DE VARIABLE
+    const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     window.supabase = _sb;
 
     async function login() {
@@ -65,6 +59,7 @@
         errorDiv.style.display = 'none';
 
         try {
+            // Usamos "supabase" que ahora ya funciona correctamente
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password
@@ -72,8 +67,8 @@
 
             if (error) throw error;
 
-            // 🔥 CORRECCIÓN 2: BORRADA la línea manual de localStorage. 
-            // Deja que Supabase lo maneje solo con la config de arriba.
+            // Guardamos sesión en localStorage por si acaso (aunque supabase lo hace auto)
+            localStorage.setItem('session', JSON.stringify(data.session));
             
             // Redirigir al inicio
             window.location.href = 'index.html';
@@ -84,7 +79,7 @@
             btn.innerText = "Ingresar";
         }
     }
-    
+
     function mostrarError(msg) {
         const div = document.getElementById('errorMsg');
         div.innerText = msg;
