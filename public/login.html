@@ -39,9 +39,7 @@
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
 
-    // 2. CORRECCIÓN IMPORTANTE:
-    // La librería global se llama 'supabase'. 
-    // A nuestra conexión la llamaremos 'supabaseClient' para no mezclarlas.
+    // 2. INICIALIZACIÓN SEGURA
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function login() {
@@ -60,7 +58,6 @@
         errorDiv.style.display = 'none';
 
         try {
-            // Usamos 'supabaseClient' en lugar de 'supabase'
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
@@ -68,13 +65,12 @@
 
             if (error) throw error;
 
-            localStorage.setItem('session', JSON.stringify(data.session));
-            
-            // Redirigir al panel o al inicio
+            // No hace falta guardar en localStorage manual, supabase-js lo hace solo.
+            // Redirigimos:
             window.location.href = 'index.html';
 
         } catch (err) {
-            console.error(err); // Sirve para ver el error real en la consola (F12)
+            console.error(err); 
             mostrarError(traducirError(err.message));
             btn.disabled = false;
             btn.innerText = "Ingresar";
@@ -93,16 +89,23 @@
         return 'Error: ' + msg;
     }
 
-    // Verificar sesión al cargar
+    // --- LÓGICA DE SESIÓN ROBUSTA ---
+    
+    // 1. Verificar al cargar si ya existe sesión válida
     async function checkSession() {
         const { data } = await supabaseClient.auth.getSession();
         if(data.session) {
-            // Si ya hay sesión, redirigir directo
             window.location.href = 'index.html';
         }
     }
     
-    // Ejecutamos la verificación
+    // 2. Escuchar cambios en tiempo real (Esto arregla desconexiones fantasma)
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN') {
+            window.location.href = 'index.html';
+        }
+    });
+
     checkSession();
 </script>
 
