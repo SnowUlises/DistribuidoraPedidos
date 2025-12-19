@@ -35,13 +35,14 @@
 </div>
 
 <script>
-    // 1. TUS CREDENCIALES CORRECTAS
+    // 1. TUS CREDENCIALES
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
 
-    // 2. CORRECCIÓN DE NOMBRE DE VARIABLE
-    const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    window.supabase = _sb;
+    // 2. CORRECCIÓN IMPORTANTE:
+    // La librería global se llama 'supabase'. 
+    // A nuestra conexión la llamaremos 'supabaseClient' para no mezclarlas.
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function login() {
         const email = document.getElementById('email').value;
@@ -59,21 +60,21 @@
         errorDiv.style.display = 'none';
 
         try {
-            // Usamos "supabase" que ahora ya funciona correctamente
-            const { data, error } = await supabase.auth.signInWithPassword({
+            // Usamos 'supabaseClient' en lugar de 'supabase'
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });
 
             if (error) throw error;
 
-            // Guardamos sesión en localStorage por si acaso (aunque supabase lo hace auto)
             localStorage.setItem('session', JSON.stringify(data.session));
             
-            // Redirigir al inicio
+            // Redirigir al panel o al inicio
             window.location.href = 'index.html';
 
         } catch (err) {
+            console.error(err); // Sirve para ver el error real en la consola (F12)
             mostrarError(traducirError(err.message));
             btn.disabled = false;
             btn.innerText = "Ingresar";
@@ -88,14 +89,20 @@
 
     function traducirError(msg) {
         if(msg.includes('Invalid login')) return 'Correo o contraseña incorrectos';
-        return msg;
+        if(msg.includes('Email not confirmed')) return 'Tu correo no ha sido confirmado aún';
+        return 'Error: ' + msg;
     }
 
-    // Si ya está logueado, sacar de aquí
+    // Verificar sesión al cargar
     async function checkSession() {
-        const { data } = await supabase.auth.getSession();
-        if(data.session) window.location.href = 'index.html';
+        const { data } = await supabaseClient.auth.getSession();
+        if(data.session) {
+            // Si ya hay sesión, redirigir directo
+            window.location.href = 'index.html';
+        }
     }
+    
+    // Ejecutamos la verificación
     checkSession();
 </script>
 
