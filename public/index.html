@@ -227,6 +227,17 @@ async function checkUser() {
     lucide.createIcons();
 }
 
+// Poner esto al inicio de tus scripts en index.html / admin.html
+_sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+        // Si por alguna razón Supabase decide cerrar la sesión, los mandamos al login
+        window.location.href = 'login.html'; 
+    }
+    if (event === 'TOKEN_REFRESHED') {
+        console.log('Token renovado con éxito, la sesión sigue viva.');
+    }
+});
+  
 function toggleCarrito() {
   const c = document.getElementById('carritoContainer');
   c.style.display = c.style.display === 'block' ? 'none' : 'block';
@@ -513,4 +524,5 @@ faviconLink.href = getImageUrl('icono.png');
 </script>
 </body>
 </html>
+
 
