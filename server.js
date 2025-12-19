@@ -13,7 +13,12 @@ app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+  auth: {
+    persistSession: true, // Guarda la sesión en LocalStorage
+    autoRefreshToken: true, // 🔥 ESTO ES CLAVE: Renueva el token automáticamente
+    detectSessionInUrl: true
+  });
 
 const PDF_PATH = path.join(process.cwd(), 'public', 'pedidos-pdf');
 if (!fs.existsSync(PDF_PATH)) fs.mkdirSync(PDF_PATH, { recursive: true });
@@ -522,6 +527,7 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
