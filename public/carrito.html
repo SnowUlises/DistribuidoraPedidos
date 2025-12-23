@@ -103,248 +103,258 @@
     </div>
 
     <script>
-        // CONFIGURACION
-        const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
-        const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
+    // CONFIGURACION
+    const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+    const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
-        // VARIABLES GLOBALES
-        let carrito = [];
-        let productos = [];
-        let usuario = null;
-        let itemsDetalle = []; // Carrito con info completa
+    // VARIABLES GLOBALES
+    let carrito = [];
+    let productos = [];
+    let usuario = null;
+    
+    // INICIALIZACION
+    document.addEventListener('DOMContentLoaded', async () => {
+        await verificarSesion();
+        await cargarProductos();
+        leerCarrito();
+        renderizar();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
 
-        // INICIALIZACION
-        document.addEventListener('DOMContentLoaded', async () => {
-            await verificarSesion();
-            await cargarProductos();
-            leerCarrito();
-            renderizar();
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+    async function verificarSesion() {
+        try {
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            const { data } = await supabase.auth.getSession();
+            if (data && data.session) {
+                usuario = data.session.user;
+                mostrarSesionUI();
+            }
+        } catch (e) { console.log('Sin sesión o error supabase'); }
+    }
+
+    function mostrarSesionUI() {
+        document.getElementById('info-sesion').classList.remove('hidden');
+        document.getElementById('campos-manuales').classList.add('hidden');
+        
+        const meta = usuario.user_metadata || {};
+        const nombre = meta.full_name || meta.name || usuario.email;
+        document.getElementById('nombre-usuario-sesion').textContent = nombre;
+    }
+
+    async function cargarProductos() {
+        try {
+            const res = await fetch(`${API_BASE}/productos`);
+            if (res.ok) productos = await res.json();
+        } catch (e) { console.error(e); }
+        document.getElementById('loading').classList.add('hidden');
+    }
+
+    function leerCarrito() {
+        try {
+            const raw = localStorage.getItem('carrito');
+            carrito = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(carrito)) carrito = [];
+        } catch (e) {
+            carrito = [];
+        }
+    }
+
+    function guardarCarrito() {
+        localStorage.setItem('carrito', JSON.stringify(carrito));
+        renderizar(); 
+    }
+
+    // RENDERIZADO VISUAL
+    function renderizar() {
+        const contenedor = document.getElementById('lista-productos');
+        contenedor.innerHTML = '';
+        
+        if (carrito.length === 0) {
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('empty-state').classList.add('flex');
+            document.getElementById('footer-total').classList.add('hidden');
+            contenedor.classList.add('hidden');
+            return;
+        }
+
+        document.getElementById('empty-state').classList.add('hidden');
+        document.getElementById('empty-state').classList.remove('flex');
+        contenedor.classList.remove('hidden');
+        document.getElementById('footer-total').classList.remove('hidden');
+
+        let total = 0;
+
+        carrito.forEach((item, index) => {
+            const prod = productos.find(p => String(p.id) === String(item.id));
+            if (!prod) return;
+
+            // Visualmente usamos el 1.10
+            const precio = Number(prod.precio) || 0;
+            const precioFinal = precio * 1.10;
+            const subtotal = precioFinal * item.cantidad;
+            total += subtotal;
+
+            let imgUrl = 'https://via.placeholder.com/80?text=IMG';
+            if (prod.imagen) {
+                imgUrl = `${SUPABASE_URL}/storage/v1/object/public/imagenes/${prod.imagen.replace(/^imagenes\//, '')}`;
+            }
+
+            const html = `
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden">
+                    <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
+                        <img src="${imgUrl}" class="w-full h-full object-contain" alt="Prod">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">${prod.nombre}</h3>
+                        <div class="text-xs text-gray-500 mb-2">${formatMoney(precioFinal)} c/u</div>
+                        <div class="font-bold text-brand-600 mono-num">${formatMoney(subtotal)}</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
+                            <button onclick="cambiarCantidad(${index}, -1)" class="w-8 h-8 flex items-center justify-center font-bold text-gray-600 hover:bg-white rounded">-</button>
+                            <span class="w-8 text-center font-bold text-sm text-gray-800">${item.cantidad}</span>
+                            <button onclick="cambiarCantidad(${index}, 1)" class="w-8 h-8 flex items-center justify-center font-bold text-brand-600 hover:bg-white rounded">+</button>
+                        </div>
+                        <button onclick="eliminarItem(${index})" class="text-xs text-red-400 font-medium p-1">Eliminar</button>
+                    </div>
+                </div>
+            `;
+            contenedor.insertAdjacentHTML('beforeend', html);
         });
 
-        async function verificarSesion() {
-            try {
-                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                const { data } = await supabase.auth.getSession();
-                if (data && data.session) {
-                    usuario = data.session.user;
-                    mostrarSesionUI();
-                }
-            } catch (e) { console.log('Sin sesión o error supabase'); }
+        document.getElementById('total-precio').textContent = formatMoney(total);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function cambiarCantidad(index, delta) {
+        const nuevaCant = carrito[index].cantidad + delta;
+        if (nuevaCant > 0) carrito[index].cantidad = nuevaCant;
+        else carrito.splice(index, 1);
+        guardarCarrito();
+    }
+
+    function eliminarItem(index) {
+        carrito.splice(index, 1);
+        guardarCarrito();
+    }
+
+    function abrirModal() {
+        document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function cerrarModal() {
+        document.getElementById('modal').classList.add('hidden');
+    }
+
+    // --- AQUI ESTA LA LOGICA CORREGIDA (IGUAL AL OLD CODE) ---
+    async function enviarPedido() {
+        const btn = document.getElementById('btn-enviar');
+        const negocio = document.getElementById('input-negocio').value.trim();
+        
+        const nombreInput = document.getElementById('input-nombre').value.trim();
+        const apellidoInput = document.getElementById('input-apellido').value.trim();
+        const telefonoInput = document.getElementById('input-telefono').value.trim();
+
+        if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
+
+        if (!usuario) {
+            if (!nombreInput || !apellidoInput) return alert('Por favor, completa tu nombre y apellido');
+            if (!telefonoInput) return alert('Por favor, ingresa un número de teléfono');
         }
 
-        function mostrarSesionUI() {
-            document.getElementById('info-sesion').classList.remove('hidden');
-            document.getElementById('campos-manuales').classList.add('hidden');
-            
-            const meta = usuario.user_metadata || {};
-            const nombre = meta.full_name || meta.name || usuario.email;
-            document.getElementById('nombre-usuario-sesion').textContent = nombre;
-        }
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
 
-        async function cargarProductos() {
-            try {
-                const res = await fetch(`${API_BASE}/productos`);
-                if (res.ok) productos = await res.json();
-            } catch (e) { console.error(e); }
-            
-            // Ocultar loading
-            document.getElementById('loading').classList.add('hidden');
-        }
+        try {
+            // 1. Preparar Datos de Usuario
+            let nombreFinal = '';
+            let telefonoFinal = '';
 
-        function leerCarrito() {
-            try {
-                const raw = localStorage.getItem('carrito');
-                carrito = raw ? JSON.parse(raw) : [];
-                if (!Array.isArray(carrito)) carrito = [];
-            } catch (e) {
-                carrito = [];
-                localStorage.removeItem('carrito');
+            if (usuario) {
+                const meta = usuario.user_metadata || {};
+                nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario Registrado';
+                telefonoFinal = meta.phone || 'Usuario Registrado'; 
+            } else {
+                // Capitalizar como en el código viejo
+                const nom = nombreInput.charAt(0).toUpperCase() + nombreInput.slice(1).toLowerCase();
+                const ape = apellidoInput.charAt(0).toUpperCase() + apellidoInput.slice(1).toLowerCase();
+                nombreFinal = `${nom} ${ape}`;
+                telefonoFinal = telefonoInput;
             }
-        }
 
-        function guardarCarrito() {
-            localStorage.setItem('carrito', JSON.stringify(carrito));
-            renderizar(); // Re-renderizar al guardar
-        }
+            // 2. RECONSTRUIR ITEMS (Lógica del código viejo: iterar y calcular)
+            // Esto asegura que se mande exactamente lo que el código viejo mandaba
+            const nuevosCarrito = [];
+            let totalCalculado = 0;
 
-        // RENDERIZADO PRINCIPAL (Aquí se genera el HTML)
-        function renderizar() {
-            const contenedor = document.getElementById('lista-productos');
-            contenedor.innerHTML = '';
-            itemsDetalle = []; // Reiniciamos detalle
+            // Usamos productos en memoria para asegurar datos frescos
+            const productosClon = productos.map(p => ({...p}));
 
-            // Si está vacío
-            if (carrito.length === 0) {
-                document.getElementById('empty-state').classList.remove('hidden');
-                document.getElementById('empty-state').classList.add('flex');
-                document.getElementById('footer-total').classList.add('hidden');
-                contenedor.classList.add('hidden');
-                return;
-            }
+            for (const item of carrito) {
+                const producto = productosClon.find(p => String(p.id) === String(item.id));
+                if (!producto) continue;
 
-            // Si hay items
-            document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('empty-state').classList.remove('flex');
-            contenedor.classList.remove('hidden');
-            document.getElementById('footer-total').classList.remove('hidden');
+                // CÁLCULO IMPORTANTE DEL 1.10
+                const precioConRecargo = Number(producto.precio) * 1.10;
 
-            let total = 0;
-
-            carrito.forEach((item, index) => {
-                const prod = productos.find(p => String(p.id) === String(item.id));
-                if (!prod) return; // Si no existe el producto, lo saltamos visualmente
-
-                const precio = Number(prod.precio) || 0;
-                const precioFinal = precio * 1.10;
-                const subtotal = precioFinal * item.cantidad;
-                total += subtotal;
-
-                // Guardamos en memoria para enviar luego
-                itemsDetalle.push({
+                nuevosCarrito.push({
                     id: item.id,
                     cantidad: item.cantidad,
-                    precioUnitario: precioFinal
+                    nombre: producto.nombre,
+                    precio: precioConRecargo, // Usamos 'precio' como en el viejo, aunque el server use unitario
+                    precioUnitario: precioConRecargo // Enviamos ambos por compatibilidad
                 });
 
-                // Construimos URL imagen
-                let imgUrl = 'https://via.placeholder.com/80?text=IMG';
-                if (prod.imagen) {
-                    imgUrl = `${SUPABASE_URL}/storage/v1/object/public/imagenes/${prod.imagen.replace(/^imagenes\//, '')}`;
-                }
+                totalCalculado += item.cantidad * precioConRecargo;
+            }
 
-                // Generamos HTML del item
-                const html = `
-                    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden">
-                        <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
-                            <img src="${imgUrl}" class="w-full h-full object-contain" alt="Prod">
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">${prod.nombre}</h3>
-                            <div class="text-xs text-gray-500 mb-2">${formatMoney(precioFinal)} c/u</div>
-                            <div class="font-bold text-brand-600 mono-num">${formatMoney(subtotal)}</div>
-                        </div>
-                        <div class="flex flex-col items-end gap-2">
-                            <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
-                                <button onclick="cambiarCantidad(${index}, -1)" class="w-8 h-8 flex items-center justify-center font-bold text-gray-600 hover:bg-white rounded">-</button>
-                                <span class="w-8 text-center font-bold text-sm text-gray-800">${item.cantidad}</span>
-                                <button onclick="cambiarCantidad(${index}, 1)" class="w-8 h-8 flex items-center justify-center font-bold text-brand-600 hover:bg-white rounded">+</button>
-                            </div>
-                            <button onclick="eliminarItem(${index})" class="text-xs text-red-400 font-medium p-1">Eliminar</button>
-                        </div>
-                    </div>
-                `;
-                contenedor.insertAdjacentHTML('beforeend', html);
+            if (nuevosCarrito.length === 0) throw new Error("Carrito vacío o productos no válidos");
+
+            // 3. Armar Payload
+            const payload = {
+                nombre: nombreFinal,
+                telefono: telefonoFinal,
+                items: nuevosCarrito,
+                total: totalCalculado,
+                user_id: usuario ? usuario.id : null,
+                nombre_negocio: negocio
+            };
+
+            const res = await fetch(`${API_BASE}/Enviar-Peticion`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            // Actualizar Total
-            document.getElementById('total-precio').textContent = formatMoney(total);
-            
-            // Re-hidratar iconos
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        // FUNCIONES DE INTERACCION
-        function cambiarCantidad(index, delta) {
-            const nuevaCant = carrito[index].cantidad + delta;
-            if (nuevaCant > 0) {
-                carrito[index].cantidad = nuevaCant;
-            } else {
-                carrito.splice(index, 1);
+            if (!res.ok) {
+                const errData = await res.json().catch(()=>({}));
+                throw new Error(errData.error || "Error servidor");
             }
+
+            // EXITO
+            carrito = [];
             guardarCarrito();
-        }
-
-        function eliminarItem(index) {
-            carrito.splice(index, 1);
-            guardarCarrito();
-        }
-
-        function abrirModal() {
-            document.getElementById('modal').classList.remove('hidden');
-        }
-
-        function cerrarModal() {
-            document.getElementById('modal').classList.add('hidden');
-        }
-
-        async function enviarPedido() {
-            const btn = document.getElementById('btn-enviar');
-            const negocio = document.getElementById('input-negocio').value.trim();
+            cerrarModal();
+            alert('¡Pedido enviado con éxito!');
             
-            // Campos de invitado
-            const nombre = document.getElementById('input-nombre').value.trim();
-            const apellido = document.getElementById('input-apellido').value.trim();
-            const telefonoInput = document.getElementById('input-telefono').value.trim(); // Nuevo
+            if (usuario) window.location.href = 'mi-cuenta.html';
+            else window.location.href = 'index.html';
 
-            if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
-
-            // VALIDACION ACTUALIZADA: Si no hay usuario, pide nombre, apellido Y TELEFONO
-            if (!usuario) {
-                if (!nombre || !apellido) return alert('Por favor, completa tu nombre y apellido');
-                if (!telefonoInput) return alert('Por favor, ingresa un número de teléfono para contactarte');
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'Enviando...';
-
-            try {
-                let nombreFinal = '';
-                let telefonoFinal = ''; // Variable para definir qué telefono enviar
-
-                if (usuario) {
-                    const meta = usuario.user_metadata || {};
-                    nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario Registrado';
-                    // Si el usuario está registrado, quizás ya tienes su teléfono o no hace falta pedirlo
-                    telefonoFinal = meta.phone || 'Usuario Registrado (Ver perfil)'; 
-                } else {
-                    nombreFinal = `${nombre} ${apellido}`;
-                    telefonoFinal = telefonoInput; // Usamos el input del invitado
-                }
-
-                // Calcular total para enviar
-                const total = itemsDetalle.reduce((acc, i) => acc + (i.precioUnitario * 1.10 * i.cantidad), 0);
-
-                const payload = {
-                    nombre: nombreFinal,
-                    telefono: telefonoFinal, // Ahora enviamos el dato real
-                    items: itemsDetalle,
-                    total: total,
-                    user_id: usuario ? usuario.id : null,
-                    nombre_negocio: negocio
-                };
-
-                const res = await fetch(`${API_BASE}/Enviar-Peticion`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!res.ok) throw new Error("Error servidor");
-
-                // EXITO
-                carrito = [];
-                guardarCarrito();
-                cerrarModal();
-                alert('¡Pedido enviado con éxito!');
-                
-                if (usuario) window.location.href = 'mi-cuenta.html';
-                else window.location.href = 'index.html';
-
-            } catch (e) {
-                alert('Error al enviar: ' + e.message);
-                btn.disabled = false;
-                btn.textContent = 'Enviar Pedido';
-            }
+        } catch (e) {
+            alert('Error al enviar: ' + e.message);
+            btn.disabled = false;
+            btn.textContent = 'Enviar Pedido';
         }
+    }
 
-        function formatMoney(amount) {
-            return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
-        }
-    </script>
+    function formatMoney(amount) {
+        return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+    }
+</script>
 </body>
 </html>
+
 
 
 
