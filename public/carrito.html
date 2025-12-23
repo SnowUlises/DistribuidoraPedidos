@@ -304,7 +304,7 @@
                 }
 
                 // Calcular total para enviar
-                const total = itemsDetalle.reduce((acc, i) => acc + (i.precioUnitario * i.cantidad), 0);
+                const total = itemsDetalle.reduce((acc, i) => acc + (i.precioUnitario * 1.10 * i.cantidad), 0);
 
                 const payload = {
                     nombre: nombreFinal,
@@ -345,5 +345,6 @@
     </script>
 </body>
 </html>
+
 
 
