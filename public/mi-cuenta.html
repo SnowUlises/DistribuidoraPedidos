@@ -180,8 +180,29 @@
                            </span>` 
                         : '';
 
-                    // Icon status
-                    const statusIcon = p.tipo === 'pedido' ? '✓' : '⏳';
+                    // LOGICA DE ESTADO (MODIFICADO AQUÍ)
+                    let statusLabel = '';
+                    let statusColor = '';
+                    let statusIconChar = '';
+
+                    if (p.tipo === 'peticion') {
+                        // Es una solicitud enviada, esperando confirmación
+                        statusLabel = 'Enviado';
+                        statusColor = '#f59e0b'; // Amber-500 (Naranja amarillento)
+                        statusIconChar = '⏳';
+                    } else {
+                        // Es un Pedido aceptado. Miramos la columna 'estado' de la DB
+                        if (p.estado === 'Preparado') {
+                            statusLabel = 'Preparado';
+                            statusColor = '#22c55e'; // Green-500 (Verde)
+                            statusIconChar = '✓';
+                        } else {
+                            // Si es null o "Armando"
+                            statusLabel = 'Armando';
+                            statusColor = '#f97316'; // Orange-500 (Naranja fuerte)
+                            statusIconChar = '📦';
+                        }
+                    }
 
                     return `
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 group mb-5">
@@ -200,8 +221,8 @@
                             </div>
                             <div class="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
                                 <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide text-white shadow-sm flex items-center gap-1.5"
-                                      style="background-color: ${p.color_estado || '#9ca3af'}">
-                                    ${statusIcon} ${p.estado_etiqueta || 'Estado'}
+                                      style="background-color: ${statusColor}">
+                                    ${statusIconChar} ${statusLabel}
                                 </span>
                             </div>
                         </div>
