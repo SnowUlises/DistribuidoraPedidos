@@ -21,7 +21,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; padding-bottom: 140px; }
         .mono-num { font-family: 'JetBrains Mono', monospace; }
         .hidden { display: none !important; }
-        /* Animación suave para el modal */
         #modal { transition: opacity 0.2s ease-in-out; }
     </style>
 </head>
@@ -51,8 +50,7 @@
             </a>
         </div>
 
-        <div id="lista-productos" class="space-y-4 pb-24 hidden">
-            </div>
+        <div id="lista-productos" class="space-y-4 pb-24 hidden"></div>
 
         <div id="footer-total" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
             <div class="max-w-3xl mx-auto flex flex-col gap-3">
@@ -123,17 +121,15 @@
             if (window.supabase) {
                 _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 await verificarSesion();
-            } else {
-                console.error("Supabase SDK no cargó correctamente");
             }
             
-            await cargarProductos();
+            await cargarProductos(); // Carga inicial
             leerCarrito();
             renderizar();
             
             if (typeof lucide !== 'undefined') lucide.createIcons();
         } catch (error) {
-            console.error("Error en inicialización:", error);
+            console.error("Error init:", error);
         }
     });
 
@@ -144,37 +140,31 @@
                 usuario = data.session.user;
                 mostrarSesionUI();
             }
-        } catch (e) { 
-            console.log('Sesión no activa o error silencioso'); 
-        }
+        } catch (e) { console.log('Sin sesión'); }
     }
 
     function mostrarSesionUI() {
-        const infoSesion = document.getElementById('info-sesion');
-        const camposManuales = document.getElementById('campos-manuales');
-        
-        if(infoSesion) infoSesion.classList.remove('hidden');
-        if(camposManuales) camposManuales.classList.add('hidden');
+        const info = document.getElementById('info-sesion');
+        const manual = document.getElementById('campos-manuales');
+        if(info) info.classList.remove('hidden');
+        if(manual) manual.classList.add('hidden');
         
         const meta = usuario.user_metadata || {};
         const nombre = meta.full_name || meta.name || usuario.email;
-        const divNombre = document.getElementById('nombre-usuario-sesion');
-        if(divNombre) divNombre.textContent = nombre;
+        document.getElementById('nombre-usuario-sesion').textContent = nombre;
     }
 
+    // Usamos el puente GET /productos (Igual que en index.html)
     async function cargarProductos() {
         try {
             const res = await fetch(`${API_BASE}/productos`);
             if (res.ok) {
                 productos = await res.json();
-            } else {
-                console.error("Error fetching productos");
             }
         } catch (e) { 
-            console.error("Error de red al cargar productos:", e); 
+            console.error("Error cargando productos:", e); 
         }
-        const loading = document.getElementById('loading');
-        if(loading) loading.classList.add('hidden');
+        document.getElementById('loading').classList.add('hidden');
     }
 
     function leerCarrito() {
@@ -182,9 +172,7 @@
             const raw = localStorage.getItem('carrito');
             carrito = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(carrito)) carrito = [];
-        } catch (e) {
-            carrito = [];
-        }
+        } catch (e) { carrito = []; }
     }
 
     function guardarCarrito() {
@@ -192,22 +180,21 @@
         renderizar(); 
     }
 
-    // --- LOGICA DE STOCK (Crucial) ---
+    // --- LÓGICA DE STOCK (Idéntica a index.html) ---
     function calcularStockTotal(p) {
         if (!p) return 0;
         // 1. Agotado manual
         if (p.stock <= -99) return 0;
         
-        // 2. Stock Leo NULL/Vacio/Undefined = Infinito (o muy alto)
+        // 2. Stock Leo NULL/Vacio = Infinito
         if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") {
             return 9999999;
         }
 
-        // 3. Calculo Suma
+        // 3. Calculo
         let miStock = p.stock > 0 ? p.stock : 0;
         let leoStock = parseFloat(p.stock_leo) || 0;
 
-        // 4. Regla de negocio: Si leoStock es 1 o menor, cuenta como 0
         if (leoStock <= 1) leoStock = 0;
 
         return miStock + leoStock;
@@ -219,51 +206,41 @@
         const emptyState = document.getElementById('empty-state');
         const footerTotal = document.getElementById('footer-total');
 
-        if (!contenedor) return;
-
         contenedor.innerHTML = '';
         
         if (carrito.length === 0) {
-            if(emptyState) {
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
-            }
-            if(footerTotal) footerTotal.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            emptyState.classList.add('flex');
+            footerTotal.classList.add('hidden');
             contenedor.classList.add('hidden');
             return;
         }
 
-        if(emptyState) {
-            emptyState.classList.add('hidden');
-            emptyState.classList.remove('flex');
-        }
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
         contenedor.classList.remove('hidden');
-        if(footerTotal) footerTotal.classList.remove('hidden');
+        footerTotal.classList.remove('hidden');
 
         let total = 0;
 
         carrito.forEach((item, index) => {
             const prod = productos.find(p => String(p.id) === String(item.id));
             
-            // Si el producto no está en caché aún, mostrar placeholder o saltar
-            // Para evitar errores visuales, usamos datos del item si prod no existe, pero idealmente prod existe
-            const nombre = prod ? prod.nombre : 'Cargando producto...';
+            // Si el producto no cargó aún, usamos valores seguros
+            const nombre = prod ? prod.nombre : 'Cargando...';
             const precioBase = prod ? (Number(prod.precio) || 0) : 0;
-            
-            // Lógica de precio visual (+10%)
             const precioFinal = precioBase * 1.10;
             const subtotal = precioFinal * item.cantidad;
             total += subtotal;
 
-            let imgUrl = 'https://via.placeholder.com/80?text=SIN+FOTO';
+            let imgUrl = 'https://via.placeholder.com/80?text=IMG';
             if (prod && prod.imagen) {
-                // Corrección de URL para Supabase
                 const cleanPath = prod.imagen.replace(/^imagenes\//, '');
                 imgUrl = `${SUPABASE_URL}/storage/v1/object/public/imagenes/${cleanPath}`;
             }
 
             const html = `
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden transition-all hover:shadow-md">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden">
                     <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
                         <img src="${imgUrl}" class="w-full h-full object-contain mix-blend-multiply" alt="Prod">
                     </div>
@@ -273,21 +250,19 @@
                         <div class="font-bold text-brand-600 mono-num">${formatMoney(subtotal)}</div>
                     </div>
                     <div class="flex flex-col items-end gap-2">
-                        <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1 shadow-sm">
-                            <button onclick="cambiarCantidad(${index}, -1)" class="w-8 h-8 flex items-center justify-center font-bold text-gray-600 hover:bg-white hover:text-brand-600 rounded transition-colors">-</button>
+                        <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
+                            <button onclick="cambiarCantidad(${index}, -1)" class="w-8 h-8 flex items-center justify-center font-bold text-gray-600 hover:bg-white rounded">-</button>
                             <span class="w-8 text-center font-bold text-sm text-gray-800 mono-num">${item.cantidad}</span>
-                            <button onclick="cambiarCantidad(${index}, 1)" class="w-8 h-8 flex items-center justify-center font-bold text-brand-600 hover:bg-white rounded transition-colors">+</button>
+                            <button onclick="cambiarCantidad(${index}, 1)" class="w-8 h-8 flex items-center justify-center font-bold text-brand-600 hover:bg-white rounded">+</button>
                         </div>
-                        <button onclick="eliminarItem(${index})" class="text-xs text-red-400 hover:text-red-600 font-medium p-1 transition-colors">Eliminar</button>
+                        <button onclick="eliminarItem(${index})" class="text-xs text-red-400 hover:text-red-600 font-medium p-1">Eliminar</button>
                     </div>
                 </div>
             `;
             contenedor.insertAdjacentHTML('beforeend', html);
         });
 
-        const totalEl = document.getElementById('total-precio');
-        if(totalEl) totalEl.textContent = formatMoney(total);
-        
+        document.getElementById('total-precio').textContent = formatMoney(total);
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
@@ -311,134 +286,108 @@
         document.getElementById('modal').classList.add('hidden');
     }
 
-    // --- ENVIAR PEDIDO ---
+    // --- ENVIAR PEDIDO MODIFICADO (SOLUCIÓN 404) ---
     async function enviarPedido() {
         const btn = document.getElementById('btn-enviar');
-        const negocioInput = document.getElementById('input-negocio');
-        const negocio = negocioInput ? negocioInput.value.trim() : '';
+        const negocio = document.getElementById('input-negocio').value.trim();
         
-        const nombreInput = document.getElementById('input-nombre');
-        const apellidoInput = document.getElementById('input-apellido');
-        const telefonoInput = document.getElementById('input-telefono');
+        const nombreIn = document.getElementById('input-nombre').value.trim();
+        const apellIn = document.getElementById('input-apellido').value.trim();
+        const telIn = document.getElementById('input-telefono').value.trim();
 
-        const valNombre = nombreInput ? nombreInput.value.trim() : '';
-        const valApellido = apellidoInput ? apellidoInput.value.trim() : '';
-        const valTelefono = telefonoInput ? telefonoInput.value.trim() : '';
-
-        // Validaciones básicas
         if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
-
         if (!usuario) {
-            if (!valNombre || !valApellido) return alert('Por favor, completa tu nombre y apellido');
-            if (!valTelefono) return alert('Por favor, ingresa un número de teléfono');
+            if (!nombreIn || !apellIn) return alert('Completa tu nombre y apellido');
+            if (!telIn) return alert('Ingresa un teléfono');
         }
 
         btn.disabled = true;
         btn.textContent = 'Verificando Stock...';
 
         try {
-            // 1. OBTENER STOCK ACTUALIZADO DEL SERVIDOR
-            const idsCarrito = carrito.map(i => i.id);
+            // PASO 1: TRAER PRODUCTOS FRESCOS (GET)
+            // En vez de POST /verificar-stock, hacemos GET /productos como en index.html
+            const resFresh = await fetch(`${API_BASE}/productos`);
+            if (!resFresh.ok) throw new Error("No se pudo conectar con el catálogo de productos.");
             
-            const resStock = await fetch(`${API_BASE}/verificar-stock`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: idsCarrito })
-            });
+            const productosFrescos = await resFresh.json();
 
-            if (!resStock.ok) throw new Error("Error al conectar con el servidor para verificar stock.");
-            
-            const productosFrescos = await resStock.json();
-
-            // 2. VALIDAR STOCK UNO POR UNO
+            // PASO 2: VALIDACIÓN LOCAL (CLIENT-SIDE)
+            // Validamos matemáticamente aquí, igual que en agregarAlCarrito de index.html
             for (const itemCarrito of carrito) {
-                // Buscamos en la respuesta fresca del servidor
                 const prodFresco = productosFrescos.find(p => String(p.id) === String(itemCarrito.id));
                 
                 if (!prodFresco) {
-                    throw new Error(`Un producto en tu carrito (ID ${itemCarrito.id}) ya no está disponible.`);
+                    throw new Error(`El producto (ID ${itemCarrito.id}) ya no existe.`);
                 }
 
                 const stockReal = calcularStockTotal(prodFresco);
 
                 if (itemCarrito.cantidad > stockReal) {
-                    const mensajeError = stockReal <= 0 
+                    const msg = stockReal <= 0 
                         ? `"${prodFresco.nombre}" se acaba de agotar.` 
-                        : `Solo quedan ${stockReal} unidades de "${prodFresco.nombre}". Por favor ajusta la cantidad.`;
-                    
-                    throw new Error(mensajeError);
+                        : `Solo quedan ${stockReal} unidades de "${prodFresco.nombre}".`;
+                    throw new Error(msg);
                 }
             }
 
-            // 3. PREPARAR DATOS DE ENVÍO
+            // PASO 3: PREPARAR DATOS
             btn.textContent = 'Enviando...';
 
-            let nombreFinal = '';
-            let telefonoFinal = '';
-
+            let nombreFinal = '', telefonoFinal = '';
             if (usuario) {
                 const meta = usuario.user_metadata || {};
-                nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario Registrado';
+                nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario';
                 telefonoFinal = meta.phone || 'Usuario Registrado'; 
             } else {
-                const nom = valNombre.charAt(0).toUpperCase() + valNombre.slice(1).toLowerCase();
-                const ape = valApellido.charAt(0).toUpperCase() + valApellido.slice(1).toLowerCase();
-                nombreFinal = `${nom} ${ape}`;
-                telefonoFinal = valTelefono;
+                nombreFinal = `${nombreIn} ${apellIn}`;
+                telefonoFinal = telIn;
             }
 
-            const nuevosCarrito = [];
+            const itemsFinales = [];
             let totalCalculado = 0;
 
-            // Construir array final con precios seguros
             for (const item of carrito) {
-                // Usamos productosFrescos preferiblemente, o fallback a caché local
-                let producto = productosFrescos.find(p => String(p.id) === String(item.id));
-                if(!producto) producto = productos.find(p => String(p.id) === String(item.id));
-                
+                const producto = productosFrescos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
 
                 const precioConRecargo = Number(producto.precio) * 1.10;
-
-                nuevosCarrito.push({
+                itemsFinales.push({
                     id: item.id,
                     cantidad: item.cantidad,
                     nombre: producto.nombre,
                     precio: precioConRecargo, 
                     precioUnitario: precioConRecargo 
                 });
-
                 totalCalculado += item.cantidad * precioConRecargo;
             }
-
-            if (nuevosCarrito.length === 0) throw new Error("Carrito vacío o productos no válidos");
 
             const payload = {
                 nombre: nombreFinal,
                 telefono: telefonoFinal,
-                items: nuevosCarrito,
+                items: itemsFinales,
                 total: totalCalculado,
                 user_id: usuario ? usuario.id : null,
                 nombre_negocio: negocio
             };
 
-            // 4. ENVIAR A API
-            const res = await fetch(`${API_BASE}/Enviar-Peticion`, {
+            // PASO 4: ENVIAR (POST /Enviar-Peticion)
+            const resEnvio = await fetch(`${API_BASE}/Enviar-Peticion`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) {
-                const errData = await res.json().catch(()=>({}));
-                throw new Error(errData.error || "Error en el servidor al procesar el pedido.");
+            if (!resEnvio.ok) {
+                const errData = await resEnvio.json().catch(()=>({}));
+                throw new Error(errData.error || "Error al enviar pedido.");
             }
 
-            // 5. EXITO
+            // ÉXITO
             carrito = [];
             guardarCarrito();
             cerrarModal();
-            alert('¡Pedido enviado con éxito! Nos pondremos en contacto.');
+            alert('¡Pedido enviado con éxito!');
             
             if (usuario) window.location.href = 'mi-cuenta.html';
             else window.location.href = 'index.html';
