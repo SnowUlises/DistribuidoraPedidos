@@ -276,6 +276,13 @@ async function cargarProductos() {
   }
 }
 
+// EXPONER PARA TESTEO DESDE CONSOLA
+// Escribe window.forceRefresh() en la consola
+window.forceRefresh = function() {
+    console.log("🔄 Forzando recarga de productos...");
+    cargarProductos();
+};
+
 function filtrarCategoria(categoria, elemento) {
   categoriaSeleccionada = categoria;
   document.querySelectorAll('#listaCategorias li').forEach(li => li.classList.remove('cat-active'));
@@ -304,11 +311,18 @@ function getImageUrl(fileName) {
 
 // --- HELPER PARA CALCULAR STOCK TOTAL ---
 function calcularStockTotal(p) {
-    // Si tu stock es -99, está "Agotado" manualmente, ignoramos stock_leo.
+    // Regla 1: Si tu stock es -99 (Agotado manual), gana sobre todo lo demás.
     if (p.stock <= -99) return 0;
     
+    // Regla 2: Si stock_leo es null, undefined o "", lo consideramos INFINITO.
+    // Retornamos un número absurdamente alto.
+    if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") {
+        return 9999999;
+    }
+    
+    // Regla 3: Si hay número, sumamos normal.
     let miStock = p.stock > 0 ? p.stock : 0;
-    let leoStock = p.stock_leo > 0 ? p.stock_leo : 0;
+    let leoStock = parseFloat(p.stock_leo) || 0;
     
     return miStock + leoStock;
 }
@@ -360,9 +374,10 @@ function renderProductos() {
     }
 
     // --- NUEVA LÓGICA DE VISUALIZACIÓN DE STOCK ---
-    // Si tu stock es -99 O la suma de ambos stocks es <= 0, mostramos Agotado.
     const stockTotal = calcularStockTotal(p);
-    const esAgotado = (p.stock <= -99) || (stockTotal <= 0);
+    
+    // Solo mostramos Agotado si realmente es 0 (bloqueado manualmente o suma da 0)
+    const esAgotado = (stockTotal <= 0);
 
     if (esAgotado) {
       accionHTML = '<div class="w-full text-center py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-lg uppercase tracking-wide">Agotado</div>';
