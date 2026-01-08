@@ -103,24 +103,24 @@
     </div>
 
     <script>
-    // --- 1. CONFIGURACIÓN SUPABASE CLIENT-SIDE (Igual que Index.html) ---
+    // --- 1. CONFIGURACIÓN SUPABASE (LLAVE PÚBLICA / ANON) ---
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+    
+    // Tu API en Render para enviar el correo/guardar pedido final
     const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
 
-    // VARIABLES GLOBALES
     let carrito = [];
-    let productosCache = []; // Para renderizar rápido
+    let productosCache = []; 
     let usuario = null;
     
-    // INICIALIZACION
     document.addEventListener('DOMContentLoaded', async () => {
         await verificarSesion();
-        await cargarProductosCache();
+        await cargarProductosCache(); // Carga rápida para visualizar
         leerCarrito();
         renderizar();
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -139,14 +139,13 @@
     function mostrarSesionUI() {
         document.getElementById('info-sesion').classList.remove('hidden');
         document.getElementById('campos-manuales').classList.add('hidden');
-        
         const meta = usuario.user_metadata || {};
         const nombre = meta.full_name || meta.name || usuario.email;
         document.getElementById('nombre-usuario-sesion').textContent = nombre;
     }
 
+    // Carga inicial para mostrar la lista (usa la API para ser rápido)
     async function cargarProductosCache() {
-        // Carga inicial rápida para mostrar la lista
         try {
             const res = await fetch(`${API_BASE}/productos`);
             if (res.ok) productosCache = await res.json();
@@ -167,11 +166,11 @@
         renderizar(); 
     }
 
-    // --- LOGICA DE STOCK (IGUAL QUE INDEX) ---
+    // --- LOGICA DE STOCK (IGUAL QUE EN INDEX) ---
     function calcularStockTotal(p) {
         if (!p) return 0;
         if (p.stock <= -99) return 0; // Manualmente agotado
-        if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") return 9999999; // Infinito
+        if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") return 9999999; 
 
         let miStock = p.stock > 0 ? p.stock : 0;
         let leoStock = parseFloat(p.stock_leo) || 0;
@@ -182,7 +181,6 @@
         return miStock + leoStock;
     }
 
-    // RENDERIZADO VISUAL
     function renderizar() {
         const contenedor = document.getElementById('lista-productos');
         contenedor.innerHTML = '';
@@ -255,15 +253,11 @@
         guardarCarrito();
     }
 
-    function abrirModal() {
-        document.getElementById('modal').classList.remove('hidden');
-    }
+    function abrirModal() { document.getElementById('modal').classList.remove('hidden'); }
+    function cerrarModal() { document.getElementById('modal').classList.add('hidden'); }
+    function formatMoney(amount) { return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2}); }
 
-    function cerrarModal() {
-        document.getElementById('modal').classList.add('hidden');
-    }
-
-    // --- ENVIO Y VALIDACIÓN ---
+    // --- ENVIAR PEDIDO ---
     async function enviarPedido() {
         const btn = document.getElementById('btn-enviar');
         const negocio = document.getElementById('input-negocio').value.trim();
@@ -273,28 +267,30 @@
         const telefonoInput = document.getElementById('input-telefono').value.trim();
 
         if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
-        if (!usuario) {
-            if (!nombreInput || !apellidoInput) return alert('Por favor, completa tu nombre y apellido');
-            if (!telefonoInput) return alert('Por favor, ingresa un número de teléfono');
+        if (!usuario && (!nombreInput || !apellidoInput || !telefonoInput)) {
+            return alert('Por favor, completa tus datos');
         }
 
         btn.disabled = true;
         btn.textContent = 'Verificando Stock...';
 
         try {
-            // 1. OBTENER IDS DEL CARRITO
+            // 1. OBTENER IDs
             const idsCarrito = carrito.map(i => i.id);
 
-            // 2. CONSULTAR SUPABASE DIRECTO (Client-Side, como en Index)
-            // Esto evita los problemas de API Key del servidor
+            // 2. CONSULTAR STOCK DIRECTO A SUPABASE
+            // Si la tabla es pública (RLS desactivado), ESTO FUNCIONARÁ.
             const { data: productosFrescos, error } = await _supabase
                 .from('productos')
                 .select('id, nombre, stock, stock_leo, precio')
                 .in('id', idsCarrito);
 
-            if (error) throw new Error("Error consultando stock. Intente nuevamente.");
+            if (error) {
+                console.error("Error Supabase:", error);
+                throw new Error("No se pudo verificar el stock. Intenta de nuevo.");
+            }
 
-            // 3. VALIDAR STOCK UNO A UNO
+            // 3. VALIDAR STOCK
             for (const itemCarrito of carrito) {
                 const prodFresco = productosFrescos.find(p => String(p.id) === String(itemCarrito.id));
                 if (!prodFresco) throw new Error(`El producto ID ${itemCarrito.id} ya no existe.`);
@@ -309,7 +305,7 @@
                 }
             }
 
-            // 4. PREPARAR ENVÍO AL SERVIDOR
+            // 4. PREPARAR DATOS
             btn.textContent = 'Enviando...';
 
             let nombreFinal = '', telefonoFinal = '';
@@ -318,9 +314,7 @@
                 nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario Registrado';
                 telefonoFinal = meta.phone || 'Usuario Registrado'; 
             } else {
-                const nom = nombreInput.charAt(0).toUpperCase() + nombreInput.slice(1).toLowerCase();
-                const ape = apellidoInput.charAt(0).toUpperCase() + apellidoInput.slice(1).toLowerCase();
-                nombreFinal = `${nom} ${ape}`;
+                nombreFinal = `${nombreInput} ${apellidoInput}`;
                 telefonoFinal = telefonoInput;
             }
 
@@ -328,7 +322,6 @@
             let totalCalculado = 0;
 
             for (const item of carrito) {
-                // Usamos la data fresca que ya bajamos
                 const producto = productosFrescos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
 
@@ -352,17 +345,14 @@
                 nombre_negocio: negocio
             };
 
-            // 5. ENVIAR AL SERVER (Endpoints ya arreglados)
+            // 5. ENVIAR A SERVIDOR
             const res = await fetch(`${API_BASE}/Enviar-Peticion`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) {
-                const errData = await res.json().catch(()=>({}));
-                throw new Error(errData.error || "Error servidor");
-            }
+            if (!res.ok) throw new Error("Error al procesar pedido en servidor");
 
             // EXITO
             carrito = [];
@@ -374,14 +364,10 @@
             else window.location.href = 'index.html';
 
         } catch (e) {
-            alert('Atención: ' + e.message);
+            alert(e.message);
             btn.disabled = false;
             btn.textContent = 'Enviar Pedido';
         }
-    }
-
-    function formatMoney(amount) {
-        return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
     }
     </script>
 </body>
