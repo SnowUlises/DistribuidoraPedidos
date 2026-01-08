@@ -87,16 +87,17 @@ async function obtenerProductosPagina(numeroPagina, logs) {
 }
 
 // --- Función Principal (Devuelve Logs) ---
+// --- Función Principal (Devuelve Logs) ---
 async function ejecutarActualizacionStock(modoTest = false) {
     const logs = [];
     logs.push(`[${new Date().toISOString()}] 🚀 Inicio proceso de actualización.`);
 
     // 1. LEEMOS TU DB
+    // CORRECCIÓN: Quitamos .neq('sku', '') porque tu SKU es numérico y eso daba error.
     const { data: productosDB, error } = await supabase
         .from('productos')
         .select('id, sku')
-        .not('sku', 'is', null)
-        .neq('sku', '');
+        .not('sku', 'is', null); // Solo pedimos que no sea NULL
 
     if (error) {
         logs.push(`❌ Error FATAL leyendo Supabase: ${error.message}`);
@@ -108,11 +109,11 @@ async function ejecutarActualizacionStock(modoTest = false) {
         logs.push(`🔍 Ejemplo SKU local: '${productosDB[0].sku}'`);
     }
 
-    const skusEnMiDB = new Set(productosDB.map(p => p.sku));
+    // Convertimos a String para asegurar la comparación luego
+    const skusEnMiDB = new Set(productosDB.map(p => String(p.sku).trim()));
     
     // 2. SCRAPING EXTERNO
     let productosExternos = [];
-    // Si es modo test, solo leemos 3 páginas para no esperar tanto
     const limitePaginas = modoTest ? 3 : MAX_PAGINAS; 
     
     logs.push(`🌍 Iniciando Scraping (Máx ${limitePaginas} páginas)...`);
@@ -148,7 +149,8 @@ async function ejecutarActualizacionStock(modoTest = false) {
     }
 
     // 3. COMPARACIÓN
-    const actualizaciones = productosExternos.filter(p => skusEnMiDB.has(p.sku));
+    // Comparamos String con String para evitar problemas de tipos
+    const actualizaciones = productosExternos.filter(p => skusEnMiDB.has(String(p.sku)));
     logs.push(`🎯 Coincidencias (Match) SKUs: ${actualizaciones.length}`);
 
     if (actualizaciones.length === 0) {
@@ -167,11 +169,10 @@ async function ejecutarActualizacionStock(modoTest = false) {
         const { error: errUpdate } = await supabase
             .from('productos')
             .update({ stock_leo: item.stock }) 
-            .eq('sku', item.sku);
+            .eq('sku', item.sku); // Supabase maneja la conversión de string a int automáticamente en el filtro
             
         if (errUpdate) {
             errores++;
-            // Loguear solo el primer error para no saturar
             if (errores === 1) logs.push(`❌ Error Update Supabase: ${errUpdate.message}`);
         }
         else actualizados++;
@@ -452,3 +453,4 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
