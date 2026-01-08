@@ -42,6 +42,9 @@
             display: flex; align-items: center; gap: 8px; width: max-content; max-width: 90%;
         }
         #mensajeAgregado.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+        
+        /* Estilo para error */
+        #mensajeAgregado.error { background: #7f1d1d; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -82,7 +85,7 @@
             <div class="w-full md:w-1/2 bg-gray-50 p-8 flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 relative">
                 <img :src="imagenUrl" :alt="producto.nombre" class="w-full h-auto max-h-[400px] object-contain mix-blend-multiply">
                 
-                <div v-if="producto.stock <= -99" class="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                <div v-if="stockDisponible <= 0" class="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
                     Agotado
                 </div>
             </div>
@@ -91,7 +94,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">{{ producto.nombre }}</h1>
                 <div class="text-3xl font-bold text-brand-600 mb-6 mono-num">${{ formatMoney(precioFinal) }}</div>
 
-                <div v-if="producto.stock > -99" class="space-y-6">
+                <div v-if="stockDisponible > 0" class="space-y-6">
                     
                     <div class="flex items-center gap-4">
                         <span class="text-sm font-bold text-gray-400 uppercase tracking-wider">Cantidad:</span>
@@ -110,8 +113,8 @@
                         <i v-if="!agregadoFeedback" data-lucide="shopping-bag" class="w-5 h-5"></i>
                         <i v-else data-lucide="check" class="w-5 h-5"></i>
                     </button>
-
-                </div>
+                    
+                    </div>
 
                 <div v-else class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center text-gray-500 font-medium text-sm">
                     Este producto no está disponible por el momento.
@@ -144,8 +147,9 @@
             </div>
         </div>
 
-        <div id="mensajeAgregado" :class="{'visible': toastVisible}">
-            <i data-lucide="check-circle" class="w-5 h-5 text-brand-400"></i>
+        <div id="mensajeAgregado" :class="{'visible': toastVisible, 'error': toastIsError}">
+            <i v-if="!toastIsError" data-lucide="check-circle" class="w-5 h-5 text-brand-400"></i>
+            <i v-else data-lucide="alert-circle" class="w-5 h-5 text-red-300"></i>
             <span>{{ toastMensaje }}</span>
         </div>
 
@@ -153,7 +157,7 @@
 
     <script>
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-        const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com/api/productos'; // Tu API
+        const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com/api/productos';
 
         const { createApp, ref, computed, onMounted } = Vue;
 
@@ -168,7 +172,29 @@
                 const agregadoFeedback = ref(false);
                 const toastVisible = ref(false);
                 const toastMensaje = ref('');
+                const toastIsError = ref(false);
                 let toastTimeout = null;
+
+                // --- HELPER STOCK LOGIC (IGUAL QUE EN INDEX) ---
+                const calcularStockTotal = (p) => {
+                    if (!p) return 0;
+                    // 1. Agotado manual
+                    if (p.stock <= -99) return 0;
+                    
+                    // 2. Stock Leo NULL/Vacio = Infinito
+                    if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") {
+                        return 9999999;
+                    }
+
+                    // 3. Calculo
+                    let miStock = p.stock > 0 ? p.stock : 0;
+                    let leoStock = parseFloat(p.stock_leo) || 0;
+
+                    // 4. Si leoStock es 1 o menor, cuenta como 0
+                    if (leoStock <= 1) leoStock = 0;
+
+                    return miStock + leoStock;
+                };
 
                 const cargarProducto = async () => {
                     const id = new URLSearchParams(window.location.search).get('id');
@@ -203,6 +229,10 @@
                 });
 
                 // Computed
+                const stockDisponible = computed(() => {
+                    return calcularStockTotal(producto.value);
+                });
+
                 const precioFinal = computed(() => {
                     return producto.value ? Number(producto.value.precio) * 1.10 : 0;
                 });
@@ -218,8 +248,6 @@
                 });
 
                 const carritoDetalle = computed(() => {
-                    // Esto es básico, idealmente tendrías la lista de productos completa o guardada
-                    // Para el modal rápido usamos lo que hay en carrito + el producto actual si coincide
                     return carrito.value.map(c => ({
                         ...c,
                         nombre: (producto.value && String(producto.value.id) === String(c.id)) ? producto.value.nombre : (c.nombre || 'Producto')
@@ -237,13 +265,31 @@
                 const agregarAlCarrito = () => {
                     if (!producto.value) return;
 
-                    const existente = carrito.value.find(p => String(p.id) === String(producto.value.id));
+                    // VALIDACIÓN DE STOCK
+                    const id = producto.value.id;
+                    const stockMax = stockDisponible.value;
+                    const existente = carrito.value.find(p => String(p.id) === String(id));
+                    
+                    // Cantidad que habría en total si agregamos lo que pide
+                    let cantidadFutura = cantidad.value; // Por defecto asumimos que sobreescribe o es nuevo
+                    
+                    // Nota: En la lógica de "Detalle", generalmente el input 'cantidad' 
+                    // representa la cantidad TOTAL deseada, no un "+1".
+                    // Si la lógica fuera "sumar a lo que hay", sería: (existente ? existente.cantidad : 0) + cantidad.value;
+                    // Pero en tu código anterior hacías `existente.cantidad = cantidad.value`, o sea, reemplazo.
+                    // Mantendremos el reemplazo que es lo usual en página de detalle, pero validamos.
+
+                    if (cantidadFutura > stockMax) {
+                        mostrarToast(`Solo hay ${stockMax} disponibles.`, true);
+                        return;
+                    }
+
                     if (existente) {
                         existente.cantidad = cantidad.value;
                     } else {
                         carrito.value.push({
                             id: producto.value.id,
-                            nombre: producto.value.nombre, // Guardamos nombre por si acaso
+                            nombre: producto.value.nombre,
                             cantidad: cantidad.value
                         });
                     }
@@ -255,12 +301,13 @@
                     if (navigator.vibrate) navigator.vibrate(50);
                     setTimeout(() => agregadoFeedback.value = false, 1500);
 
-                    // Toast
-                    mostrarToast(`${producto.value.nombre} (x${cantidad.value})`);
+                    // Toast Exito
+                    mostrarToast(`${producto.value.nombre} (x${cantidad.value})`, false);
                 };
 
-                const mostrarToast = (msg) => {
-                    toastMensaje.value = "Guardado: " + msg;
+                const mostrarToast = (msg, esError = false) => {
+                    toastMensaje.value = esError ? msg : "Guardado: " + msg;
+                    toastIsError.value = esError;
                     toastVisible.value = true;
                     if(toastTimeout) clearTimeout(toastTimeout);
                     toastTimeout = setTimeout(() => toastVisible.value = false, 2500);
@@ -269,7 +316,6 @@
                 const eliminarDelCarrito = (id) => {
                     carrito.value = carrito.value.filter(i => String(i.id) !== String(id));
                     localStorage.setItem('carrito', JSON.stringify(carrito.value));
-                    // Si borramos el actual, resetear cantidad visual a 1
                     if (producto.value && String(producto.value.id) === String(id)) cantidad.value = 1;
                 };
 
@@ -294,8 +340,8 @@
                     carritoAbierto, toggleCarrito,
                     cantidadTotalCarrito, carritoDetalle,
                     eliminarDelCarrito, vaciarCarrito,
-                    toastVisible, toastMensaje,
-                    formatMoney
+                    toastVisible, toastMensaje, toastIsError,
+                    formatMoney, stockDisponible // Exportamos para usar en template
                 };
             },
             updated() { lucide.createIcons(); }
