@@ -18,16 +18,21 @@ app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+// --- 🔑 CONFIGURACIÓN SUPABASE (FIX: CLAVES HARDCODED PARA EVITAR ERROR 401) ---
+const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+// Usamos la Service Role Key para tener permisos completos en el servidor
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+    persistSession: false, // Importante: false en servidor
+    autoRefreshToken: false,
+    detectSessionInUrl: false
   }
 });
 
 /* ====================================================================================
-   🕵️‍♂️ LÓGICA DE ACTUALIZACIÓN DE STOCK (MODO DIAGNÓSTICO)
+   🕵️‍♂️ LÓGICA DE ACTUALIZACIÓN DE STOCK
    ==================================================================================== */
 
 const URL_BASE_WEB = "https://cooperar-s-k.dongestion.com/ecommerce/products";
@@ -59,7 +64,6 @@ async function obtenerProductosPagina(numeroPagina, logs) {
         const response = await axios.get(url, { headers: HEADERS_SCRAPER, timeout: 20000 });
         const html = response.data;
         
-        // Regex ajustado
         const patron = /(?:window\.)?bk_products\s*=\s*(\[.*?\]);/s;
         const match = html.match(patron);
 
@@ -68,15 +72,13 @@ async function obtenerProductosPagina(numeroPagina, logs) {
             const items = data.map(p => ({
                 sku: normalizeSku(p.sku || p.id),
                 stock: safeFloat(p.qty_available),
-                nombre: p.name // Solo para debug
+                nombre: p.name 
             })).filter(item => item.sku !== "");
             
             return items;
         } else {
-            // DEBUG: Si falla en página 1, guardamos un trozo del HTML para ver qué pasó
             if (numeroPagina === 1) {
                 logs.push(`⚠️ ALERTA: No se encontró el patrón Regex en página 1.`);
-                logs.push(`🔍 Muestra HTML (primeros 200 chars): ${html.substring(0, 200)}...`);
             }
             return [];
         }
@@ -86,18 +88,15 @@ async function obtenerProductosPagina(numeroPagina, logs) {
     }
 }
 
-// --- Función Principal (Devuelve Logs) ---
-// --- Función Principal (Devuelve Logs) ---
+// --- Función Principal ---
 async function ejecutarActualizacionStock(modoTest = false) {
     const logs = [];
     logs.push(`[${new Date().toISOString()}] 🚀 Inicio proceso de actualización.`);
 
-    // 1. LEEMOS TU DB
-    // CORRECCIÓN: Quitamos .neq('sku', '') porque tu SKU es numérico y eso daba error.
     const { data: productosDB, error } = await supabase
         .from('productos')
         .select('id, sku')
-        .not('sku', 'is', null); // Solo pedimos que no sea NULL
+        .not('sku', 'is', null);
 
     if (error) {
         logs.push(`❌ Error FATAL leyendo Supabase: ${error.message}`);
@@ -105,14 +104,8 @@ async function ejecutarActualizacionStock(modoTest = false) {
     }
 
     logs.push(`📊 Tu Base de Datos: ${productosDB.length} productos con SKU.`);
-    if (productosDB.length > 0) {
-        logs.push(`🔍 Ejemplo SKU local: '${productosDB[0].sku}'`);
-    }
-
-    // Convertimos a String para asegurar la comparación luego
     const skusEnMiDB = new Set(productosDB.map(p => String(p.sku).trim()));
     
-    // 2. SCRAPING EXTERNO
     let productosExternos = [];
     const limitePaginas = modoTest ? 3 : MAX_PAGINAS; 
     
@@ -137,31 +130,16 @@ async function ejecutarActualizacionStock(modoTest = false) {
             }
         }
         
-        if (encontradosEnLote === 0) {
-            logs.push(`⏹️ Fin del catálogo detectado o bloqueo en lote ${i}.`);
-            break; 
-        }
+        if (encontradosEnLote === 0) break; 
     }
 
     logs.push(`📦 Total productos encontrados en la web: ${productosExternos.length}`);
-    if (productosExternos.length > 0) {
-        logs.push(`🔍 Ejemplo SKU Web: '${productosExternos[0].sku}' - Stock: ${productosExternos[0].stock}`);
-    }
 
-    // 3. COMPARACIÓN
-    // Comparamos String con String para evitar problemas de tipos
     const actualizaciones = productosExternos.filter(p => skusEnMiDB.has(String(p.sku)));
     logs.push(`🎯 Coincidencias (Match) SKUs: ${actualizaciones.length}`);
 
-    if (actualizaciones.length === 0) {
-        logs.push("⚠️ CUIDADO: No hubo coincidencias. Revisa si los SKUs son idénticos.");
-        if (productosExternos.length > 0 && productosDB.length > 0) {
-             logs.push(`COMPARATIVA FALLIDA: Local '${productosDB[0].sku}' vs Web '${productosExternos[0].sku}'`);
-        }
-        return logs;
-    }
+    if (actualizaciones.length === 0) return logs;
 
-    // 4. ACTUALIZACIÓN DB
     let actualizados = 0;
     let errores = 0;
     
@@ -169,12 +147,9 @@ async function ejecutarActualizacionStock(modoTest = false) {
         const { error: errUpdate } = await supabase
             .from('productos')
             .update({ stock_leo: item.stock }) 
-            .eq('sku', item.sku); // Supabase maneja la conversión de string a int automáticamente en el filtro
+            .eq('sku', item.sku);
             
-        if (errUpdate) {
-            errores++;
-            if (errores === 1) logs.push(`❌ Error Update Supabase: ${errUpdate.message}`);
-        }
+        if (errUpdate) errores++;
         else actualizados++;
     };
 
@@ -188,26 +163,45 @@ async function ejecutarActualizacionStock(modoTest = false) {
     return logs;
 }
 
-// --- CRON JOB (Silencioso en consola) ---
+// --- CRON JOB ---
 cron.schedule('*/10 * * * *', async () => {
     try {
         const logs = await ejecutarActualizacionStock(false);
-        console.log(logs[logs.length - 1]); // Solo imprime la ultima linea
+        console.log(logs[logs.length - 1]);
     } catch (error) {
         console.error("❌ Cron Job Error:", error);
     }
 });
 
-/* -----------------------------
-   🔍 VERIFICAR STOCK (NUEVO)
-   Evita el error 401 haciendo la consulta desde el servidor
------------------------------ */
+// --- ENDPOINTS DIAGNÓSTICO ---
+app.get('/api/test-stock-update', async (req, res) => {
+    try {
+        const logs = await ejecutarActualizacionStock(true);
+        res.json({ success: true, logs: logs });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/admin/forzar-sync', async (req, res) => {
+    try {
+        const logs = await ejecutarActualizacionStock(false); 
+        res.json({ success: true, logs: logs });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+/* ====================================================================================
+   📦 RUTAS API
+   ==================================================================================== */
+
+// --- 🔥 NUEVO: VERIFICAR STOCK (Necesario para el Carrito) ---
 app.post('/api/verificar-stock', async (req, res) => {
     try {
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: 'IDs inválidos' });
 
-        // El servidor SI tiene permiso para leer Supabase
         const { data, error } = await supabase
             .from('productos')
             .select('id, nombre, stock, stock_leo')
@@ -221,46 +215,6 @@ app.post('/api/verificar-stock', async (req, res) => {
     }
 });
 
-// --- 🚨 NUEVO: ENDPOINT PARA FORZAR ACTUALIZACIÓN COMPLETA (NO TEST) ---
-app.get('/api/admin/forzar-sync', async (req, res) => {
-    try {
-        console.log("⚠️ INICIANDO ACTUALIZACIÓN FORZADA (COMPLETA)...");
-        console.log("Esto puede tardar unos minutos. Por favor espera...");
-
-        // Llamamos a la función con 'false' para que lea las 100 páginas
-        const logs = await ejecutarActualizacionStock(false); 
-
-        res.json({ 
-            success: true, 
-            mensaje: "✅ Actualización masiva completada con éxito.", 
-            logs: logs 
-        });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: e.message });
-    }
-});
-
-// --- 🔥 NUEVO ENDPOINT PARA FORZAR Y VER QUE PASA ---
-app.get('/api/test-stock-update', async (req, res) => {
-    try {
-        // Ejecuta en modo test (solo 3 páginas para ser rápido)
-        const logs = await ejecutarActualizacionStock(true);
-        res.json({ 
-            success: true, 
-            mensaje: "Proceso de diagnóstico finalizado", 
-            logs: logs 
-        });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
-/* ==================================================================================== */
-
-/* -----------------------------
- 📦 LISTAR PRODUCTOS
------------------------------ */
 app.get('/api/productos', async (req, res) => {
   try {
     const { data, error } = await supabase.from('productos').select('*');
@@ -272,24 +226,15 @@ app.get('/api/productos', async (req, res) => {
   }
 });
 
-/* -----------------------------
- 📦 HISTORIAL DE USUARIO (NUEVO)
------------------------------ */
 app.get('/api/mis-pedidos', async (req, res) => {
   try {
     const userId = req.query.uid;
     if (!userId) return res.status(400).json({ error: 'Falta User ID' });
 
-    const { data: peticiones, error: errPet } = await supabase
-      .from('Peticiones')
-      .select('*')
-      .eq('user_id', userId);
+    const { data: peticiones, error: errPet } = await supabase.from('Peticiones').select('*').eq('user_id', userId);
     if (errPet) throw errPet;
 
-    const { data: pedidos, error: errPed } = await supabase
-      .from('pedidos')
-      .select('*')
-      .eq('user_id', userId);
+    const { data: pedidos, error: errPed } = await supabase.from('pedidos').select('*').eq('user_id', userId);
     if (errPed) throw errPed;
 
     const listaPeticiones = (peticiones || []).map(p => ({
@@ -300,7 +245,6 @@ app.get('/api/mis-pedidos', async (req, res) => {
     }));
 
     const historial = [...listaPeticiones, ...listaPedidos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
     res.json(historial);
   } catch (err) {
     console.error('❌ Error cargando historial:', err);
@@ -308,15 +252,9 @@ app.get('/api/mis-pedidos', async (req, res) => {
   }
 });
 
-/* -----------------------------
- 📦 LISTAR PEDIDOS (ADMIN)
------------------------------ */
 app.get('/api/pedidos', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pedidos')
-      .select('*')
-      .order('fecha', { ascending: false });
+    const { data, error } = await supabase.from('pedidos').select('*').order('fecha', { ascending: false });
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -327,10 +265,7 @@ app.get('/api/pedidos', async (req, res) => {
 
 app.get('/api/peticiones', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('Peticiones')
-      .select('*')
-      .order('fecha', { ascending: false });
+    const { data, error } = await supabase.from('Peticiones').select('*').order('fecha', { ascending: false });
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -339,14 +274,10 @@ app.get('/api/peticiones', async (req, res) => {
   }
 });
 
-/* -----------------------------
- 📦 GUARDAR PEDIDOS
------------------------------ */
 app.post('/api/guardar-pedidos', async (req, res) => {
   try {
     const pedidoItems = req.body.pedido;
     const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
-    
     const userId = req.body.user_id || null;
     const nombreNegocio = req.body.nombre_negocio || null;
 
@@ -358,11 +289,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 
     for (const it of pedidoItems) {
       const prodId = it.id;
-      const { data: prod, error: prodError } = await supabase
-        .from('productos')
-        .select('*')
-        .eq('id', prodId)
-        .single();
+      const { data: prod, error: prodError } = await supabase.from('productos').select('*').eq('id', prodId).single();
 
       if (prodError) { console.warn('⚠️ Producto no encontrado:', prodError); continue; }
       if (!prod) continue;
@@ -382,36 +309,23 @@ app.post('/api/guardar-pedidos', async (req, res) => {
       });
 
       const newStock = Math.max(0, (Number(prod.stock) || 0) - cantidadFinal);
-      const { error: updErr } = await supabase
-        .from('productos')
-        .update({ stock: newStock })
-        .eq('id', prodId);
+      const { error: updErr } = await supabase.from('productos').update({ stock: newStock }).eq('id', prodId);
       if (updErr) console.error('❌ Error actualizando stock:', updErr);
     }
 
-    if (items.length === 0)
-      return res.status(400).json({ error: 'No hay items válidos para el pedido' });
+    if (items.length === 0) return res.status(400).json({ error: 'No hay items válidos' });
 
     const id = Date.now().toString();
     const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
     const payload = { 
-        id, 
-        user: usuarioPedido, 
-        fecha: fechaLocal, 
-        items, 
-        total,
-        user_id: userId,            
-        nombre_negocio: nombreNegocio 
+        id, user: usuarioPedido, fecha: fechaLocal, items, total,
+        user_id: userId, nombre_negocio: nombreNegocio 
     };
 
     console.log('💾 Guardando pedido:', payload);
 
-    const { data, error } = await supabase
-      .from('pedidos')
-      .insert([payload])
-      .select()
-      .single();
+    const { data, error } = await supabase.from('pedidos').insert([payload]).select().single();
 
     if (error) {
       console.error('❌ Supabase insert error:', error);
@@ -426,17 +340,14 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   }
 });
 
-/* -----------------------------
- 📦 ENVIAR PETICION (CORREGIDO: CON TELÉFONO)
------------------------------ */
 app.post('/api/Enviar-Peticion', async (req, res) => {
     try {
         console.log('Received payload:', JSON.stringify(req.body, null, 2));
         let { nombre, telefono, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
         
-        if (nombre && nombre.startsWith('Nombre: ')) { nombre = nombre.slice('Nombre: '.length).trim(); }
-        if (!nombre || !Array.isArray(pedidoItems) || pedidoItems.length === 0) { return res.status(400).json({ error: 'Petición inválida: nombre o items faltantes' }); }
-    
+        if (nombre && nombre.startsWith('Nombre: ')) nombre = nombre.slice('Nombre: '.length).trim();
+        if (!nombre || !Array.isArray(pedidoItems) || pedidoItems.length === 0) return res.status(400).json({ error: 'Petición inválida' });
+        
         let total = 0;
         const processedItems = [];
 
@@ -444,17 +355,19 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
             const prodId = it.id;
             const { data: prod, error: prodError } = await supabase.from('productos').select('*').eq('id', prodId).single();
             if (prodError || !prod) continue;
+            
             const cantidadFinal = Number(it.cantidad) || 0;
             if (cantidadFinal <= 0) continue;
+            
             const precioBase = Number(prod.precio) || 0;
             const precioUnitario = precioBase * 1.10;
             const subtotal = cantidadFinal * precioUnitario;
             total += subtotal;
             processedItems.push({ id: prodId, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: precioUnitario, subtotal });
         }
-    
-        if (processedItems.length === 0) { return res.status(400).json({ error: 'No hay items válidos para la petición' }); }
-    
+        
+        if (processedItems.length === 0) return res.status(400).json({ error: 'No hay items válidos' });
+        
         const totalInt = Math.round(total);
         const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
@@ -464,18 +377,18 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
             items: processedItems,
             total: totalInt,
             fecha: fechaLocal,
-            user_id: user_id || null,              
+            user_id: user_id || null,            
             nombre_negocio: nombre_negocio || null 
         };
         
         console.log('💾 Guardando petición:', payload);
         const { data, error } = await supabase.from('Peticiones').insert([payload]).select().single();
-    
-        if (error) { console.error('❌ Supabase insert error:', error); return res.status(500).json({ error: `Error al guardar la petición: ${error.message}` }); }
+        
+        if (error) { console.error('❌ Error insert:', error); return res.status(500).json({ error: error.message }); }
         res.json({ ok: true, mensaje: 'Petición guardada', id: data?.id });
     } catch (err) {
         console.error('❌ Exception en Enviar-Peticion:', err);
-        res.status(500).json({ error: err.message || 'Error interno del servidor' });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -496,6 +409,3 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
-
-
-
