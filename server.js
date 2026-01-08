@@ -198,6 +198,29 @@ cron.schedule('*/10 * * * *', async () => {
     }
 });
 
+/* -----------------------------
+   🔍 VERIFICAR STOCK (NUEVO)
+   Evita el error 401 haciendo la consulta desde el servidor
+----------------------------- */
+app.post('/api/verificar-stock', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: 'IDs inválidos' });
+
+        // El servidor SI tiene permiso para leer Supabase
+        const { data, error } = await supabase
+            .from('productos')
+            .select('id, nombre, stock, stock_leo')
+            .in('id', ids);
+
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        console.error('❌ Error verificando stock:', err);
+        res.status(500).json({ error: 'Error interno verificando stock' });
+    }
+});
+
 // --- 🚨 NUEVO: ENDPOINT PARA FORZAR ACTUALIZACIÓN COMPLETA (NO TEST) ---
 app.get('/api/admin/forzar-sync', async (req, res) => {
     try {
@@ -473,5 +496,6 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
