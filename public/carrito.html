@@ -105,7 +105,267 @@
     <script>
     // --- 1. CONFIGURACIÓN SUPABASE (LLAVE PÚBLICA / ANON) ---
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
+    
+    // Tu API en Render para enviar el correo/guardar pedido final
+    const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
+
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+
+    let carrito = [];
+    let productosCache = []; 
+    let usuario = null;
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+        await verificarSesion();
+        await cargarProductosCache(); // Carga rápida para visualizar
+        leerCarrito();
+        renderizar();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    async function verificarSesion() {
+        try {
+            const { data } = await _supabase.auth.getSession();
+            if (data && data.session) {
+                usuario = data.session.user;
+                mostrarSesionUI();
+            }
+        } catch (e) { console.log('Sin sesión o error supabase'); }
+    }
+
+    function mostrarSesionUI() {
+        document.getElementById('info-sesion').classList.remove('hidden');
+        document.getElementById('campos-manuales').classList.add('hidden');
+        const meta = usuario.user_metadata || {};
+        const nombre = meta.full_name || meta.name || usuario.email;
+        document.getElementById('nombre-usuario-sesion').textContent = nombre;
+    }
+
+    // Carga inicial para mostrar la lista (usa la API para ser rápido)
+    async function cargarProductosCache() {
+        try {
+            const res = await fetch(`${API_BASE}/productos`);
+            if (res.ok) productosCache = await res.json();
+        } catch (e) { console.error(e); }
+        document.getElementById('loading').classList.add('hidden');
+    }
+
+    function leerCarrito() {
+        try {
+            const raw = localStorage.getItem('carrito');
+            carrito = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(carrito)) carrito = [];
+        } catch (e) { carrito = []; }
+    }
+
+    function guardarCarrito() {
+        localStorage.setItem('carrito', JSON.stringify(carrito));
+        renderizar(); 
+    }
+
+    // --- LOGICA DE STOCK (IGUAL QUE EN INDEX) ---
+    function calcularStockTotal(p) {
+        if (!p) return 0;
+        if (p.stock <= -99) return 0; // Manualmente agotado
+        if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") return 9999999; 
+
+        let miStock = p.stock > 0 ? p.stock : 0;
+        let leoStock = parseFloat(p.stock_leo) || 0;
+
+        // 🔥 REGLA DE ORO: Si Leo <= 1, es 0.
+        if (leoStock <= 1) leoStock = 0;
+
+        return miStock + leoStock;
+    }
+
+    function renderizar() {
+        const contenedor = document.getElementById('lista-productos');
+        contenedor.innerHTML = '';
+        
+        if (carrito.length === 0) {
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('empty-state').classList.add('flex');
+            document.getElementById('footer-total').classList.add('hidden');
+            contenedor.classList.add('hidden');
+            return;
+        }
+
+        document.getElementById('empty-state').classList.add('hidden');
+        document.getElementById('empty-state').classList.remove('flex');
+        contenedor.classList.remove('hidden');
+        document.getElementById('footer-total').classList.remove('hidden');
+
+        let total = 0;
+
+        carrito.forEach((item, index) => {
+            const prod = productosCache.find(p => String(p.id) === String(item.id));
+            if (!prod) return;
+
+            const precio = Number(prod.precio) || 0;
+            const precioFinal = precio * 1.10;
+            const subtotal = precioFinal * item.cantidad;
+            total += subtotal;
+
+            let imgUrl = 'https://via.placeholder.com/80?text=IMG';
+            if (prod.imagen) {
+                imgUrl = `${SUPABASE_URL}/storage/v1/object/public/imagenes/${prod.imagen.replace(/^imagenes\//, '')}`;
+            }
+
+            const html = `
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden">
+                    <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
+                        <img src="${imgUrl}" class="w-full h-full object-contain" alt="Prod">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">${prod.nombre}</h3>
+                        <div class="text-xs text-gray-500 mb-2">${formatMoney(precioFinal)} c/u</div>
+                        <div class="font-bold text-brand-600 mono-num">${formatMoney(subtotal)}</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
+                            <button onclick="cambiarCantidad(${index}, -1)" class="w-8 h-8 flex items-center justify-center font-bold text-gray-600 hover:bg-white rounded">-</button>
+                            <span class="w-8 text-center font-bold text-sm text-gray-800">${item.cantidad}</span>
+                            <button onclick="cambiarCantidad(${index}, 1)" class="w-8 h-8 flex items-center justify-center font-bold text-brand-600 hover:bg-white rounded">+</button>
+                        </div>
+                        <button onclick="eliminarItem(${index})" class="text-xs text-red-400 font-medium p-1">Eliminar</button>
+                    </div>
+                </div>
+            `;
+            contenedor.insertAdjacentHTML('beforeend', html);
+        });
+
+        document.getElementById('total-precio').textContent = formatMoney(total);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function cambiarCantidad(index, delta) {
+        const nuevaCant = carrito[index].cantidad + delta;
+        if (nuevaCant > 0) carrito[index].cantidad = nuevaCant;
+        else carrito.splice(index, 1);
+        guardarCarrito();
+    }
+
+    function eliminarItem(index) {
+        carrito.splice(index, 1);
+        guardarCarrito();
+    }
+
+    function abrirModal() { document.getElementById('modal').classList.remove('hidden'); }
+    function cerrarModal() { document.getElementById('modal').classList.add('hidden'); }
+    function formatMoney(amount) { return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2}); }
+
+    // --- ENVIAR PEDIDO ---
+   <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito - Distribuidora Funaz</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { colors: { brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' } } }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1f2937; padding-bottom: 140px; }
+        .mono-num { font-family: 'JetBrains Mono', monospace; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div class="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
+        
+        <header class="flex items-center justify-between mb-8">
+            <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 font-bold text-sm bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+                ⬅ Seguir comprando
+            </a>
+            <h1 class="text-xl font-bold tracking-tight text-gray-900">Mi Carrito</h1>
+            <div class="w-8"></div> 
+        </header>
+
+        <div id="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <div class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando...</span>
+        </div>
+
+        <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-center">
+            <div class="bg-gray-100 p-6 rounded-full mb-4 text-4xl">🛒</div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Tu carrito está vacío</h2>
+            <a href="index.html" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg mt-4 inline-block">
+                Ir a la Tienda
+            </a>
+        </div>
+
+        <div id="lista-productos" class="space-y-4 pb-24 hidden">
+            </div>
+
+        <div id="footer-total" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-40">
+            <div class="max-w-3xl mx-auto flex flex-col gap-3">
+                <div class="flex justify-between items-end px-1">
+                    <span class="text-sm font-medium text-gray-500 uppercase">Total</span>
+                    <span class="text-2xl font-black text-gray-900 mono-num" id="total-precio">$0</span>
+                </div>
+                <button onclick="abrirModal()" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2">
+                    Confirmar Pedido
+                </button>
+            </div>
+        </div>
+
+        <div id="modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative">
+                <button onclick="cerrarModal()" class="absolute top-4 right-4 text-gray-400 p-2 font-bold text-xl">&times;</button>
+
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Datos de Envío</h3>
+                <p class="text-sm text-gray-500 mb-6">Completa la información.</p>
+
+                <div id="info-sesion" class="hidden bg-brand-50 border border-brand-200 rounded-xl p-3 mb-4 flex items-center gap-3">
+                    <div class="bg-brand-200 p-2 rounded-full text-brand-700">👤</div>
+                    <div class="overflow-hidden">
+                        <div class="text-[10px] text-brand-600 font-bold uppercase">Enviando como</div>
+                        <div class="text-sm font-bold text-gray-800 truncate" id="nombre-usuario-sesion">...</div>
+                    </div>
+                </div>
+
+                <div id="campos-manuales">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
+                    <input id="input-nombre" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm mb-3 outline-none">
+                    
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Apellido</label>
+                    <input id="input-apellido" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm mb-3 outline-none">
+
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Teléfono / WhatsApp</label>
+                    <input id="input-telefono" type="tel" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" placeholder="Ej: 264...">
+                </div>
+
+                <div class="mt-3">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Negocio</label>
+                    <input id="input-negocio" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" placeholder="Ej: Kiosco...">
+                </div>
+
+                <button id="btn-enviar" onclick="enviarPedido()" class="w-full bg-brand-500 text-white py-3 rounded-xl font-bold shadow-md mt-4 disabled:bg-gray-300">
+                    Enviar Pedido
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    // --- 1. CONFIGURACIÓN SUPABASE (LLAVE PÚBLICA / ANON) ---
+    const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
     
     // Tu API en Render para enviar el correo/guardar pedido final
     const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
@@ -369,6 +629,8 @@
             btn.textContent = 'Enviar Pedido';
         }
     }
+
     </script>
 </body>
 </html>
+
