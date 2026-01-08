@@ -227,10 +227,8 @@ async function checkUser() {
     lucide.createIcons();
 }
 
-// Poner esto al inicio de tus scripts en index.html / admin.html
 _sb.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') {
-        // Si por alguna razón Supabase decide cerrar la sesión, los mandamos al login
         window.location.href = 'login.html'; 
     }
     if (event === 'TOKEN_REFRESHED') {
@@ -258,12 +256,23 @@ async function cargarProductos() {
   try {
     const res = await fetch('https://distribuidorafunaz-a2o6.onrender.com/api/productos');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    productos = await res.json();
-    console.log('Loaded products:', productos.length);
-    cambiarCantidadPagina();
+    const data = await res.json();
+    
+    // Actualizamos la variable global
+    productos = data;
+    console.log('Stock actualizado. Total productos:', productos.length);
+    
+    // Volvemos a renderizar solo si ya hay productos mostrándose (para actualizar estados de "Agotado")
+    // Esto es útil cuando el setInterval corre en background.
+    if (document.querySelector('.productos').innerHTML !== '') {
+        renderProductos();
+    } else {
+        cambiarCantidadPagina(); // Primera carga
+    }
+    
   } catch (err) {
     console.error('Error cargando productos:', err);
-    alert('Error de conexión. Intente recargar.');
+    // No mostramos alert en el setInterval para no molestar
   }
 }
 
@@ -291,6 +300,17 @@ function getImageUrl(fileName) {
   if (!fileName) return '';
   const cleanFileName = fileName.trim().replace(/^imagenes\//, '');
   return `https://slroycxifwezthdomkny.supabase.co/storage/v1/object/public/imagenes/${cleanFileName}`;
+}
+
+// --- HELPER PARA CALCULAR STOCK TOTAL ---
+function calcularStockTotal(p) {
+    // Si tu stock es -99, está "Agotado" manualmente, ignoramos stock_leo.
+    if (p.stock <= -99) return 0;
+    
+    let miStock = p.stock > 0 ? p.stock : 0;
+    let leoStock = p.stock_leo > 0 ? p.stock_leo : 0;
+    
+    return miStock + leoStock;
 }
 
 // FUNCION RENDER PRODUCTOS
@@ -339,7 +359,12 @@ function renderProductos() {
         btnClase = "bg-brand-500 hover:bg-brand-600 text-white w-full py-2 rounded-lg text-sm font-bold transition-all border border-brand-500 shadow-sm shadow-brand-200";
     }
 
-    if (p.stock <= -99) {
+    // --- NUEVA LÓGICA DE VISUALIZACIÓN DE STOCK ---
+    // Si tu stock es -99 O la suma de ambos stocks es <= 0, mostramos Agotado.
+    const stockTotal = calcularStockTotal(p);
+    const esAgotado = (p.stock <= -99) || (stockTotal <= 0);
+
+    if (esAgotado) {
       accionHTML = '<div class="w-full text-center py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-lg uppercase tracking-wide">Agotado</div>';
     } else {
       accionHTML = `<button class="btn-carrito ${btnClase}" onclick="agregarAlCarrito(${p.id}, 1, false, this)">${btnTexto}</button>`;
@@ -395,18 +420,30 @@ function paginaSiguiente() {
   }
 }
 
-// FUNCION AGREGAR
+// FUNCION AGREGAR (CON VALIDACIÓN DE STOCK COMBINADO)
 function agregarAlCarrito(id, cantidad = 1, silent = false, btnElement = null) {
   const producto = productos.find(p => String(p.id) === String(id));
 
   if (!producto) { return; }
 
+  // 1. Chequeo manual de -99
   if (producto.stock <= -99) {
     mostrarMensaje('Producto sin stock.', true);
     return;
   }
   
+  // 2. Chequeo de Stock Combinado
+  const stockDispo = calcularStockTotal(producto);
   const item = carrito.find(i => i.id === id);
+  const cantidadEnCarrito = item ? item.cantidad : 0;
+  
+  // Si lo que ya tengo + lo que quiero agregar supera lo disponible
+  if ((cantidadEnCarrito + cantidad) > stockDispo) {
+      mostrarMensaje(`Solo quedan ${stockDispo} disponibles.`, true);
+      return;
+  }
+
+  // Si pasa, agregamos
   let nuevaCantidad = cantidad;
 
   if (item) {
@@ -509,6 +546,14 @@ actualizarContadorCarrito();
 cargarProductos();
 checkUser(); 
 
+// --- ACTUALIZACIÓN DE STOCK EN SEGUNDO PLANO ---
+// Se ejecuta cada 10 minutos (600,000 ms) para traer los datos nuevos del servidor
+// sin que el usuario tenga que recargar la página.
+setInterval(() => {
+    console.log("Actualizando stock en segundo plano...");
+    cargarProductos();
+}, 600000);
+
 const buscadorInput = document.getElementById('buscador');
 if (buscadorInput) {
   buscadorInput.addEventListener('input', (e) => {
@@ -524,5 +569,3 @@ faviconLink.href = getImageUrl('icono.png');
 </script>
 </body>
 </html>
-
-
