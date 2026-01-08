@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carrito - Distribuidora Funaz</title>
-    
+   
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+   
     <script>
         tailwind.config = {
             theme: {
@@ -25,22 +25,19 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-
     <div class="flex-1 max-w-3xl mx-auto w-full p-4 md:p-8">
-        
+       
         <header class="flex items-center justify-between mb-8">
             <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-brand-600 font-bold text-sm bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm transition-colors">
                 ⬅ Seguir comprando
             </a>
             <h1 class="text-xl font-bold tracking-tight text-gray-900">Mi Carrito</h1>
-            <div class="w-8"></div> 
+            <div class="w-8"></div>
         </header>
-
         <div id="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
             <div class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Cargando...</span>
         </div>
-
         <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-center">
             <div class="bg-gray-100 p-6 rounded-full mb-4 text-4xl">🛒</div>
             <h2 class="text-xl font-bold text-gray-900 mb-2">Tu carrito está vacío</h2>
@@ -49,9 +46,7 @@
                 Ir a la Tienda
             </a>
         </div>
-
         <div id="lista-productos" class="space-y-4 pb-24 hidden"></div>
-
         <div id="footer-total" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
             <div class="max-w-3xl mx-auto flex flex-col gap-3">
                 <div class="flex justify-between items-end px-1">
@@ -63,14 +58,12 @@
                 </button>
             </div>
         </div>
-
         <div id="modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative animate-[fadeIn_0.2s_ease-out]">
                 <button onclick="cerrarModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 font-bold text-xl transition-colors">&times;</button>
-
                 <h3 class="text-xl font-bold text-gray-900 mb-2">Datos de Envío</h3>
                 <p class="text-sm text-gray-500 mb-6">Completa la información para procesar el pedido.</p>
-
+                <div id="ajustes-stock" class="hidden bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 text-sm text-yellow-700"></div>
                 <div id="info-sesion" class="hidden bg-brand-50 border border-brand-200 rounded-xl p-3 mb-4 flex items-center gap-3">
                     <div class="bg-brand-200 p-2 rounded-full text-brand-700">👤</div>
                     <div class="overflow-hidden">
@@ -78,43 +71,36 @@
                         <div class="text-sm font-bold text-gray-800 truncate" id="nombre-usuario-sesion">...</div>
                     </div>
                 </div>
-
                 <div id="campos-manuales">
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
                     <input id="input-nombre" type="text" class="w-full bg-gray-50 border border-gray-200 focus:border-brand-500 rounded-xl p-3 text-sm mb-3 outline-none transition-colors">
-                    
+                   
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Apellido</label>
                     <input id="input-apellido" type="text" class="w-full bg-gray-50 border border-gray-200 focus:border-brand-500 rounded-xl p-3 text-sm mb-3 outline-none transition-colors">
-
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Teléfono / WhatsApp</label>
                     <input id="input-telefono" type="tel" class="w-full bg-gray-50 border border-gray-200 focus:border-brand-500 rounded-xl p-3 text-sm outline-none transition-colors" placeholder="Ej: 264...">
                 </div>
-
                 <div class="mt-3">
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre del Negocio</label>
                     <input id="input-negocio" type="text" class="w-full bg-gray-50 border border-gray-200 focus:border-brand-500 rounded-xl p-3 text-sm outline-none transition-colors" placeholder="Ej: Kiosco...">
                 </div>
-
                 <button id="btn-enviar" onclick="enviarPedido()" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold shadow-md mt-6 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
                     Enviar Pedido
                 </button>
             </div>
         </div>
-
     </div>
-
     <script>
     // --- CONFIGURACION ---
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
     const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
-
     // --- VARIABLES GLOBALES ---
     let carrito = [];
     let productos = []; // Cache local
     let usuario = null;
     let _supabase = null;
-    
+   
     // --- INICIALIZACION ---
     document.addEventListener('DOMContentLoaded', async () => {
         try {
@@ -122,17 +108,16 @@
                 _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 await verificarSesion();
             }
-            
+           
             await cargarProductos(); // Carga inicial
             leerCarrito();
             renderizar();
-            
+           
             if (typeof lucide !== 'undefined') lucide.createIcons();
         } catch (error) {
             console.error("Error init:", error);
         }
     });
-
     async function verificarSesion() {
         try {
             const { data } = await _supabase.auth.getSession();
@@ -142,18 +127,16 @@
             }
         } catch (e) { console.log('Sin sesión'); }
     }
-
     function mostrarSesionUI() {
         const info = document.getElementById('info-sesion');
         const manual = document.getElementById('campos-manuales');
         if(info) info.classList.remove('hidden');
         if(manual) manual.classList.add('hidden');
-        
+       
         const meta = usuario.user_metadata || {};
         const nombre = meta.full_name || meta.name || usuario.email;
         document.getElementById('nombre-usuario-sesion').textContent = nombre;
     }
-
     // Usamos el puente GET /productos (Igual que en index.html)
     async function cargarProductos() {
         try {
@@ -161,12 +144,11 @@
             if (res.ok) {
                 productos = await res.json();
             }
-        } catch (e) { 
-            console.error("Error cargando productos:", e); 
+        } catch (e) {
+            console.error("Error cargando productos:", e);
         }
         document.getElementById('loading').classList.add('hidden');
     }
-
     function leerCarrito() {
         try {
             const raw = localStorage.getItem('carrito');
@@ -174,40 +156,33 @@
             if (!Array.isArray(carrito)) carrito = [];
         } catch (e) { carrito = []; }
     }
-
     function guardarCarrito() {
         localStorage.setItem('carrito', JSON.stringify(carrito));
-        renderizar(); 
+        renderizar();
     }
-
     // --- LÓGICA DE STOCK (Idéntica a index.html) ---
     function calcularStockTotal(p) {
         if (!p) return 0;
         // 1. Agotado manual
         if (p.stock <= -99) return 0;
-        
+       
         // 2. Stock Leo NULL/Vacio = Infinito
         if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") {
             return 9999999;
         }
-
         // 3. Calculo
         let miStock = p.stock > 0 ? p.stock : 0;
         let leoStock = parseFloat(p.stock_leo) || 0;
-
         if (leoStock <= 1) leoStock = 0;
-
         return miStock + leoStock;
     }
-
     // --- RENDERIZADO ---
     function renderizar() {
         const contenedor = document.getElementById('lista-productos');
         const emptyState = document.getElementById('empty-state');
         const footerTotal = document.getElementById('footer-total');
-
         contenedor.innerHTML = '';
-        
+       
         if (carrito.length === 0) {
             emptyState.classList.remove('hidden');
             emptyState.classList.add('flex');
@@ -215,30 +190,25 @@
             contenedor.classList.add('hidden');
             return;
         }
-
         emptyState.classList.add('hidden');
         emptyState.classList.remove('flex');
         contenedor.classList.remove('hidden');
         footerTotal.classList.remove('hidden');
-
         let total = 0;
-
         carrito.forEach((item, index) => {
             const prod = productos.find(p => String(p.id) === String(item.id));
-            
+           
             // Si el producto no cargó aún, usamos valores seguros
             const nombre = prod ? prod.nombre : 'Cargando...';
             const precioBase = prod ? (Number(prod.precio) || 0) : 0;
             const precioFinal = precioBase * 1.10;
             const subtotal = precioFinal * item.cantidad;
             total += subtotal;
-
             let imgUrl = 'https://via.placeholder.com/80?text=IMG';
             if (prod && prod.imagen) {
                 const cleanPath = prod.imagen.replace(/^imagenes\//, '');
                 imgUrl = `${SUPABASE_URL}/storage/v1/object/public/imagenes/${cleanPath}`;
             }
-
             const html = `
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center relative overflow-hidden">
                     <div class="w-20 h-20 bg-gray-50 rounded-lg flex-shrink-0 p-2 flex items-center justify-center border border-gray-100">
@@ -261,107 +231,114 @@
             `;
             contenedor.insertAdjacentHTML('beforeend', html);
         });
-
         document.getElementById('total-precio').textContent = formatMoney(total);
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
-
     function cambiarCantidad(index, delta) {
         const nuevaCant = carrito[index].cantidad + delta;
         if (nuevaCant > 0) carrito[index].cantidad = nuevaCant;
         else carrito.splice(index, 1);
         guardarCarrito();
     }
-
     function eliminarItem(index) {
         carrito.splice(index, 1);
         guardarCarrito();
     }
-
     function abrirModal() {
         document.getElementById('modal').classList.remove('hidden');
     }
-
     function cerrarModal() {
         document.getElementById('modal').classList.add('hidden');
     }
-
     // --- ENVIAR PEDIDO MODIFICADO (SOLUCIÓN 404) ---
     async function enviarPedido() {
         const btn = document.getElementById('btn-enviar');
         const negocio = document.getElementById('input-negocio').value.trim();
-        
+       
         const nombreIn = document.getElementById('input-nombre').value.trim();
         const apellIn = document.getElementById('input-apellido').value.trim();
         const telIn = document.getElementById('input-telefono').value.trim();
-
         if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
         if (!usuario) {
             if (!nombreIn || !apellIn) return alert('Completa tu nombre y apellido');
             if (!telIn) return alert('Ingresa un teléfono');
         }
-
         btn.disabled = true;
         btn.textContent = 'Verificando Stock...';
-
         try {
             // PASO 1: TRAER PRODUCTOS FRESCOS (GET)
             // En vez de POST /verificar-stock, hacemos GET /productos como en index.html
             const resFresh = await fetch(`${API_BASE}/productos`);
             if (!resFresh.ok) throw new Error("No se pudo conectar con el catálogo de productos.");
-            
+           
             const productosFrescos = await resFresh.json();
+            productos = productosFrescos; // Actualizar cache local
 
-            // PASO 2: VALIDACIÓN LOCAL (CLIENT-SIDE)
-            // Validamos matemáticamente aquí, igual que en agregarAlCarrito de index.html
-            for (const itemCarrito of carrito) {
-                const prodFresco = productosFrescos.find(p => String(p.id) === String(itemCarrito.id));
-                
+            // PASO 2: AJUSTES AUTOMÁTICOS POR STOCK
+            let ajustes = [];
+            for (let i = carrito.length - 1; i >= 0; i--) {
+                const item = carrito[i];
+                const prodFresco = productosFrescos.find(p => String(p.id) === String(item.id));
+               
                 if (!prodFresco) {
-                    throw new Error(`El producto (ID ${itemCarrito.id}) ya no existe.`);
+                    ajustes.push(`Producto con ID ${item.id} ya no existe y fue removido.`);
+                    carrito.splice(i, 1);
+                    continue;
                 }
-
                 const stockReal = calcularStockTotal(prodFresco);
-
-                if (itemCarrito.cantidad > stockReal) {
-                    const msg = stockReal <= 0 
-                        ? `"${prodFresco.nombre}" se acaba de agotar.` 
-                        : `Solo quedan ${stockReal} unidades de "${prodFresco.nombre}".`;
-                    throw new Error(msg);
+                if (stockReal <= 0) {
+                    ajustes.push(`"${prodFresco.nombre}" se agotó y fue removido del carrito.`);
+                    carrito.splice(i, 1);
+                } else if (item.cantidad > stockReal) {
+                    const oldCant = item.cantidad;
+                    item.cantidad = stockReal;
+                    ajustes.push(`De "${prodFresco.nombre}" solo quedan ${stockReal} unidades, cantidad ajustada de ${oldCant} a ${stockReal}.`);
                 }
+            }
+            guardarCarrito(); // Actualiza UI con ajustes
+
+            // Mostrar ajustes en el modal si hay
+            const ajustesDiv = document.getElementById('ajustes-stock');
+            if (ajustes.length > 0) {
+                ajustesDiv.innerHTML = '<div class="font-bold mb-2">Ajustes realizados por disponibilidad:</div>' +
+                    '<ul class="list-disc pl-4 space-y-1">' + ajustes.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
+                ajustesDiv.classList.remove('hidden');
+            }
+
+            // Si carrito vacío después de ajustes
+            if (carrito.length === 0) {
+                const emptyMsg = 'El carrito quedó vacío después de los ajustes. No se puede enviar el pedido.';
+                ajustesDiv.innerHTML += `<p class="mt-3 font-bold text-red-700">${emptyMsg}</p>`;
+                btn.textContent = 'Enviar Pedido';
+                return; // No enviar, usuario puede cerrar modal
             }
 
             // PASO 3: PREPARAR DATOS
             btn.textContent = 'Enviando...';
-
             let nombreFinal = '', telefonoFinal = '';
             if (usuario) {
                 const meta = usuario.user_metadata || {};
                 nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario';
-                telefonoFinal = meta.phone || 'Usuario Registrado'; 
+                telefonoFinal = meta.phone || 'Usuario Registrado';
             } else {
                 nombreFinal = `${nombreIn} ${apellIn}`;
                 telefonoFinal = telIn;
             }
-
             const itemsFinales = [];
             let totalCalculado = 0;
-
             for (const item of carrito) {
-                const producto = productosFrescos.find(p => String(p.id) === String(item.id));
+                const producto = productos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
-
                 const precioConRecargo = Number(producto.precio) * 1.10;
                 itemsFinales.push({
                     id: item.id,
                     cantidad: item.cantidad,
                     nombre: producto.nombre,
-                    precio: precioConRecargo, 
-                    precioUnitario: precioConRecargo 
+                    precio: precioConRecargo,
+                    precioUnitario: precioConRecargo
                 });
                 totalCalculado += item.cantidad * precioConRecargo;
             }
-
             const payload = {
                 nombre: nombreFinal,
                 telefono: telefonoFinal,
@@ -370,35 +347,30 @@
                 user_id: usuario ? usuario.id : null,
                 nombre_negocio: negocio
             };
-
             // PASO 4: ENVIAR (POST /Enviar-Peticion)
             const resEnvio = await fetch(`${API_BASE}/Enviar-Peticion`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
             if (!resEnvio.ok) {
                 const errData = await resEnvio.json().catch(()=>({}));
                 throw new Error(errData.error || "Error al enviar pedido.");
             }
-
             // ÉXITO
             carrito = [];
             guardarCarrito();
             cerrarModal();
             alert('¡Pedido enviado con éxito!');
-            
+           
             if (usuario) window.location.href = 'mi-cuenta.html';
             else window.location.href = 'index.html';
-
         } catch (e) {
             alert('Atención: ' + e.message);
             btn.disabled = false;
             btn.textContent = 'Enviar Pedido';
         }
     }
-
     function formatMoney(amount) {
         return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
     }
