@@ -245,6 +245,12 @@
         guardarCarrito();
     }
     function abrirModal() {
+        const ajustesDiv = document.getElementById('ajustes-stock');
+        ajustesDiv.innerHTML = '';
+        ajustesDiv.classList.add('hidden');
+        const btn = document.getElementById('btn-enviar');
+        btn.textContent = 'Enviar Pedido';
+        btn.disabled = false;
         document.getElementById('modal').classList.remove('hidden');
     }
     function cerrarModal() {
@@ -265,6 +271,9 @@
         }
         btn.disabled = true;
         btn.textContent = 'Verificando Stock...';
+        const ajustesDiv = document.getElementById('ajustes-stock');
+        ajustesDiv.innerHTML = '';
+        ajustesDiv.classList.add('hidden');
         try {
             // PASO 1: TRAER PRODUCTOS FRESCOS (GET)
             // En vez de POST /verificar-stock, hacemos GET /productos como en index.html
@@ -298,7 +307,6 @@
             guardarCarrito(); // Actualiza UI con ajustes
 
             // Mostrar ajustes en el modal si hay
-            const ajustesDiv = document.getElementById('ajustes-stock');
             if (ajustes.length > 0) {
                 ajustesDiv.innerHTML = '<div class="font-bold mb-2">Ajustes realizados por disponibilidad:</div>' +
                     '<ul class="list-disc pl-4 space-y-1">' + ajustes.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
@@ -307,10 +315,14 @@
 
             // Si carrito vacío después de ajustes
             if (carrito.length === 0) {
-                const emptyMsg = 'El carrito quedó vacío después de los ajustes. No se puede enviar el pedido.';
-                ajustesDiv.innerHTML += `<p class="mt-3 font-bold text-red-700">${emptyMsg}</p>`;
-                btn.textContent = 'Enviar Pedido';
+                ajustesDiv.innerHTML += `<p class="mt-3 font-bold text-red-700">El carrito quedó vacío después de los ajustes. No se puede enviar el pedido.</p>`;
+                btn.textContent = 'No se puede enviar';
+                btn.disabled = true;
                 return; // No enviar, usuario puede cerrar modal
+            } else if (ajustes.length > 0) {
+                btn.textContent = 'Enviar Pedido Actualizado';
+                btn.disabled = false;
+                return; // Requiere click nuevamente
             }
 
             // PASO 3: PREPARAR DATOS
