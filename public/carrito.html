@@ -290,19 +290,22 @@
 
         try {
             // ----------------------------------------------------
-            // 1. VALIDACIÓN DE STOCK EN TIEMPO REAL (OPTIMIZADA)
+            // 1. VALIDACIÓN DE STOCK (VIA SERVIDOR PARA EVITAR 401)
             // ----------------------------------------------------
             
             // Extraemos solo los IDs del carrito
             const idsCarrito = carrito.map(i => i.id);
 
-            // Consulta quirúrgica a Supabase: Solo traemos los items involucrados
-            const { data: productosFrescos, error: errorStock } = await _supabase
-                .from('productos')
-                .select('id, nombre, stock, stock_leo') // Solo columnas necesarias
-                .in('id', idsCarrito);
+            // Consulta al Endpoint del Servidor (Node.js) en vez de Supabase directo
+            const resStock = await fetch(`${API_BASE}/verificar-stock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsCarrito })
+            });
 
-            if (errorStock) throw new Error("Error verificando stock. Intente nuevamente.");
+            if (!resStock.ok) throw new Error("Error al conectar con el servidor para verificar stock.");
+            
+            const productosFrescos = await resStock.json();
 
             // Validamos uno por uno
             for (const itemCarrito of carrito) {
@@ -349,13 +352,6 @@
             // Si por alguna razón no coincide longitud (raro), usamos cache local
             const fuenteDatos = productosFrescos.length === carrito.length ? productosFrescos : productos;
             
-            // RE-BUSCAMOS PRECIO PARA CALCULAR TOTAL
-            // Nota: productosFrescos no traía precio en la consulta optimizada de arriba.
-            // Para el cálculo final del dinero, podemos confiar en la caché local (productos)
-            // ya que el precio no es tan crítico "en tiempo real" como el stock, 
-            // pero si quieres ser estricto, deberíamos haber pedido precio en el select de arriba.
-            // Por simplicidad y rendimiento, usamos la caché local para precios y nombres finales.
-
             for (const item of carrito) {
                 const producto = productos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
