@@ -103,22 +103,24 @@
     </div>
 
     <script>
-    // CONFIGURACION
+    // --- 1. CONFIGURACIÓN SUPABASE CLIENT-SIDE (Igual que Index.html) ---
     const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InFub24iLCJpYXQiOjE3NTYyNzIzNDIsImV4cCI6MjA3MTg0ODM0Mn0.OhgCTvtvdvOejXS9iXPX8rkg3Dh_jBkWObwhL-HnDB8';
     const API_BASE = 'https://distribuidorafunaz-a2o6.onrender.com/api';
 
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+
     // VARIABLES GLOBALES
     let carrito = [];
-    let productos = []; // Cache local
+    let productosCache = []; // Para renderizar rápido
     let usuario = null;
-    let _supabase = null;
     
     // INICIALIZACION
     document.addEventListener('DOMContentLoaded', async () => {
-        _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         await verificarSesion();
-        await cargarProductos();
+        await cargarProductosCache();
         leerCarrito();
         renderizar();
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -143,10 +145,11 @@
         document.getElementById('nombre-usuario-sesion').textContent = nombre;
     }
 
-    async function cargarProductos() {
+    async function cargarProductosCache() {
+        // Carga inicial rápida para mostrar la lista
         try {
             const res = await fetch(`${API_BASE}/productos`);
-            if (res.ok) productos = await res.json();
+            if (res.ok) productosCache = await res.json();
         } catch (e) { console.error(e); }
         document.getElementById('loading').classList.add('hidden');
     }
@@ -156,9 +159,7 @@
             const raw = localStorage.getItem('carrito');
             carrito = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(carrito)) carrito = [];
-        } catch (e) {
-            carrito = [];
-        }
+        } catch (e) { carrito = []; }
     }
 
     function guardarCarrito() {
@@ -166,22 +167,16 @@
         renderizar(); 
     }
 
-    // --- HELPER STOCK LOGIC ---
+    // --- LOGICA DE STOCK (IGUAL QUE INDEX) ---
     function calcularStockTotal(p) {
         if (!p) return 0;
-        // 1. Agotado manual
-        if (p.stock <= -99) return 0;
-        
-        // 2. Stock Leo NULL/Vacio = Infinito
-        if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") {
-            return 9999999;
-        }
+        if (p.stock <= -99) return 0; // Manualmente agotado
+        if (p.stock_leo === null || p.stock_leo === undefined || p.stock_leo === "") return 9999999; // Infinito
 
-        // 3. Calculo
         let miStock = p.stock > 0 ? p.stock : 0;
         let leoStock = parseFloat(p.stock_leo) || 0;
 
-        // 4. Si leoStock es 1 o menor, cuenta como 0
+        // 🔥 REGLA DE ORO: Si Leo <= 1, es 0.
         if (leoStock <= 1) leoStock = 0;
 
         return miStock + leoStock;
@@ -208,10 +203,9 @@
         let total = 0;
 
         carrito.forEach((item, index) => {
-            const prod = productos.find(p => String(p.id) === String(item.id));
+            const prod = productosCache.find(p => String(p.id) === String(item.id));
             if (!prod) return;
 
-            // Visualmente usamos el 1.10
             const precio = Number(prod.precio) || 0;
             const precioFinal = precio * 1.10;
             const subtotal = precioFinal * item.cantidad;
@@ -269,7 +263,7 @@
         document.getElementById('modal').classList.add('hidden');
     }
 
-    // --- ENVIAR PEDIDO CON VALIDACIÓN DE STOCK REAL ---
+    // --- ENVIO Y VALIDACIÓN ---
     async function enviarPedido() {
         const btn = document.getElementById('btn-enviar');
         const negocio = document.getElementById('input-negocio').value.trim();
@@ -279,7 +273,6 @@
         const telefonoInput = document.getElementById('input-telefono').value.trim();
 
         if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
-
         if (!usuario) {
             if (!nombreInput || !apellidoInput) return alert('Por favor, completa tu nombre y apellido');
             if (!telefonoInput) return alert('Por favor, ingresa un número de teléfono');
@@ -289,51 +282,37 @@
         btn.textContent = 'Verificando Stock...';
 
         try {
-            // ----------------------------------------------------
-            // 1. VALIDACIÓN DE STOCK (VIA SERVIDOR PARA EVITAR 401)
-            // ----------------------------------------------------
-            
-            // Extraemos solo los IDs del carrito
+            // 1. OBTENER IDS DEL CARRITO
             const idsCarrito = carrito.map(i => i.id);
 
-            // Consulta al Endpoint del Servidor (Node.js) en vez de Supabase directo
-            const resStock = await fetch(`${API_BASE}/verificar-stock`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: idsCarrito })
-            });
+            // 2. CONSULTAR SUPABASE DIRECTO (Client-Side, como en Index)
+            // Esto evita los problemas de API Key del servidor
+            const { data: productosFrescos, error } = await _supabase
+                .from('productos')
+                .select('id, nombre, stock, stock_leo, precio')
+                .in('id', idsCarrito);
 
-            if (!resStock.ok) throw new Error("Error al conectar con el servidor para verificar stock.");
-            
-            const productosFrescos = await resStock.json();
+            if (error) throw new Error("Error consultando stock. Intente nuevamente.");
 
-            // Validamos uno por uno
+            // 3. VALIDAR STOCK UNO A UNO
             for (const itemCarrito of carrito) {
                 const prodFresco = productosFrescos.find(p => String(p.id) === String(itemCarrito.id));
-                
-                if (!prodFresco) {
-                    throw new Error(`El producto ID ${itemCarrito.id} ya no existe.`);
-                }
+                if (!prodFresco) throw new Error(`El producto ID ${itemCarrito.id} ya no existe.`);
 
                 const stockReal = calcularStockTotal(prodFresco);
 
                 if (itemCarrito.cantidad > stockReal) {
-                    const mensajeError = stockReal <= 0 
+                    const msg = stockReal <= 0 
                         ? `"${prodFresco.nombre}" se acaba de agotar.` 
                         : `Solo quedan ${stockReal} unidades de "${prodFresco.nombre}".`;
-                    
-                    throw new Error(mensajeError);
+                    throw new Error(msg);
                 }
             }
 
-            // ----------------------------------------------------
-            // 2. PROCESO DE ENVÍO (Si pasó la validación)
-            // ----------------------------------------------------
+            // 4. PREPARAR ENVÍO AL SERVIDOR
             btn.textContent = 'Enviando...';
 
-            let nombreFinal = '';
-            let telefonoFinal = '';
-
+            let nombreFinal = '', telefonoFinal = '';
             if (usuario) {
                 const meta = usuario.user_metadata || {};
                 nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario Registrado';
@@ -348,16 +327,12 @@
             const nuevosCarrito = [];
             let totalCalculado = 0;
 
-            // Usamos productosFrescos para asegurar precios y datos actuales
-            // Si por alguna razón no coincide longitud (raro), usamos cache local
-            const fuenteDatos = productosFrescos.length === carrito.length ? productosFrescos : productos;
-            
             for (const item of carrito) {
-                const producto = productos.find(p => String(p.id) === String(item.id));
+                // Usamos la data fresca que ya bajamos
+                const producto = productosFrescos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
 
                 const precioConRecargo = Number(producto.precio) * 1.10;
-
                 nuevosCarrito.push({
                     id: item.id,
                     cantidad: item.cantidad,
@@ -365,11 +340,8 @@
                     precio: precioConRecargo, 
                     precioUnitario: precioConRecargo 
                 });
-
                 totalCalculado += item.cantidad * precioConRecargo;
             }
-
-            if (nuevosCarrito.length === 0) throw new Error("Carrito vacío o productos no válidos");
 
             const payload = {
                 nombre: nombreFinal,
@@ -380,6 +352,7 @@
                 nombre_negocio: negocio
             };
 
+            // 5. ENVIAR AL SERVER (Endpoints ya arreglados)
             const res = await fetch(`${API_BASE}/Enviar-Peticion`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -410,6 +383,6 @@
     function formatMoney(amount) {
         return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
     }
-</script>
+    </script>
 </body>
 </html>
