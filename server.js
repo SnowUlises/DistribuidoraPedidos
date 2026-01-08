@@ -6,7 +6,7 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 
-// --- NUEVOS IMPORTS PARA EL SCRAPER ---
+// --- IMPORTS PARA EL SCRAPER ---
 import axios from 'axios';
 import cron from 'node-cron';
 // --------------------------------------
@@ -20,15 +20,14 @@ app.use(express.static('public'));
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
   auth: {
-    persistSession: true, // Guarda la sesión en LocalStorage
-    autoRefreshToken: true, // 🔥 ESTO ES CLAVE: Renueva el token automáticamente
+    persistSession: true,
+    autoRefreshToken: true,
     detectSessionInUrl: true
   }
 });
 
 /* ====================================================================================
-   🤖 LÓGICA DE ACTUALIZACIÓN DE STOCK ("STOCK LEO")
-   Se ejecuta cada 10 minutos. No toca el stock real, solo 'stock_leo'.
+   🕵️‍♂️ LÓGICA DE ACTUALIZACIÓN DE STOCK (MODO DIAGNÓSTICO)
    ==================================================================================== */
 
 const URL_BASE_WEB = "https://cooperar-s-k.dongestion.com/ecommerce/products";
@@ -38,7 +37,7 @@ const HEADERS_SCRAPER = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
 };
 
-// --- Utilidades del Scraper ---
+// --- Utilidades ---
 function normalizeSku(val) {
     if (!val) return "";
     let s = String(val).trim();
@@ -53,34 +52,46 @@ function safeFloat(val) {
     } catch (e) { return 0.0; }
 }
 
-// --- Obtener productos de una página específica ---
-async function obtenerProductosPagina(numeroPagina) {
+// --- Scraper de Página Individual (Con Logs) ---
+async function obtenerProductosPagina(numeroPagina, logs) {
     const url = `${URL_BASE_WEB}?page=${numeroPagina}`;
     try {
         const response = await axios.get(url, { headers: HEADERS_SCRAPER, timeout: 20000 });
         const html = response.data;
+        
+        // Regex ajustado
         const patron = /(?:window\.)?bk_products\s*=\s*(\[.*?\]);/s;
         const match = html.match(patron);
 
         if (match && match[1]) {
             const data = JSON.parse(match[1]);
-            return data.map(p => ({
+            const items = data.map(p => ({
                 sku: normalizeSku(p.sku || p.id),
-                stock: safeFloat(p.qty_available)
+                stock: safeFloat(p.qty_available),
+                nombre: p.name // Solo para debug
             })).filter(item => item.sku !== "");
+            
+            return items;
+        } else {
+            // DEBUG: Si falla en página 1, guardamos un trozo del HTML para ver qué pasó
+            if (numeroPagina === 1) {
+                logs.push(`⚠️ ALERTA: No se encontró el patrón Regex en página 1.`);
+                logs.push(`🔍 Muestra HTML (primeros 200 chars): ${html.substring(0, 200)}...`);
+            }
+            return [];
         }
-        return [];
     } catch (error) {
-        console.error(`⚠️ Error scrapeando pág ${numeroPagina}: ${error.message}`);
+        logs.push(`❌ Error HTTP pág ${numeroPagina}: ${error.message}`);
         return [];
     }
 }
 
-// --- Función Principal de Actualización ---
-async function ejecutarActualizacionStock() {
-    console.log(`[${new Date().toISOString()}] 🔄 Iniciando actualización de Stock Leo...`);
+// --- Función Principal (Devuelve Logs) ---
+async function ejecutarActualizacionStock(modoTest = false) {
+    const logs = [];
+    logs.push(`[${new Date().toISOString()}] 🚀 Inicio proceso de actualización.`);
 
-    // 1. LEEMOS TU DB (Solo lectura de IDs y SKUs para filtrar)
+    // 1. LEEMOS TU DB
     const { data: productosDB, error } = await supabase
         .from('productos')
         .select('id, sku')
@@ -88,22 +99,31 @@ async function ejecutarActualizacionStock() {
         .neq('sku', '');
 
     if (error) {
-        console.error("❌ Error leyendo Supabase para actualización:", error);
-        return;
+        logs.push(`❌ Error FATAL leyendo Supabase: ${error.message}`);
+        return logs;
+    }
+
+    logs.push(`📊 Tu Base de Datos: ${productosDB.length} productos con SKU.`);
+    if (productosDB.length > 0) {
+        logs.push(`🔍 Ejemplo SKU local: '${productosDB[0].sku}'`);
     }
 
     const skusEnMiDB = new Set(productosDB.map(p => p.sku));
     
-    // 2. SCRAPING EXTERNO (Lote por lote)
+    // 2. SCRAPING EXTERNO
     let productosExternos = [];
-    const LOTE_PAGINAS = 10; 
+    // Si es modo test, solo leemos 3 páginas para no esperar tanto
+    const limitePaginas = modoTest ? 3 : MAX_PAGINAS; 
     
-    for (let i = 1; i <= MAX_PAGINAS; i += LOTE_PAGINAS) {
+    logs.push(`🌍 Iniciando Scraping (Máx ${limitePaginas} páginas)...`);
+
+    const LOTE_PAGINAS = 5; 
+    for (let i = 1; i <= limitePaginas; i += LOTE_PAGINAS) {
         const promesas = [];
         for (let j = 0; j < LOTE_PAGINAS; j++) {
             const pag = i + j;
-            if (pag > MAX_PAGINAS) break;
-            promesas.push(obtenerProductosPagina(pag));
+            if (pag > limitePaginas) break;
+            promesas.push(obtenerProductosPagina(pag, logs));
         }
 
         const resultados = await Promise.all(promesas);
@@ -115,28 +135,45 @@ async function ejecutarActualizacionStock() {
                 encontradosEnLote += res.length;
             }
         }
-        if (encontradosEnLote === 0) break; 
+        
+        if (encontradosEnLote === 0) {
+            logs.push(`⏹️ Fin del catálogo detectado o bloqueo en lote ${i}.`);
+            break; 
+        }
     }
 
-    // 3. FILTRADO (Solo actualizamos lo que existe en tu DB)
+    logs.push(`📦 Total productos encontrados en la web: ${productosExternos.length}`);
+    if (productosExternos.length > 0) {
+        logs.push(`🔍 Ejemplo SKU Web: '${productosExternos[0].sku}' - Stock: ${productosExternos[0].stock}`);
+    }
+
+    // 3. COMPARACIÓN
     const actualizaciones = productosExternos.filter(p => skusEnMiDB.has(p.sku));
-    
+    logs.push(`🎯 Coincidencias (Match) SKUs: ${actualizaciones.length}`);
+
     if (actualizaciones.length === 0) {
-        console.log("✅ Nada que actualizar.");
-        return;
+        logs.push("⚠️ CUIDADO: No hubo coincidencias. Revisa si los SKUs son idénticos.");
+        if (productosExternos.length > 0 && productosDB.length > 0) {
+             logs.push(`COMPARATIVA FALLIDA: Local '${productosDB[0].sku}' vs Web '${productosExternos[0].sku}'`);
+        }
+        return logs;
     }
 
-    // 4. ACTUALIZACIÓN MASIVA (Solo columna stock_leo)
+    // 4. ACTUALIZACIÓN DB
     let actualizados = 0;
     let errores = 0;
     
     const updateOne = async (item) => {
         const { error: errUpdate } = await supabase
             .from('productos')
-            .update({ stock_leo: item.stock }) // <--- SEGURIDAD: Solo tocamos stock_leo
+            .update({ stock_leo: item.stock }) 
             .eq('sku', item.sku);
             
-        if (errUpdate) errores++;
+        if (errUpdate) {
+            errores++;
+            // Loguear solo el primer error para no saturar
+            if (errores === 1) logs.push(`❌ Error Update Supabase: ${errUpdate.message}`);
+        }
         else actualizados++;
     };
 
@@ -146,22 +183,36 @@ async function ejecutarActualizacionStock() {
         await Promise.all(chunk.map(updateOne));
     }
 
-    console.log(`✅ [FIN] Stock Leo Actualizado. Items: ${actualizados} | Errores: ${errores}`);
+    logs.push(`✅ FINALIZADO. OK: ${actualizados} | Errores: ${errores}`);
+    return logs;
 }
 
-// --- CRON JOB (Cada 10 minutos) ---
+// --- CRON JOB (Silencioso en consola) ---
 cron.schedule('*/10 * * * *', async () => {
     try {
-        await ejecutarActualizacionStock();
+        const logs = await ejecutarActualizacionStock(false);
+        console.log(logs[logs.length - 1]); // Solo imprime la ultima linea
     } catch (error) {
-        console.error("❌ Error en tarea programada de stock:", error);
+        console.error("❌ Cron Job Error:", error);
     }
 });
 
-/* ====================================================================================
-   📦 FIN LÓGICA DE ACTUALIZACIÓN
-   ==================================================================================== */
+// --- 🔥 NUEVO ENDPOINT PARA FORZAR Y VER QUE PASA ---
+app.get('/api/test-stock-update', async (req, res) => {
+    try {
+        // Ejecuta en modo test (solo 3 páginas para ser rápido)
+        const logs = await ejecutarActualizacionStock(true);
+        res.json({ 
+            success: true, 
+            mensaje: "Proceso de diagnóstico finalizado", 
+            logs: logs 
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
+/* ==================================================================================== */
 
 /* -----------------------------
  📦 LISTAR PRODUCTOS
@@ -185,21 +236,18 @@ app.get('/api/mis-pedidos', async (req, res) => {
     const userId = req.query.uid;
     if (!userId) return res.status(400).json({ error: 'Falta User ID' });
 
-    // 1. Buscar en Peticiones (Pendientes)
     const { data: peticiones, error: errPet } = await supabase
       .from('Peticiones')
       .select('*')
       .eq('user_id', userId);
     if (errPet) throw errPet;
 
-    // 2. Buscar en Pedidos (Aprobados)
     const { data: pedidos, error: errPed } = await supabase
       .from('pedidos')
       .select('*')
       .eq('user_id', userId);
     if (errPed) throw errPed;
 
-    // 3. Unificar y etiquetar
     const listaPeticiones = (peticiones || []).map(p => ({
       ...p, tipo: 'peticion', estado_etiqueta: '⏳ Pendiente', color_estado: '#FF9800'
     }));
@@ -207,7 +255,6 @@ app.get('/api/mis-pedidos', async (req, res) => {
       ...p, tipo: 'pedido', estado_etiqueta: '✅ Preparado', color_estado: '#4CAF50'
     }));
 
-    // Ordenar por fecha (más reciente primero)
     const historial = [...listaPeticiones, ...listaPedidos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
     res.json(historial);
@@ -248,8 +295,6 @@ app.get('/api/peticiones', async (req, res) => {
   }
 });
 
-
-
 /* -----------------------------
  📦 GUARDAR PEDIDOS
 ----------------------------- */
@@ -258,10 +303,8 @@ app.post('/api/guardar-pedidos', async (req, res) => {
     const pedidoItems = req.body.pedido;
     const usuarioPedido = req.body.user || req.body.usuario || 'invitado';
     
-    // --- NUEVO: Recibimos ID y Negocio ---
     const userId = req.body.user_id || null;
     const nombreNegocio = req.body.nombre_negocio || null;
-    // -------------------------------------
 
     if (!Array.isArray(pedidoItems) || pedidoItems.length === 0)
       return res.status(400).json({ error: 'Pedido inválido' });
@@ -277,14 +320,10 @@ app.post('/api/guardar-pedidos', async (req, res) => {
         .eq('id', prodId)
         .single();
 
-      if (prodError) {
-        console.warn('⚠️ Producto no encontrado:', prodError);
-        continue;
-      }
+      if (prodError) { console.warn('⚠️ Producto no encontrado:', prodError); continue; }
       if (!prod) continue;
 
       const cantidadFinal = Number(it.cantidad) || 0;
-
       const precioBase = Number(prod.precio) || 0;
       const precioUnitario = precioBase * 1.10;
       const subtotal = cantidadFinal * precioUnitario;
@@ -312,7 +351,6 @@ app.post('/api/guardar-pedidos', async (req, res) => {
     const id = Date.now().toString();
     const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
-    // --- MODIFICADO: Agregamos user_id y nombre_negocio al payload ---
     const payload = { 
         id, 
         user: usuarioPedido, 
@@ -322,7 +360,6 @@ app.post('/api/guardar-pedidos', async (req, res) => {
         user_id: userId,            
         nombre_negocio: nombreNegocio 
     };
-    // ----------------------------------------------------------------
 
     console.log('💾 Guardando pedido:', payload);
 
@@ -338,14 +375,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
     }
 
     const returnedId = data?.id ?? id;
-
-    // 🔹 RESPUESTA SIMPLE: nada de PDFs aquí
-    res.json({
-      ok: true,
-      mensaje: 'Pedido guardado',
-      id: returnedId,
-      endpoint_pdf: `/api/pedidos/${returnedId}/pdf` // opcional
-    });
+    res.json({ ok: true, mensaje: 'Pedido guardado', id: returnedId, endpoint_pdf: `/api/pedidos/${returnedId}/pdf` });
   } catch (err) {
     console.error('❌ Exception en guardar-pedidos:', err);
     res.status(500).json({ error: err.message || err });
@@ -358,60 +388,35 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 app.post('/api/Enviar-Peticion', async (req, res) => {
     try {
         console.log('Received payload:', JSON.stringify(req.body, null, 2));
-        
-        // 1. AQUI AGREGAMOS 'telefono' para leerlo del frontend
         let { nombre, telefono, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
         
-        if (nombre && nombre.startsWith('Nombre: ')) {
-            nombre = nombre.slice('Nombre: '.length).trim();
-        }
-
-        if (!nombre || !Array.isArray(pedidoItems) || pedidoItems.length === 0) {
-            return res.status(400).json({ error: 'Petición inválida: nombre o items faltantes' });
-        }
-
+        if (nombre && nombre.startsWith('Nombre: ')) { nombre = nombre.slice('Nombre: '.length).trim(); }
+        if (!nombre || !Array.isArray(pedidoItems) || pedidoItems.length === 0) { return res.status(400).json({ error: 'Petición inválida: nombre o items faltantes' }); }
+    
         let total = 0;
         const processedItems = [];
 
-        // Process each item
         for (const it of pedidoItems) {
             const prodId = it.id;
-            const { data: prod, error: prodError } = await supabase
-                .from('productos')
-                .select('*')
-                .eq('id', prodId)
-                .single();
-
+            const { data: prod, error: prodError } = await supabase.from('productos').select('*').eq('id', prodId).single();
             if (prodError || !prod) continue;
-
             const cantidadFinal = Number(it.cantidad) || 0;
             if (cantidadFinal <= 0) continue;
-
             const precioBase = Number(prod.precio) || 0;
             const precioUnitario = precioBase * 1.10;
             const subtotal = cantidadFinal * precioUnitario;
             total += subtotal;
-
-            processedItems.push({
-                id: prodId,
-                nombre: prod.nombre,
-                cantidad: cantidadFinal,
-                precio_unitario: precioUnitario,
-                subtotal
-            });
+            processedItems.push({ id: prodId, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: precioUnitario, subtotal });
         }
-
-        if (processedItems.length === 0) {
-            return res.status(400).json({ error: 'No hay items válidos para la petición' });
-        }
-
+    
+        if (processedItems.length === 0) { return res.status(400).json({ error: 'No hay items válidos para la petición' }); }
+    
         const totalInt = Math.round(total);
         const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
-        // 2. AQUI AGREGAMOS 'telefono' AL PAYLOAD PARA SUPABASE
         const payload = {
             nombre,
-            telefono: telefono || null, // <--- AHORA SE GUARDA
+            telefono: telefono || null,
             items: processedItems,
             total: totalInt,
             fecha: fechaLocal,
@@ -420,63 +425,30 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
         };
         
         console.log('💾 Guardando petición:', payload);
-
-        const { data, error } = await supabase
-            .from('Peticiones')
-            .insert([payload])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('❌ Supabase insert error:', error);
-            return res.status(500).json({ error: `Error al guardar la petición: ${error.message}` });
-        }
-
-        const returnedId = data?.id;
-        res.json({
-            ok: true,
-            mensaje: 'Petición guardada',
-            id: returnedId
-        });
+        const { data, error } = await supabase.from('Peticiones').insert([payload]).select().single();
+    
+        if (error) { console.error('❌ Supabase insert error:', error); return res.status(500).json({ error: `Error al guardar la petición: ${error.message}` }); }
+        res.json({ ok: true, mensaje: 'Petición guardada', id: data?.id });
     } catch (err) {
         console.error('❌ Exception en Enviar-Peticion:', err);
         res.status(500).json({ error: err.message || 'Error interno del servidor' });
     }
 });
 
-
-
 app.get('/api/mi-estado-cuenta', async (req, res) => {
     try {
         const userId = req.query.uid;
         if (!userId) return res.status(400).json({ error: 'Usuario no identificado' });
-
-        const { data, error } = await supabase
-            .from('clients_v2')
-            .select('*')
-            .eq('user_id', userId) 
-            .single();
-
-        if (error || !data) {
-            return res.status(404).json({ error: 'Cliente no vinculado' });
-        }
-
-        // AQUI ESTÁ EL CAMBIO: Enviamos 'history'
-        const clienteLimpio = {
-            name: data.name,
-            items: data.data.items || [],
-            history: data.data.history || [] // <--- AHORA SE ENVÍA ESTO
-        };
-
+        const { data, error } = await supabase.from('clients_v2').select('*').eq('user_id', userId).single();
+        if (error || !data) { return res.status(404).json({ error: 'Cliente no vinculado' }); }
+        const clienteLimpio = { name: data.name, items: data.data.items || [], history: data.data.history || [] };
         res.json(clienteLimpio);
-
     } catch (err) {
         console.error('❌ Error cargando cuenta:', err);
         res.status(500).json({ error: 'Error del servidor' });
     }
 });
 
-// ⚠️ PUERTO CONFIGURADO PARA RENDER
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
