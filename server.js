@@ -198,6 +198,26 @@ cron.schedule('*/10 * * * *', async () => {
     }
 });
 
+// --- 🚨 NUEVO: ENDPOINT PARA FORZAR ACTUALIZACIÓN COMPLETA (NO TEST) ---
+app.get('/api/admin/forzar-sync', async (req, res) => {
+    try {
+        console.log("⚠️ INICIANDO ACTUALIZACIÓN FORZADA (COMPLETA)...");
+        console.log("Esto puede tardar unos minutos. Por favor espera...");
+
+        // Llamamos a la función con 'false' para que lea las 100 páginas
+        const logs = await ejecutarActualizacionStock(false); 
+
+        res.json({ 
+            success: true, 
+            mensaje: "✅ Actualización masiva completada con éxito.", 
+            logs: logs 
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // --- 🔥 NUEVO ENDPOINT PARA FORZAR Y VER QUE PASA ---
 app.get('/api/test-stock-update', async (req, res) => {
     try {
@@ -453,4 +473,5 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
