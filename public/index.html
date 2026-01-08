@@ -323,6 +323,10 @@ function calcularStockTotal(p) {
     // Regla 3: Si hay número, sumamos normal.
     let miStock = p.stock > 0 ? p.stock : 0;
     let leoStock = parseFloat(p.stock_leo) || 0;
+
+    if (leoStock <= 1) {
+        leoStock = 0;
+    }
     
     return miStock + leoStock;
 }
@@ -584,3 +588,4 @@ faviconLink.href = getImageUrl('icono.png');
 </script>
 </body>
 </html>
+
