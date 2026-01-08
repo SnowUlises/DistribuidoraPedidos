@@ -6,6 +6,11 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 
+// --- NUEVOS IMPORTS PARA EL SCRAPER ---
+import axios from 'axios';
+import cron from 'node-cron';
+// --------------------------------------
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -20,6 +25,143 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
     detectSessionInUrl: true
   }
 });
+
+/* ====================================================================================
+   🤖 LÓGICA DE ACTUALIZACIÓN DE STOCK ("STOCK LEO")
+   Se ejecuta cada 10 minutos. No toca el stock real, solo 'stock_leo'.
+   ==================================================================================== */
+
+const URL_BASE_WEB = "https://cooperar-s-k.dongestion.com/ecommerce/products";
+const MAX_PAGINAS = 100; 
+const HEADERS_SCRAPER = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
+};
+
+// --- Utilidades del Scraper ---
+function normalizeSku(val) {
+    if (!val) return "";
+    let s = String(val).trim();
+    if (s.endsWith(".0")) s = s.slice(0, -2);
+    return s;
+}
+
+function safeFloat(val) {
+    try {
+        if (!val) return 0.0;
+        return parseFloat(String(val).replace(',', '')) || 0.0;
+    } catch (e) { return 0.0; }
+}
+
+// --- Obtener productos de una página específica ---
+async function obtenerProductosPagina(numeroPagina) {
+    const url = `${URL_BASE_WEB}?page=${numeroPagina}`;
+    try {
+        const response = await axios.get(url, { headers: HEADERS_SCRAPER, timeout: 20000 });
+        const html = response.data;
+        const patron = /(?:window\.)?bk_products\s*=\s*(\[.*?\]);/s;
+        const match = html.match(patron);
+
+        if (match && match[1]) {
+            const data = JSON.parse(match[1]);
+            return data.map(p => ({
+                sku: normalizeSku(p.sku || p.id),
+                stock: safeFloat(p.qty_available)
+            })).filter(item => item.sku !== "");
+        }
+        return [];
+    } catch (error) {
+        console.error(`⚠️ Error scrapeando pág ${numeroPagina}: ${error.message}`);
+        return [];
+    }
+}
+
+// --- Función Principal de Actualización ---
+async function ejecutarActualizacionStock() {
+    console.log(`[${new Date().toISOString()}] 🔄 Iniciando actualización de Stock Leo...`);
+
+    // 1. LEEMOS TU DB (Solo lectura de IDs y SKUs para filtrar)
+    const { data: productosDB, error } = await supabase
+        .from('productos')
+        .select('id, sku')
+        .not('sku', 'is', null)
+        .neq('sku', '');
+
+    if (error) {
+        console.error("❌ Error leyendo Supabase para actualización:", error);
+        return;
+    }
+
+    const skusEnMiDB = new Set(productosDB.map(p => p.sku));
+    
+    // 2. SCRAPING EXTERNO (Lote por lote)
+    let productosExternos = [];
+    const LOTE_PAGINAS = 10; 
+    
+    for (let i = 1; i <= MAX_PAGINAS; i += LOTE_PAGINAS) {
+        const promesas = [];
+        for (let j = 0; j < LOTE_PAGINAS; j++) {
+            const pag = i + j;
+            if (pag > MAX_PAGINAS) break;
+            promesas.push(obtenerProductosPagina(pag));
+        }
+
+        const resultados = await Promise.all(promesas);
+        let encontradosEnLote = 0;
+        
+        for (const res of resultados) {
+            if (res.length > 0) {
+                productosExternos.push(...res);
+                encontradosEnLote += res.length;
+            }
+        }
+        if (encontradosEnLote === 0) break; 
+    }
+
+    // 3. FILTRADO (Solo actualizamos lo que existe en tu DB)
+    const actualizaciones = productosExternos.filter(p => skusEnMiDB.has(p.sku));
+    
+    if (actualizaciones.length === 0) {
+        console.log("✅ Nada que actualizar.");
+        return;
+    }
+
+    // 4. ACTUALIZACIÓN MASIVA (Solo columna stock_leo)
+    let actualizados = 0;
+    let errores = 0;
+    
+    const updateOne = async (item) => {
+        const { error: errUpdate } = await supabase
+            .from('productos')
+            .update({ stock_leo: item.stock }) // <--- SEGURIDAD: Solo tocamos stock_leo
+            .eq('sku', item.sku);
+            
+        if (errUpdate) errores++;
+        else actualizados++;
+    };
+
+    const CHUNK_SIZE = 20;
+    for (let i = 0; i < actualizaciones.length; i += CHUNK_SIZE) {
+        const chunk = actualizaciones.slice(i, i + CHUNK_SIZE);
+        await Promise.all(chunk.map(updateOne));
+    }
+
+    console.log(`✅ [FIN] Stock Leo Actualizado. Items: ${actualizados} | Errores: ${errores}`);
+}
+
+// --- CRON JOB (Cada 10 minutos) ---
+cron.schedule('*/10 * * * *', async () => {
+    try {
+        await ejecutarActualizacionStock();
+    } catch (error) {
+        console.error("❌ Error en tarea programada de stock:", error);
+    }
+});
+
+/* ====================================================================================
+   📦 FIN LÓGICA DE ACTUALIZACIÓN
+   ==================================================================================== */
+
 
 /* -----------------------------
  📦 LISTAR PRODUCTOS
@@ -177,7 +319,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
         fecha: fechaLocal, 
         items, 
         total,
-        user_id: userId,           
+        user_id: userId,            
         nombre_negocio: nombreNegocio 
     };
     // ----------------------------------------------------------------
@@ -234,8 +376,6 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
         // Process each item
         for (const it of pedidoItems) {
             const prodId = it.id;
-            if (!prodId) continue;
-
             const { data: prod, error: prodError } = await supabase
                 .from('productos')
                 .select('*')
@@ -340,17 +480,3 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
