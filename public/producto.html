@@ -102,11 +102,11 @@
                         <span class="text-sm font-bold text-gray-400 uppercase tracking-wider">Cantidad:</span>
                         <div class="flex items-center bg-gray-50 rounded-xl border border-gray-200 p-1">
                             <button @click="disminuir" class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-white hover:shadow-sm rounded-lg transition-all font-bold text-lg">-</button>
-                            <input type="number" v-model.number="cantidad" @change="validarInput" class="w-12 text-center bg-transparent font-bold text-gray-800 outline-none mono-num" min="1" :max="stockDisponible">
+                            <input type="number" v-model.number="cantidad" @change="validarInput" class="w-12 text-center bg-transparent font-bold text-gray-800 outline-none mono-num" min="1" :max="maxCantidad">
                             <button @click="aumentar" class="w-10 h-10 flex items-center justify-center text-brand-600 hover:bg-white hover:shadow-sm rounded-lg transition-all font-bold text-lg">+</button>
                         </div>
                     </div>
-                    <p class="text-sm text-gray-600">Disponible: {{ stockDisponible }} unidades</p>
+                    <p class="text-sm text-gray-600">Disponible: {{ stockDisplay }} unidades</p>
                     <button @click="agregarAlCarrito"
                             class="w-full bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-brand-200 transition-all hover:-translate-y-1 active:scale-95 flex justify-center items-center gap-2"
                             :class="{'bg-green-600 scale-95': agregadoFeedback}">
@@ -216,6 +216,16 @@
                 const stockDisponible = computed(() => {
                     return calcularStockTotal(producto.value);
                 });
+                const maxCantidad = computed(() => {
+                    const stock = stockDisponible.value;
+                    if (stock === 0) return 0;
+                    return stock > 99 ? 99 : stock;
+                });
+                const stockDisplay = computed(() => {
+                    const stock = stockDisponible.value;
+                    if (stock > 99) return '99+';
+                    return stock;
+                });
                 const precioFinal = computed(() => {
                     return producto.value ? Number(producto.value.precio) * 1.10 : 0;
                 });
@@ -235,10 +245,11 @@
                 });
                 // Actions
                 const aumentar = () => { 
-                    if (cantidad.value < stockDisponible.value) {
+                    if (cantidad.value < maxCantidad.value) {
                         cantidad.value++;
                     } else {
-                        mostrarToast(`No hay más stock disponible. Máximo: ${stockDisponible.value}`, true);
+                        const msg = stockDisponible.value > 99 ? 'Máximo por pedido: 99 unidades' : `Solo hay ${stockDisponible.value} disponibles`;
+                        mostrarToast(msg, true);
                     }
                 };
                 const disminuir = () => { if (cantidad.value > 1) cantidad.value--; };
@@ -246,9 +257,10 @@
                 const validarInput = () => {
                     if (cantidad.value < 1 || isNaN(cantidad.value)) {
                         cantidad.value = 1;
-                    } else if (cantidad.value > stockDisponible.value) {
-                        cantidad.value = stockDisponible.value;
-                        mostrarToast(`No hay más stock disponible. Máximo: ${stockDisponible.value}`, true);
+                    } else if (cantidad.value > maxCantidad.value) {
+                        cantidad.value = maxCantidad.value;
+                        const msg = stockDisponible.value > 99 ? 'Máximo por pedido: 99 unidades' : `Solo hay ${stockDisponible.value} disponibles`;
+                        mostrarToast(msg, true);
                     }
                 };
                 const agregarAlCarrito = () => {
@@ -261,7 +273,11 @@
                     // Cantidad que habría en total si agregamos lo que pide
                     let cantidadFutura = cantidad.value; // Por defecto asumimos que sobreescribe o es nuevo
                    
-
+                    // Nota: En la lógica de "Detalle", generalmente el input 'cantidad'
+                    // representa la cantidad TOTAL deseada, no un "+1".
+                    // Si la lógica fuera "sumar a lo que hay", sería: (existente ? existente.cantidad : 0) + cantidad.value;
+                    // Pero en tu código anterior hacías `existente.cantidad = cantidad.value`, o sea, reemplazo.
+                    // Mantendremos el reemplazo que es lo usual en página de detalle, pero validamos.
                     if (cantidadFutura > stockMax) {
                         mostrarToast(`Solo hay ${stockMax} disponibles.`, true);
                         return;
@@ -315,7 +331,7 @@
                     cantidadTotalCarrito, carritoDetalle,
                     eliminarDelCarrito, vaciarCarrito,
                     toastVisible, toastMensaje, toastIsError,
-                    formatMoney, stockDisponible // Exportamos para usar en template
+                    formatMoney, stockDisponible, maxCantidad, stockDisplay // Exportamos para usar en template
                 };
             },
             updated() { lucide.createIcons(); }
