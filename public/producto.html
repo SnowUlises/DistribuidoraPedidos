@@ -216,10 +216,13 @@
                 const stockDisponible = computed(() => {
                     return calcularStockTotal(producto.value);
                 });
+                const isInfinite = computed(() => {
+                    return stockDisponible.value === 9999999;
+                });
                 const maxCantidad = computed(() => {
                     const stock = stockDisponible.value;
                     if (stock === 0) return 0;
-                    return stock > 99 ? 99 : stock;
+                    return isInfinite.value ? 999 : stock;
                 });
                 const stockDisplay = computed(() => {
                     const stock = stockDisponible.value;
@@ -248,7 +251,12 @@
                     if (cantidad.value < maxCantidad.value) {
                         cantidad.value++;
                     } else {
-                        const msg = stockDisponible.value > 99 ? 'Máximo por pedido: 99 unidades' : `Solo hay ${stockDisponible.value} disponibles`;
+                        let msg;
+                        if (isInfinite.value) {
+                            msg = 'Máximo por pedido: 999 unidades';
+                        } else {
+                            msg = `Solo hay ${stockDisponible.value} disponibles`;
+                        }
                         mostrarToast(msg, true);
                     }
                 };
@@ -258,9 +266,14 @@
                     if (cantidad.value < 1 || isNaN(cantidad.value)) {
                         cantidad.value = 1;
                     } else if (cantidad.value > maxCantidad.value) {
-                        cantidad.value = maxCantidad.value;
-                        const msg = stockDisponible.value > 99 ? 'Máximo por pedido: 99 unidades' : `Solo hay ${stockDisponible.value} disponibles`;
+                        let msg;
+                        if (isInfinite.value) {
+                            msg = 'Máximo por pedido: 999 unidades';
+                        } else {
+                            msg = `Solo hay ${stockDisponible.value} disponibles`;
+                        }
                         mostrarToast(msg, true);
+                        cantidad.value = maxCantidad.value;
                     }
                 };
                 const agregarAlCarrito = () => {
@@ -270,16 +283,16 @@
                     const stockMax = stockDisponible.value;
                     const existente = carrito.value.find(p => String(p.id) === String(id));
                    
-                    // Cantidad que habría en total si agregamos lo que pide
-                    let cantidadFutura = cantidad.value; // Por defecto asumimos que sobreescribe o es nuevo
+                    let cantidadFutura = cantidad.value;
                    
-                    // Nota: En la lógica de "Detalle", generalmente el input 'cantidad'
-                    // representa la cantidad TOTAL deseada, no un "+1".
-                    // Si la lógica fuera "sumar a lo que hay", sería: (existente ? existente.cantidad : 0) + cantidad.value;
-                    // Pero en tu código anterior hacías `existente.cantidad = cantidad.value`, o sea, reemplazo.
-                    // Mantendremos el reemplazo que es lo usual en página de detalle, pero validamos.
                     if (cantidadFutura > stockMax) {
-                        mostrarToast(`Solo hay ${stockMax} disponibles.`, true);
+                        let msg;
+                        if (isInfinite.value) {
+                            msg = 'Máximo por pedido: 999 unidades';
+                        } else {
+                            msg = `Solo hay ${stockMax} disponibles`;
+                        }
+                        mostrarToast(msg, true);
                         return;
                     }
                     if (existente) {
