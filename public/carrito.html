@@ -201,7 +201,7 @@
             // Si el producto no cargó aún, usamos valores seguros
             const nombre = prod ? prod.nombre : 'Cargando...';
             const precioBase = prod ? (Number(prod.precio) || 0) : 0;
-            const precioFinal = precioBase * 1.10;
+            const precioFinal = precioBase * 1.10 * 1.02;
             const subtotal = precioFinal * item.cantidad;
             total += subtotal;
             let imgUrl = 'https://via.placeholder.com/80?text=IMG';
@@ -341,7 +341,7 @@
             for (const item of carrito) {
                 const producto = productos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
-                const precioConRecargo = Number(producto.precio) * 1.10;
+                const precioConRecargo = Number(producto.precio) * 1.10 * 1.02;
                 itemsFinales.push({
                     id: item.id,
                     cantidad: item.cantidad,
@@ -389,3 +389,4 @@
     </script>
 </body>
 </html>
+
