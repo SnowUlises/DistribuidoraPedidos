@@ -296,7 +296,7 @@ app.post('/api/guardar-pedidos', async (req, res) => {
 
       const cantidadFinal = Number(it.cantidad) || 0;
       const precioBase = Number(prod.precio) || 0;
-      const precioUnitario = precioBase * 1.10;
+      const precioUnitario = precioBase * 1.10 * 1.02;
       const subtotal = cantidadFinal * precioUnitario;
       total += subtotal;
 
@@ -360,7 +360,7 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
             if (cantidadFinal <= 0) continue;
             
             const precioBase = Number(prod.precio) || 0;
-            const precioUnitario = precioBase * 1.10;
+            const precioUnitario = precioBase * 1.10 * 1.02;
             const subtotal = cantidadFinal * precioUnitario;
             total += subtotal;
             processedItems.push({ id: prodId, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: precioUnitario, subtotal });
@@ -409,3 +409,4 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
