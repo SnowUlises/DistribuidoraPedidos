@@ -405,7 +405,7 @@ function renderProductos() {
     
     div.innerHTML = `
       <h3 class="text-sm font-semibold text-gray-800 text-center mb-1 line-clamp-2 h-10 w-full leading-tight">${p.nombre}</h3>
-      <div class="text-lg font-bold text-brand-600 mb-3">$${(p.precio * 1.10).toFixed(2)}</div>
+      <div class="text-lg font-bold text-brand-600 mb-3">$${(p.precio * 1.10 * 1.02).toFixed(2)}</div>
       ${accionHTML}
     `;
     div.insertBefore(img, div.firstChild);
@@ -588,4 +588,5 @@ faviconLink.href = getImageUrl('icono.png');
 </script>
 </body>
 </html>
+
 
