@@ -360,7 +360,7 @@
             if (usuario) {
                 const meta = usuario.user_metadata || {};
                 nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario';
-                telefonoFinal = meta.phone || 'Usuario Registrado';
+                telefonoFinal = meta.phone || null;
             } else {
                 nombreFinal = `${nombreIn} ${apellIn}`;
                 telefonoFinal = telIn;
@@ -429,6 +429,7 @@
     </script>
 </body>
 </html>
+
 
 
 
