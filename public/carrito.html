@@ -257,80 +257,105 @@
         document.getElementById('modal').classList.add('hidden');
     }
     // --- ENVIAR PEDIDO MODIFICADO (SOLUCIÓN 404) ---
+    // --- ENVIAR PEDIDO MODIFICADO (OPTIMIZADO Y CORREGIDO) ---
     async function enviarPedido() {
         const btn = document.getElementById('btn-enviar');
         const negocio = document.getElementById('input-negocio').value.trim();
-       
+        
         const nombreIn = document.getElementById('input-nombre').value.trim();
         const apellIn = document.getElementById('input-apellido').value.trim();
         const telIn = document.getElementById('input-telefono').value.trim();
+
         if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
         if (!usuario) {
             if (!nombreIn || !apellIn) return alert('Completa tu nombre y apellido');
             if (!telIn) return alert('Ingresa un teléfono');
         }
+
         btn.disabled = true;
         btn.textContent = 'Verificando Stock...';
+        
         const ajustesDiv = document.getElementById('ajustes-stock');
         ajustesDiv.innerHTML = '';
         ajustesDiv.classList.add('hidden');
+
         try {
-            // PASO 1: TRAER PRODUCTOS FRESCOS (GET)
-            // En vez de POST /verificar-stock, hacemos GET /productos como en index.html
+            // PASO 1: TRAER SOLO LOS PRODUCTOS DEL CARRITO (OPTIMIZADO)
+            // Definimos idsCarrito aquí para evitar el error "undefined"
+            const idsCarrito = carrito.map(item => item.id);
+
+            // Usamos el endpoint específico que ya tienes en el server
             const resFresh = await fetch(`${API_BASE}/verificar-stock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: idsCarrito })
-    });
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsCarrito })
+            });
 
-    if (!resFresh.ok) throw new Error("Error verificando disponibilidad.");
-    
-    const productosFrescos = await resFresh.json();
+            if (!resFresh.ok) throw new Error("No se pudo verificar el stock. Intenta de nuevo.");
+            
+            // Actualizamos la caché local SOLO con los productos relevantes
+            const productosFrescos = await resFresh.json();
+            
+            // Actualizamos nuestra lista global 'productos' con la info fresca
+            // (Mantenemos los viejos, actualizamos los que vamos a comprar)
+            productosFrescos.forEach(pFresh => {
+                const idx = productos.findIndex(p => String(p.id) === String(pFresh.id));
+                if (idx !== -1) {
+                    productos[idx] = pFresh;
+                } else {
+                    productos.push(pFresh);
+                }
+            });
 
-            // PASO 2: AJUSTES AUTOMÁTICOS POR STOCK
+            // PASO 2: AJUSTES AUTOMÁTICOS POR STOCK (Lógica idéntica a la anterior)
             let ajustes = [];
             for (let i = carrito.length - 1; i >= 0; i--) {
                 const item = carrito[i];
                 const prodFresco = productosFrescos.find(p => String(p.id) === String(item.id));
-               
+                
+                // Si el producto no viene en la respuesta, es que se borró de la DB
                 if (!prodFresco) {
-                    ajustes.push(`Producto con ID ${item.id} ya no existe y fue removido.`);
+                    ajustes.push(`Producto ID ${item.id} ya no existe.`);
                     carrito.splice(i, 1);
                     continue;
                 }
+
                 const stockReal = calcularStockTotal(prodFresco);
+                
                 if (stockReal <= 0) {
-                    ajustes.push(`"${prodFresco.nombre}" se agotó y fue removido del carrito.`);
+                    ajustes.push(`"${prodFresco.nombre}" se agotó mientras comprabas.`);
                     carrito.splice(i, 1);
                 } else if (item.cantidad > stockReal) {
                     const oldCant = item.cantidad;
                     item.cantidad = stockReal;
-                    ajustes.push(`De "${prodFresco.nombre}" solo quedan ${stockReal} unidades, cantidad ajustada de ${oldCant} a ${stockReal}.`);
+                    ajustes.push(`De "${prodFresco.nombre}" solo quedan ${stockReal}, ajustamos tu cantidad.`);
                 }
             }
-            guardarCarrito(); // Actualiza UI con ajustes
+            
+            guardarCarrito(); // Actualiza la vista visualmente
 
-            // Mostrar ajustes en el modal si hay
+            // Mostrar ajustes en el modal si hubo cambios
             if (ajustes.length > 0) {
-                ajustesDiv.innerHTML = '<div class="font-bold mb-2">Ajustes realizados por disponibilidad:</div>' +
+                ajustesDiv.innerHTML = '<div class="font-bold mb-2">Ajustes realizados por stock:</div>' +
                     '<ul class="list-disc pl-4 space-y-1">' + ajustes.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
                 ajustesDiv.classList.remove('hidden');
             }
 
             // Si carrito vacío después de ajustes
             if (carrito.length === 0) {
-                ajustesDiv.innerHTML += `<p class="mt-3 font-bold text-red-700">El carrito quedó vacío después de los ajustes. No se puede enviar el pedido.</p>`;
-                btn.textContent = 'No se puede enviar';
+                ajustesDiv.innerHTML += `<p class="mt-3 font-bold text-red-700">El carrito quedó vacío. No se puede enviar.</p>`;
+                btn.textContent = 'Carrito Vacío';
                 btn.disabled = true;
-                return; // No enviar, usuario puede cerrar modal
+                return;
             } else if (ajustes.length > 0) {
-                btn.textContent = 'Enviar Pedido Actualizado';
+                btn.textContent = 'Confirmar con cambios';
                 btn.disabled = false;
-                return; // Requiere click nuevamente
+                return; // Requiere click nuevamente para confirmar los cambios
             }
 
-            // PASO 3: PREPARAR DATOS
+            // PASO 3: PREPARAR DATOS PARA EL ENVÍO
             btn.textContent = 'Enviando...';
+            
             let nombreFinal = '', telefonoFinal = '';
             if (usuario) {
                 const meta = usuario.user_metadata || {};
@@ -340,12 +365,16 @@
                 nombreFinal = `${nombreIn} ${apellIn}`;
                 telefonoFinal = telIn;
             }
+
             const itemsFinales = [];
             let totalCalculado = 0;
+            
             for (const item of carrito) {
                 const producto = productos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
+                
                 const precioConRecargo = Number(producto.precio) * 1.10 * 1.02;
+                
                 itemsFinales.push({
                     id: item.id,
                     cantidad: item.cantidad,
@@ -355,6 +384,7 @@
                 });
                 totalCalculado += item.cantidad * precioConRecargo;
             }
+
             const payload = {
                 nombre: nombreFinal,
                 telefono: telefonoFinal,
@@ -363,35 +393,42 @@
                 user_id: usuario ? usuario.id : null,
                 nombre_negocio: negocio
             };
-            // PASO 4: ENVIAR (POST /Enviar-Peticion)
+
+            // PASO 4: ENVIAR AL SERVIDOR
             const resEnvio = await fetch(`${API_BASE}/Enviar-Peticion`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
             if (!resEnvio.ok) {
                 const errData = await resEnvio.json().catch(()=>({}));
-                throw new Error(errData.error || "Error al enviar pedido.");
+                throw new Error(errData.error || "Error al procesar el pedido.");
             }
+
             // ÉXITO
             carrito = [];
             guardarCarrito();
             cerrarModal();
             alert('¡Pedido enviado con éxito!');
-           
+            
             if (usuario) window.location.href = 'mi-cuenta.html';
             else window.location.href = 'index.html';
+
         } catch (e) {
+            console.error(e);
             alert('Atención: ' + e.message);
             btn.disabled = false;
-            btn.textContent = 'Enviar Pedido';
+            btn.textContent = 'Intentar de nuevo';
         }
     }
+        
     function formatMoney(amount) {
         return '$' + amount.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 2});
     }
     </script>
 </body>
 </html>
+
 
 
