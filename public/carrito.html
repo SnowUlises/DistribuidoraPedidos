@@ -277,11 +277,15 @@
         try {
             // PASO 1: TRAER PRODUCTOS FRESCOS (GET)
             // En vez de POST /verificar-stock, hacemos GET /productos como en index.html
-            const resFresh = await fetch(`${API_BASE}/productos`);
-            if (!resFresh.ok) throw new Error("No se pudo conectar con el catálogo de productos.");
-           
-            const productosFrescos = await resFresh.json();
-            productos = productosFrescos; // Actualizar cache local
+            const resFresh = await fetch(`${API_BASE}/verificar-stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: idsCarrito })
+    });
+
+    if (!resFresh.ok) throw new Error("Error verificando disponibilidad.");
+    
+    const productosFrescos = await resFresh.json();
 
             // PASO 2: AJUSTES AUTOMÁTICOS POR STOCK
             let ajustes = [];
@@ -389,4 +393,5 @@
     </script>
 </body>
 </html>
+
 
