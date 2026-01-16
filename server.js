@@ -340,21 +340,43 @@ app.post('/api/guardar-pedidos', async (req, res) => {
   }
 });
 
+// REEMPLAZA ESTO EN TU server.js
+
 app.post('/api/Enviar-Peticion', async (req, res) => {
     try {
-        console.log('Received payload:', JSON.stringify(req.body, null, 2));
+        console.log('📦 Recibiendo pedido:', JSON.stringify(req.body, null, 2));
         let { nombre, telefono, items: pedidoItems, total: providedTotal, user_id, nombre_negocio } = req.body;
         
         if (nombre && nombre.startsWith('Nombre: ')) nombre = nombre.slice('Nombre: '.length).trim();
         if (!nombre || !Array.isArray(pedidoItems) || pedidoItems.length === 0) return res.status(400).json({ error: 'Petición inválida' });
         
+        // 1. EXTRAER TODOS LOS IDs
+        const ids = pedidoItems.map(i => i.id);
+
+        // 2. UNA SOLA CONSULTA A LA BASE DE DATOS (Más rápido y seguro)
+        const { data: productosDB, error: dbError } = await supabase
+            .from('productos')
+            .select('*')
+            .in('id', ids);
+
+        if (dbError) {
+            console.error('❌ Error DB al buscar productos:', dbError);
+            return res.status(500).json({ error: 'Error verificando productos en el servidor.' });
+        }
+
         let total = 0;
         const processedItems = [];
 
+        // 3. PROCESAR EN MEMORIA
         for (const it of pedidoItems) {
-            const prodId = it.id;
-            const { data: prod, error: prodError } = await supabase.from('productos').select('*').eq('id', prodId).single();
-            if (prodError || !prod) continue;
+            // Buscamos el producto en el array que ya trajimos (no hacemos fetch de nuevo)
+            const prod = productosDB.find(p => String(p.id) === String(it.id));
+
+            if (!prod) {
+                console.warn(`⚠️ Producto ID ${it.id} no encontrado en DB, se omitirá.`);
+                // Opcional: Podrías lanzar error aquí si quieres ser estricto
+                continue; 
+            }
             
             const cantidadFinal = Number(it.cantidad) || 0;
             if (cantidadFinal <= 0) continue;
@@ -363,10 +385,17 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
             const precioUnitario = precioBase * 1.10 * 1.02;
             const subtotal = cantidadFinal * precioUnitario;
             total += subtotal;
-            processedItems.push({ id: prodId, nombre: prod.nombre, cantidad: cantidadFinal, precio_unitario: precioUnitario, subtotal });
+            
+            processedItems.push({ 
+                id: prod.id, 
+                nombre: prod.nombre, 
+                cantidad: cantidadFinal, 
+                precio_unitario: precioUnitario, 
+                subtotal 
+            });
         }
         
-        if (processedItems.length === 0) return res.status(400).json({ error: 'No hay items válidos' });
+        if (processedItems.length === 0) return res.status(400).json({ error: 'No se pudieron procesar los items (Stock o ID inválido)' });
         
         const totalInt = Math.round(total);
         const fechaLocal = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
@@ -381,11 +410,12 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
             nombre_negocio: nombre_negocio || null 
         };
         
-        console.log('💾 Guardando petición:', payload);
+        console.log('💾 Guardando petición validada:', payload);
         const { data, error } = await supabase.from('Peticiones').insert([payload]).select().single();
         
         if (error) { console.error('❌ Error insert:', error); return res.status(500).json({ error: error.message }); }
         res.json({ ok: true, mensaje: 'Petición guardada', id: data?.id });
+
     } catch (err) {
         console.error('❌ Exception en Enviar-Peticion:', err);
         res.status(500).json({ error: err.message });
@@ -409,4 +439,5 @@ app.get('/api/mi-estado-cuenta', async (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
