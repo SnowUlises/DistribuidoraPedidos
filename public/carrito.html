@@ -354,16 +354,23 @@
             }
 
             // PASO 3: PREPARAR DATOS PARA EL ENVÍO
+            // PASO 3: PREPARAR DATOS PARA EL ENVÍO
             btn.textContent = 'Enviando...';
             
             let nombreFinal = '', telefonoFinal = '';
+            
+            // Función interna para limpiar caracteres raros: (264) 5-24 -> 264524
+            const limpiarTelefono = (tel) => tel ? String(tel).replace(/\D/g, '') : '';
+
             if (usuario) {
                 const meta = usuario.user_metadata || {};
                 nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario';
-                telefonoFinal = meta.phone || null;
+                // Limpiamos el teléfono que viene de la cuenta del usuario
+                telefonoFinal = limpiarTelefono(meta.phone || '');
             } else {
                 nombreFinal = `${nombreIn} ${apellIn}`;
-                telefonoFinal = telIn;
+                // Limpiamos el teléfono del input manual
+                telefonoFinal = limpiarTelefono(telIn);
             }
 
             const itemsFinales = [];
@@ -387,7 +394,7 @@
 
             const payload = {
                 nombre: nombreFinal,
-                telefono: telefonoFinal,
+                telefono: telefonoFinal, // Enviamos el número limpio
                 items: itemsFinales,
                 total: totalCalculado,
                 user_id: usuario ? usuario.id : null,
@@ -429,6 +436,7 @@
     </script>
 </body>
 </html>
+
 
 
 
