@@ -7,17 +7,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' }, // Lima
+                        brand: { 400: '#a3e635', 500: '#84cc16', 600: '#65a30d' },
                     },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
                 }
             }
         }
@@ -34,7 +31,6 @@
 <body class="min-h-screen flex flex-col">
 
     <div class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
-        
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div class="flex items-center gap-3 w-full md:w-auto">
                 <div class="bg-brand-400 p-2 rounded-xl text-brand-900 shadow-sm">
@@ -45,14 +41,11 @@
                     <p class="text-xs text-gray-400 font-medium tracking-wide mt-1">ESTADO DE CUENTA</p>
                 </div>
             </div>
-
             <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                <a href="index.html" class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-gray-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                    Volver a Pedidos
+                <a href="index.html" class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-gray-200 transition-all">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver
                 </a>
-                
-                <button id="btn-logout" class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Cerrar Sesión">
+                <button id="btn-logout" class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                     <i data-lucide="log-out" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -60,99 +53,64 @@
 
         <div id="view-loading" class="flex flex-col items-center justify-center py-20 text-gray-300 min-h-[300px]">
             <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2 text-brand-500"></i>
-            <span class="text-xs font-medium uppercase tracking-widest">Cargando información...</span>
-            <div id="slow-network-help" class="hidden mt-8 text-center fade-in">
-                <p class="text-xs text-gray-400 mb-2">¿Tarda mucho?</p>
-                <button onclick="window.location.reload()" class="bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 mx-auto">
-                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Recargar
-                </button>
-            </div>
+            <span class="text-xs font-medium uppercase tracking-widest">Cargando datos SQL...</span>
         </div>
 
-        <div id="view-error" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-r shadow-sm my-4">
-            <p class="text-red-700 font-bold text-sm">No pudimos cargar tu cuenta.</p>
-            <p id="error-message" class="text-red-500 text-xs mt-1"></p>
-            <button onclick="window.location.reload()" class="mt-3 text-xs font-bold text-red-700 underline">Intentar de nuevo</button>
+        <div id="view-error" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm my-4">
+            <p id="error-message" class="text-red-700 text-xs font-bold"></p>
+            <button onclick="window.location.reload()" class="mt-3 text-xs font-bold text-red-700 underline">Reintentar</button>
         </div>
 
         <div id="view-content" class="hidden">
-            
-            <div class="bg-gray-900 text-white rounded-2xl p-6 md:p-10 mb-8 shadow-xl shadow-gray-200 relative overflow-hidden">
+            <div class="bg-gray-900 text-white rounded-2xl p-6 md:p-10 mb-8 shadow-xl relative overflow-hidden">
                 <div class="absolute top-0 right-0 p-32 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
-                
                 <div class="relative z-10">
-                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Pendiente</p>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Saldo Total Pendiente</p>
                     <div class="text-5xl md:text-6xl font-bold tracking-tighter mono-num flex items-start gap-1">
                         <span class="text-2xl mt-2 text-brand-400">$</span>
                         <span id="display-total">0</span>
                     </div>
                     <div class="mt-4 flex items-center gap-2 text-sm text-gray-400">
                         <div class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></div>
-                        Hola, <span id="display-name" class="text-white font-bold">...</span>
+                        Cliente: <span id="display-name" class="text-white font-bold">...</span>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-                
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> Deudas Pendientes
+                        <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> Detalle de Deudas
                     </h3>
                     <div id="pending-list" class="space-y-3"></div>
                     <div id="pending-empty" class="hidden text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                        <i data-lucide="check-circle-2" class="w-10 h-10 text-brand-500 mx-auto mb-2 opacity-50"></i>
-                        <p class="text-sm text-gray-500 font-medium">¡Estás al día!</p>
+                        <p class="text-sm text-gray-500 font-medium">¡Sin deudas pendientes!</p>
                     </div>
                 </div>
 
                 <div class="border-t lg:border-t-0 lg:border-l border-gray-100 pt-8 lg:pt-0 lg:pl-12">
                     <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Últimos Movimientos
+                        <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Historial (Audit Log)
                     </h3>
-                    
                     <div class="relative pl-4 space-y-6 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-px before:bg-gray-200">
                         <div id="history-list"></div>
-                        <div id="load-more-container" class="pt-2 hidden">
-                            <button id="btn-load-more" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-lg w-full transition-colors flex items-center justify-center gap-2">
-                                <i data-lucide="arrow-down" class="w-3 h-3"></i>
-                                Cargar más movimientos
-                            </button>
-                        </div>
-                        <div id="history-empty" class="hidden text-sm text-gray-400 italic">Sin movimientos recientes.</div>
-                        <div id="history-start" class="relative pt-4 hidden">
-                            <div class="absolute -left-[20px] top-6 w-2 h-2 rounded-full bg-gray-200"></div>
-                            <p class="text-xs text-gray-400 italic">Inicio del registro</p>
-                        </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN ---
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
-        // Usamos la KEY de anon o service role según tu implementación previa
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
         const API_BASE = '/api'; 
 
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- ESTADO GLOBAL ---
-        const state = {
-            loading: true,
-            error: null,
-            clientName: '',
-            items: [],
-            fullHistory: [],
-            displayLimit: 8
-        };
+        const state = { loading: true, error: null, clientName: '', items: [], history: [] };
 
         const els = {
             viewLoading: document.getElementById('view-loading'),
-            slowHelp: document.getElementById('slow-network-help'),
             viewError: document.getElementById('view-error'),
             viewContent: document.getElementById('view-content'),
             errorMsg: document.getElementById('error-message'),
@@ -160,45 +118,13 @@
             displayName: document.getElementById('display-name'),
             pendingList: document.getElementById('pending-list'),
             pendingEmpty: document.getElementById('pending-empty'),
-            historyList: document.getElementById('history-list'),
-            historyEmpty: document.getElementById('history-empty'),
-            loadMoreContainer: document.getElementById('load-more-container'),
-            historyStart: document.getElementById('history-start'),
-            btnLoadMore: document.getElementById('btn-load-more'),
-            btnLogout: document.getElementById('btn-logout')
+            historyList: document.getElementById('history-list')
         };
 
         const formatMoney = (v) => Math.round(v || 0).toLocaleString('es-AR');
         
-        const formatDateShort = (iso) => {
-            if(!iso) return '';
-            const d = new Date(iso);
-            return d.toLocaleDateString('es-AR', {day:'numeric', month:'short'});
-        };
-
-        const formatDateLong = (ts) => {
-            if(!ts) return '';
-            const d = new Date(ts);
-            return d.toLocaleDateString('es-AR', {weekday: 'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
-        };
-
-        const getActionColor = (actionStr) => {
-            if (!actionStr) return 'bg-gray-400';
-            const s = actionStr.toLowerCase();
-            if (s.includes('pago') || s.includes('redistribuido')) return 'bg-green-500';
-            if (s.includes('crear') || s.includes('nuevo')) return 'bg-brand-500';
-            if (s.includes('modif') || s.includes('update')) return 'bg-yellow-500';
-            if (s.includes('eliminar') || s.includes('borrar')) return 'bg-red-500';
-            return 'bg-gray-400';
-        };
-
         function render() {
-            if (state.loading) {
-                els.viewLoading.classList.remove('hidden');
-                els.viewContent.classList.add('hidden');
-                return;
-            }
-
+            if (state.loading) return;
             if (state.error) {
                 els.viewLoading.classList.add('hidden');
                 els.viewError.classList.remove('hidden');
@@ -208,106 +134,76 @@
 
             els.viewLoading.classList.add('hidden');
             els.viewContent.classList.remove('hidden');
-
-            // 1. Cabecera y Saldo Total (Solo deudas pendientes)
             els.displayName.textContent = state.clientName;
+
+            // 1. Calcular Total Real (Suma de amount - paid de cada item tipo 'debt')
             const totalDebt = state.items.reduce((acc, item) => {
                 if (item.type !== 'debt') return acc;
                 return acc + (item.amount - (item.paid || 0));
             }, 0);
             els.displayTotal.textContent = formatMoney(totalDebt);
 
-            // 2. Lista de Pendientes (items de tipo 'debt' con saldo > 0)
-            const pendingItems = state.items.filter(i => i.type === 'debt' && (i.amount - (i.paid || 0)) > 0);
-            
-            if (pendingItems.length === 0) {
-                els.pendingList.innerHTML = '';
+            // 2. Renderizar Deudas
+            const activeDebts = state.items.filter(i => i.type === 'debt' && (i.amount - (i.paid || 0)) > 0);
+            if (activeDebts.length === 0) {
                 els.pendingEmpty.classList.remove('hidden');
+                els.pendingList.innerHTML = '';
             } else {
                 els.pendingEmpty.classList.add('hidden');
-                els.pendingList.innerHTML = pendingItems.map(item => {
+                els.pendingList.innerHTML = activeDebts.map(item => {
                     const remaining = item.amount - (item.paid || 0);
                     const percent = Math.min(100, (item.paid / item.amount * 100));
-                    
                     return `
-                        <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+                        <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
                             <div class="flex justify-between items-start mb-2">
                                 <div class="text-2xl font-bold text-gray-800 mono-num">$${formatMoney(item.amount)}</div>
-                                <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                                    ${formatDateShort(item.date)}
-                                </span>
+                                <span class="bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded">${new Date(item.date).toLocaleDateString()}</span>
                             </div>
-                            
                             ${item.paid > 0 ? `
-                                <div class="mb-3">
-                                    <div class="flex justify-between text-[10px] uppercase font-bold text-gray-400 mb-1">
+                                <div class="mb-2">
+                                    <div class="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
                                         <span>Pagado: $${formatMoney(item.paid)}</span>
-                                        <span class="text-brand-600">Faltan: $${formatMoney(remaining)}</span>
+                                        <span class="text-brand-600">Resta: $${formatMoney(remaining)}</span>
                                     </div>
-                                    <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                        <div class="bg-brand-500 h-full transition-all" style="width: ${percent}%"></div>
+                                    <div class="w-full bg-gray-100 rounded-full h-1">
+                                        <div class="bg-brand-500 h-full rounded-full" style="width: ${percent}%"></div>
                                     </div>
                                 </div>
                             ` : ''}
-
                             <p class="text-sm text-gray-600 font-medium">${item.notes || 'Sin descripción'}</p>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
             }
 
-            // 3. Historial (basado en Audit Log o History)
-            const visibleHistory = state.fullHistory.slice(0, state.displayLimit);
-            if (visibleHistory.length === 0) {
-                els.historyEmpty.classList.remove('hidden');
-                els.loadMoreContainer.classList.add('hidden');
-            } else {
-                els.historyEmpty.classList.add('hidden');
-                els.historyList.innerHTML = visibleHistory.map(log => `
-                    <div class="relative group pb-1">
-                        <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${getActionColor(log.action)}"></div>
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                ${formatDateLong(log.timestamp)}
-                            </span>
-                            <span class="text-sm font-semibold text-gray-700 leading-tight">
-                                ${log.action}
-                            </span>
-                        </div>
+            // 3. Renderizar Historial (Audit Log)
+            els.historyList.innerHTML = state.history.map(log => `
+                <div class="relative group">
+                    <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm bg-gray-400"></div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${new Date(log.timestamp).toLocaleString()}</span>
+                        <span class="text-sm font-semibold text-gray-700">${log.action}</span>
                     </div>
-                `).join('');
+                </div>
+            `).join('');
 
-                if (state.fullHistory.length > state.displayLimit) {
-                    els.loadMoreContainer.classList.remove('hidden');
-                    els.historyStart.classList.add('hidden');
-                } else {
-                    els.loadMoreContainer.classList.add('hidden');
-                    els.historyStart.classList.remove('hidden');
-                }
-            }
             lucide.createIcons();
         }
 
         async function init() {
             try {
-                // Obtenemos la sesión actual de Supabase Auth
                 const { data: { session } } = await sb.auth.getSession();
-                if (!session) {
-                    window.location.href = 'index.html'; // O login.html
-                    return;
-                }
+                if (!session) { window.location.href = 'index.html'; return; }
 
-                // Llamada a tu API del servidor
+                // Llamamos al server con el UID de auth
                 const res = await fetch(`${API_BASE}/mi-estado-cuenta?uid=${session.user.id}`);
-                if (!res.ok) throw new Error("No pudimos obtener los datos de tu cuenta.");
+                if (!res.ok) throw new Error("No tienes una cuenta de cliente vinculada.");
                 
                 const data = await res.json();
                 state.clientName = data.name;
                 state.items = data.items || [];
-                state.fullHistory = data.history || [];
+                state.history = data.history || [];
                 state.loading = false;
                 render();
-
             } catch (e) {
                 state.error = e.message;
                 state.loading = false;
@@ -315,28 +211,12 @@
             }
         }
 
-        // --- EVENTOS ---
-        els.btnLoadMore.onclick = () => {
-            state.displayLimit += 10;
-            render();
+        document.getElementById('btn-logout').onclick = async () => {
+            await sb.auth.signOut();
+            window.location.href = 'index.html';
         };
 
-        els.btnLogout.onclick = async () => {
-            if(confirm("¿Deseas cerrar sesión?")) {
-                await sb.auth.signOut();
-                window.location.href = 'index.html';
-            }
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            init();
-            
-            // Si tarda mucho, mostramos ayuda de recarga
-            setTimeout(() => {
-                if (state.loading) els.slowHelp.classList.remove('hidden');
-            }, 8000);
-        });
+        init();
     </script>
 </body>
 </html>
