@@ -27,8 +27,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; }
         .mono-num { font-family: 'JetBrains Mono', monospace; }
         .hidden { display: none !important; }
-        
-        /* Animación suave para el botón de ayuda */
         .fade-in { animation: fadeIn 0.5s ease-in forwards; opacity: 0; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -63,7 +61,6 @@
         <div id="view-loading" class="flex flex-col items-center justify-center py-20 text-gray-300 min-h-[300px]">
             <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2 text-brand-500"></i>
             <span class="text-xs font-medium uppercase tracking-widest">Cargando información...</span>
-
             <div id="slow-network-help" class="hidden mt-8 text-center fade-in">
                 <p class="text-xs text-gray-400 mb-2">¿Tarda mucho?</p>
                 <button onclick="window.location.reload()" class="bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 mx-auto">
@@ -84,7 +81,7 @@
                 <div class="absolute top-0 right-0 p-32 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
                 
                 <div class="relative z-10">
-                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total a Pagar</p>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">Total Pendiente</p>
                     <div class="text-5xl md:text-6xl font-bold tracking-tighter mono-num flex items-start gap-1">
                         <span class="text-2xl mt-2 text-brand-400">$</span>
                         <span id="display-total">0</span>
@@ -100,12 +97,9 @@
                 
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> Pendientes
+                        <span class="w-1.5 h-6 bg-brand-500 rounded-full"></span> Deudas Pendientes
                     </h3>
-
-                    <div id="pending-list" class="space-y-3">
-                        </div>
-
+                    <div id="pending-list" class="space-y-3"></div>
                     <div id="pending-empty" class="hidden text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                         <i data-lucide="check-circle-2" class="w-10 h-10 text-brand-500 mx-auto mb-2 opacity-50"></i>
                         <p class="text-sm text-gray-500 font-medium">¡Estás al día!</p>
@@ -114,43 +108,36 @@
 
                 <div class="border-t lg:border-t-0 lg:border-l border-gray-100 pt-8 lg:pt-0 lg:pl-12">
                     <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Historial de Movimientos
+                        <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Últimos Movimientos
                     </h3>
                     
                     <div class="relative pl-4 space-y-6 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-px before:bg-gray-200">
-                        
-                        <div id="history-list">
-                            </div>
-
+                        <div id="history-list"></div>
                         <div id="load-more-container" class="pt-2 hidden">
                             <button id="btn-load-more" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-lg w-full transition-colors flex items-center justify-center gap-2">
                                 <i data-lucide="arrow-down" class="w-3 h-3"></i>
                                 Cargar más movimientos
                             </button>
                         </div>
-
-                        <div id="history-empty" class="hidden text-sm text-gray-400 italic">No hay historial disponible.</div>
-
+                        <div id="history-empty" class="hidden text-sm text-gray-400 italic">Sin movimientos recientes.</div>
                         <div id="history-start" class="relative pt-4 hidden">
                             <div class="absolute -left-[20px] top-6 w-2 h-2 rounded-full bg-gray-200"></div>
                             <p class="text-xs text-gray-400 italic">Inicio del registro</p>
                         </div>
-
                     </div>
                 </div>
 
             </div>
-
         </div>
     </div>
 
     <script>
         // --- CONFIGURACIÓN ---
         const SUPABASE_URL = 'https://slroycxifwezthdomkny.supabase.co';
+        // Usamos la KEY de anon o service role según tu implementación previa
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscm95Y3hpZndlenRoZG9ta255Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjI3MjM0MiwiZXhwIjoyMDcxODQ4MzQyfQ.s7vfcg-sqZw-VxXUnOCyroi7oTyzfx0i4siNeDOW6lE';
         const API_BASE = '/api'; 
 
-        // USAMOS 'sb' PARA EVITAR CONFLICTOS
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- ESTADO GLOBAL ---
@@ -160,13 +147,12 @@
             clientName: '',
             items: [],
             fullHistory: [],
-            displayLimit: 10
+            displayLimit: 8
         };
 
-        // --- DOM ELEMENTS ---
         const els = {
             viewLoading: document.getElementById('view-loading'),
-            slowHelp: document.getElementById('slow-network-help'), // Nuevo elemento
+            slowHelp: document.getElementById('slow-network-help'),
             viewError: document.getElementById('view-error'),
             viewContent: document.getElementById('view-content'),
             errorMsg: document.getElementById('error-message'),
@@ -182,8 +168,7 @@
             btnLogout: document.getElementById('btn-logout')
         };
 
-        // --- HELPERS DE FORMATO ---
-        const formatMoney = (v) => (v || 0).toLocaleString('es-AR', {minimumFractionDigits:0});
+        const formatMoney = (v) => Math.round(v || 0).toLocaleString('es-AR');
         
         const formatDateShort = (iso) => {
             if(!iso) return '';
@@ -194,37 +179,28 @@
         const formatDateLong = (ts) => {
             if(!ts) return '';
             const d = new Date(ts);
-            return d.toLocaleDateString('es-AR', {weekday: 'short', day:'numeric', month:'long'}) + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+            return d.toLocaleDateString('es-AR', {weekday: 'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
         };
 
         const getActionColor = (actionStr) => {
             if (!actionStr) return 'bg-gray-400';
-            if (actionStr.includes('Pago')) return 'bg-green-500';
-            if (actionStr.includes('Nueva Deuda')) return 'bg-red-500';
-            if (actionStr.includes('Eliminado')) return 'bg-gray-400';
-            if (actionStr.includes('Editado')) return 'bg-yellow-500';
-            return 'bg-brand-500';
+            const s = actionStr.toLowerCase();
+            if (s.includes('pago') || s.includes('redistribuido')) return 'bg-green-500';
+            if (s.includes('crear') || s.includes('nuevo')) return 'bg-brand-500';
+            if (s.includes('modif') || s.includes('update')) return 'bg-yellow-500';
+            if (s.includes('eliminar') || s.includes('borrar')) return 'bg-red-500';
+            return 'bg-gray-400';
         };
-
-        const formatActionText = (text) => {
-            if(!text) return 'Movimiento';
-            return text.replace('Pago Global', 'Pago');
-        };
-
-        // --- FUNCIONES PRINCIPALES ---
 
         function render() {
-            // Manejo de Vistas
             if (state.loading) {
                 els.viewLoading.classList.remove('hidden');
                 els.viewContent.classList.add('hidden');
-                els.viewError.classList.add('hidden');
                 return;
             }
 
             if (state.error) {
                 els.viewLoading.classList.add('hidden');
-                els.viewContent.classList.add('hidden');
                 els.viewError.classList.remove('hidden');
                 els.errorMsg.textContent = state.error;
                 return;
@@ -233,16 +209,15 @@
             els.viewLoading.classList.add('hidden');
             els.viewContent.classList.remove('hidden');
 
-            // 1. Datos del Cliente y Total
+            // 1. Cabecera y Saldo Total (Solo deudas pendientes)
             els.displayName.textContent = state.clientName;
-            
             const totalDebt = state.items.reduce((acc, item) => {
-                if (item.type === 'divider' || item.type === 'payment') return acc;
+                if (item.type !== 'debt') return acc;
                 return acc + (item.amount - (item.paid || 0));
             }, 0);
             els.displayTotal.textContent = formatMoney(totalDebt);
 
-            // 2. Render Pendientes
+            // 2. Lista de Pendientes (items de tipo 'debt' con saldo > 0)
             const pendingItems = state.items.filter(i => i.type === 'debt' && (i.amount - (i.paid || 0)) > 0);
             
             if (pendingItems.length === 0) {
@@ -251,70 +226,57 @@
             } else {
                 els.pendingEmpty.classList.add('hidden');
                 els.pendingList.innerHTML = pendingItems.map(item => {
-                    const percent = (item.paid / item.amount * 100);
-                    const remaining = item.amount - item.paid;
+                    const remaining = item.amount - (item.paid || 0);
+                    const percent = Math.min(100, (item.paid / item.amount * 100));
                     
-                    let progressHtml = '';
-                    if (item.paid > 0) {
-                        progressHtml = `
-                            <div class="mb-3">
-                                <div class="flex justify-between text-[10px] uppercase font-bold text-gray-400 mb-1">
-                                    <span>Pagado: $${formatMoney(item.paid)}</span>
-                                    <span class="text-brand-600">Restan: $${formatMoney(remaining)}</span>
-                                </div>
-                                <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                    <div class="bg-brand-500 h-full rounded-full" style="width: ${percent}%"></div>
-                                </div>
-                            </div>
-                        `;
-                    }
-
                     return `
-                        <div class="group bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-brand-200">
+                        <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
                             <div class="flex justify-between items-start mb-2">
-                                <div class="text-2xl font-bold text-gray-800 mono-num tracking-tight">$${formatMoney(item.amount)}</div>
+                                <div class="text-2xl font-bold text-gray-800 mono-num">$${formatMoney(item.amount)}</div>
                                 <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
                                     ${formatDateShort(item.date)}
                                 </span>
                             </div>
                             
-                            ${progressHtml}
+                            ${item.paid > 0 ? `
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-[10px] uppercase font-bold text-gray-400 mb-1">
+                                        <span>Pagado: $${formatMoney(item.paid)}</span>
+                                        <span class="text-brand-600">Faltan: $${formatMoney(remaining)}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-brand-500 h-full transition-all" style="width: ${percent}%"></div>
+                                    </div>
+                                </div>
+                            ` : ''}
 
-                            <p class="text-sm text-gray-600 leading-relaxed font-medium">
-                                ${item.notes || 'Pedido sin detalles'}
-                            </p>
+                            <p class="text-sm text-gray-600 font-medium">${item.notes || 'Sin descripción'}</p>
                         </div>
                     `;
                 }).join('');
             }
 
-            // 3. Render Historial
+            // 3. Historial (basado en Audit Log o History)
             const visibleHistory = state.fullHistory.slice(0, state.displayLimit);
-            
-            if (state.fullHistory.length === 0) {
-                els.historyList.innerHTML = '';
+            if (visibleHistory.length === 0) {
                 els.historyEmpty.classList.remove('hidden');
                 els.loadMoreContainer.classList.add('hidden');
             } else {
                 els.historyEmpty.classList.add('hidden');
-                
                 els.historyList.innerHTML = visibleHistory.map(log => `
-                    <div class="relative group">
+                    <div class="relative group pb-1">
                         <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${getActionColor(log.action)}"></div>
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
-                            <div>
-                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-0.5">
-                                    ${formatDateLong(log.timestamp)}
-                                </span>
-                                <span class="text-sm font-bold text-gray-800 block">
-                                    ${formatActionText(log.action)}
-                                </span>
-                            </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                ${formatDateLong(log.timestamp)}
+                            </span>
+                            <span class="text-sm font-semibold text-gray-700 leading-tight">
+                                ${log.action}
+                            </span>
                         </div>
                     </div>
                 `).join('');
 
-                // Botón Cargar Más
                 if (state.fullHistory.length > state.displayLimit) {
                     els.loadMoreContainer.classList.remove('hidden');
                     els.historyStart.classList.add('hidden');
@@ -323,25 +285,29 @@
                     els.historyStart.classList.remove('hidden');
                 }
             }
-
-            // Refrescar iconos
             lucide.createIcons();
         }
 
-        async function fetchDebtData(uid) {
+        async function init() {
             try {
-                const res = await fetch(`${API_BASE}/mi-estado-cuenta?uid=${uid}`);
-                if (!res.ok) {
-                    if (res.status === 404) throw new Error("Tu usuario no está vinculado a una cuenta de cliente.");
-                    throw new Error("Error al obtener datos.");
+                // Obtenemos la sesión actual de Supabase Auth
+                const { data: { session } } = await sb.auth.getSession();
+                if (!session) {
+                    window.location.href = 'index.html'; // O login.html
+                    return;
                 }
-                const data = await res.json();
+
+                // Llamada a tu API del servidor
+                const res = await fetch(`${API_BASE}/mi-estado-cuenta?uid=${session.user.id}`);
+                if (!res.ok) throw new Error("No pudimos obtener los datos de tu cuenta.");
                 
+                const data = await res.json();
                 state.clientName = data.name;
                 state.items = data.items || [];
                 state.fullHistory = data.history || [];
                 state.loading = false;
                 render();
+
             } catch (e) {
                 state.error = e.message;
                 state.loading = false;
@@ -349,48 +315,28 @@
             }
         }
 
-        async function init() {
-            try {
-                // Usamos 'sb'
-                const { data: { session }, error } = await sb.auth.getSession();
-                if (session) {
-                    fetchDebtData(session.user.id);
-                } else {
-                    window.location.href = 'index.html';
-                }
-            } catch (err) {
-                window.location.href = 'index.html';
-            }
-        }
-
-        // --- EVENT LISTENERS ---
-        
-        els.btnLoadMore.addEventListener('click', () => {
+        // --- EVENTOS ---
+        els.btnLoadMore.onclick = () => {
             state.displayLimit += 10;
             render();
-        });
+        };
 
-        els.btnLogout.addEventListener('click', async () => {
-            if(!confirm("¿Cerrar sesión?")) return;
-            await sb.auth.signOut();
-            window.location.href = 'index.html';
-        });
+        els.btnLogout.onclick = async () => {
+            if(confirm("¿Deseas cerrar sesión?")) {
+                await sb.auth.signOut();
+                window.location.href = 'index.html';
+            }
+        };
 
-        // --- INICIALIZACIÓN ---
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             init();
-
-            // --- SISTEMA PACÍFICO ---
-            // Si en 8 segundos sigue el loading, mostrar ayuda
+            
+            // Si tarda mucho, mostramos ayuda de recarga
             setTimeout(() => {
-                if (!els.viewLoading.classList.contains('hidden')) {
-                    els.slowHelp.classList.remove('hidden');
-                    lucide.createIcons();
-                }
+                if (state.loading) els.slowHelp.classList.remove('hidden');
             }, 8000);
         });
-
     </script>
 </body>
 </html>
