@@ -422,23 +422,72 @@ app.post('/api/Enviar-Peticion', async (req, res) => {
     }
 });
 
+// --- REEMPLAZAR EN SERVER 3000 ---
+
 app.get('/api/mi-estado-cuenta', async (req, res) => {
-    try {
-        const userId = req.query.uid;
-        if (!userId) return res.status(400).json({ error: 'Usuario no identificado' });
-        const { data, error } = await supabase.from('clients_v2').select('*').eq('user_id', userId).single();
-        if (error || !data) { return res.status(404).json({ error: 'Cliente no vinculado' }); }
-        const clienteLimpio = { name: data.name, items: data.data.items || [], history: data.data.history || [] };
-        res.json(clienteLimpio);
-    } catch (err) {
-        console.error('❌ Error cargando cuenta:', err);
-        res.status(500).json({ error: 'Error del servidor' });
+  // Evitamos caché para ver los datos al instante
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+  try {
+    const userId = req.query.uid; // El ID Auth (3894...)
+    if (!userId) return res.status(400).json({ error: 'Usuario no identificado' });
+
+    // 1. OBTENER EL CLIENTE REAL (Tabla 'clients', no 'clients_v2')
+    // Buscamos usando el user_id de Auth para sacar el ID interno
+    const { data: clientData, error: clientErr } = await supabase
+      .from('clients') 
+      .select('id, name') 
+      .eq('user_id', userId)
+      .single();
+
+    if (clientErr || !clientData) { 
+        return res.status(404).json({ error: 'Cliente no vinculado en sistema SQL' }); 
     }
+
+    const internalId = clientData.id; // Este es el 8c23...
+
+    // 2. OBTENER LOS ITEMS (Tabla 'items')
+    // Usamos el ID interno (8c23...) para buscar en client_id
+    const { data: itemsData, error: itemsErr } = await supabase
+      .from('items')
+      .select('*')
+      .eq('client_id', internalId)
+      .eq('is_deleted', false) // Solo activos
+      .order('position', { ascending: true }); // Ordenamos por posición igual que el admin
+
+    if (itemsErr) throw itemsErr;
+
+    // 3. OBTENER HISTORIAL (Tabla 'audit_log')
+    const { data: historyData, error: historyErr } = await supabase
+      .from('audit_log')
+      .select('created_at, description')
+      .eq('client_id', internalId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    // Mapeamos para que el HTML reciba el formato que espera
+    // El HTML espera: { name, items, history: [{ timestamp, action }] }
+    const responseData = {
+        name: clientData.name,
+        items: itemsData || [],
+        history: (historyData || []).map(h => ({
+            timestamp: h.created_at, 
+            action: h.description 
+        }))
+    };
+
+    res.json(responseData);
+
+  } catch (err) {
+    console.error('❌ Error cargando cuenta SQL:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server escuchando en http://localhost:${PORT}`);
 });
+
 
 
 
