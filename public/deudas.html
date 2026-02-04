@@ -124,71 +124,66 @@
         const formatMoney = (v) => Math.round(v || 0).toLocaleString('es-AR');
         
         function render() {
-            if (state.loading) return;
-            if (state.error) {
-                els.viewLoading.classList.add('hidden');
-                els.viewError.classList.remove('hidden');
-                els.errorMsg.textContent = state.error;
-                return;
-            }
+    if (state.loading) return;
+    if (state.error) {
+        els.viewLoading.classList.add('hidden');
+        els.viewError.classList.remove('hidden');
+        els.errorMsg.textContent = state.error;
+        return;
+    }
 
-            els.viewLoading.classList.add('hidden');
-            els.viewContent.classList.remove('hidden');
-            els.displayName.textContent = state.clientName;
+    els.viewLoading.classList.add('hidden');
+    els.viewContent.classList.remove('hidden');
+    els.displayName.textContent = state.clientName;
 
-            // 1. Calcular Total Real (Suma de amount - paid de cada item tipo 'debt')
-            const totalDebt = state.items.reduce((acc, item) => {
-                if (item.type !== 'debt') return acc;
-                return acc + (item.amount - (item.paid || 0));
-            }, 0);
-            els.displayTotal.textContent = formatMoney(totalDebt);
+    // 1. Total (Usamos Number() por si Supabase manda strings)
+    const totalDebt = state.items.reduce((acc, item) => {
+        return acc + (Number(item.amount || 0) - Number(item.paid || 0));
+    }, 0);
+    els.displayTotal.textContent = totalDebt.toLocaleString('es-AR');
 
-            // 2. Renderizar Deudas
-            const activeDebts = state.items.filter(i => i.type === 'debt' && (i.amount - (i.paid || 0)) > 0);
-            if (activeDebts.length === 0) {
-                els.pendingEmpty.classList.remove('hidden');
-                els.pendingList.innerHTML = '';
-            } else {
-                els.pendingEmpty.classList.add('hidden');
-                els.pendingList.innerHTML = activeDebts.map(item => {
-                    const remaining = item.amount - (item.paid || 0);
-                    const percent = Math.min(100, (item.paid / item.amount * 100));
-                    return `
-                        <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="text-2xl font-bold text-gray-800 mono-num">$${formatMoney(item.amount)}</div>
-                                <span class="bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded">${new Date(item.date).toLocaleDateString()}</span>
-                            </div>
-                            ${item.paid > 0 ? `
-                                <div class="mb-2">
-                                    <div class="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                        <span>Pagado: $${formatMoney(item.paid)}</span>
-                                        <span class="text-brand-600">Resta: $${formatMoney(remaining)}</span>
-                                    </div>
-                                    <div class="w-full bg-gray-100 rounded-full h-1">
-                                        <div class="bg-brand-500 h-full rounded-full" style="width: ${percent}%"></div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            <p class="text-sm text-gray-600 font-medium">${item.notes || 'Sin descripción'}</p>
-                        </div>`;
-                }).join('');
-            }
-
-            // 3. Renderizar Historial (Audit Log)
-            els.historyList.innerHTML = state.history.map(log => `
-                <div class="relative group">
-                    <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm bg-gray-400"></div>
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${new Date(log.timestamp).toLocaleString()}</span>
-                        <span class="text-sm font-semibold text-gray-700">${log.action}</span>
+    // 2. Lista de Pendientes (Tu fila de $123 DEBE aparecer aquí)
+    if (state.items.length === 0) {
+        els.pendingEmpty.classList.remove('hidden');
+        els.pendingList.innerHTML = '';
+    } else {
+        els.pendingEmpty.classList.add('hidden');
+        els.pendingList.innerHTML = state.items.map(item => {
+            const monto = Number(item.amount || 0);
+            const pagado = Number(item.paid || 0);
+            const pendiente = monto - pagado;
+            
+            // Si el monto es 123 y el pagado es 0, pendiente será 123
+            return `
+                <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm mb-3">
+                    <div class="flex justify-between items-start">
+                        <div class="text-2xl font-bold text-gray-800 mono-num">$${monto.toLocaleString('es-AR')}</div>
+                        <span class="bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-1 rounded">
+                            ${item.date ? new Date(item.date).toLocaleDateString() : 'Sin Fecha'}
+                        </span>
                     </div>
+                    <p class="text-sm text-gray-600 font-medium mt-1">
+                        ${item.notes && item.notes.trim() !== "" ? item.notes : "Deuda Registrada"}
+                    </p>
+                    ${pagado > 0 ? `<p class="text-xs text-green-600 font-bold mt-2">Pagado: $${pagado.toLocaleString('es-AR')}</p>` : ''}
                 </div>
-            `).join('');
+            `;
+        }).join('');
+    }
 
-            lucide.createIcons();
-        }
+    // 3. Historial
+    els.historyList.innerHTML = (state.history || []).map(log => `
+        <div class="relative group pb-1">
+            <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm bg-gray-400"></div>
+            <div class="flex flex-col">
+                <span class="text-[10px] font-bold text-gray-400">${new Date(log.timestamp).toLocaleString()}</span>
+                <span class="text-sm font-semibold text-gray-700 leading-tight">${log.action || 'Movimiento'}</span>
+            </div>
+        </div>
+    `).join('');
 
+    lucide.createIcons();
+}
         async function init() {
             try {
                 const { data: { session } } = await sb.auth.getSession();
