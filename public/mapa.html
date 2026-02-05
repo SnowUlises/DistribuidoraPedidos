@@ -3,299 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mapa Logística</title>
+    <title>Logística San Juan</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        body { margin: 0; padding: 0; height: 100vh; font-family: sans-serif; overflow: hidden; }
-        #map { width: 100%; height: 100%; }
-        
-        /* UI Flotante */
-        .float-btn { position: absolute; background: white; width: 50px; height: 50px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; }
-        #btn-add { bottom: 20px; right: 20px; font-size: 24px; color: #333; }
-        #btn-list { top: 20px; left: 20px; width: 40px; height: 40px; }
-        #btn-global { top: 20px; right: 20px; width: auto; padding: 0 15px; border-radius: 20px; font-weight: bold; font-size: 14px; color: #555; }
-        #btn-global.active { background: #e8f0fe; color: #1a73e8; }
-
-        /* Pin Central (Modo Agregar) */
-        #center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 900; pointer-events: none; display: none; color: #ea4335; font-size: 40px; }
-        #btn-confirm { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 10px 20px; border-radius: 20px; z-index: 1000; cursor: pointer; display: none; }
-
-        /* Panel Detalles */
-        #sheet { position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-radius: 15px 15px 0 0; transform: translateY(100%); transition: 0.3s; z-index: 1001; padding-bottom: 20px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
-        #sheet.open { transform: translateY(0); }
-        .sheet-body { padding: 20px; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; margin-top: 5px; font-weight: bold; }
-        .btn-blue { background: #1a73e8; color: white; }
-        .btn-red { background: #d93025; color: white; }
-        .btn-gray { background: #f1f3f4; color: #333; }
-
-        /* Sidebar */
-        #sidebar { position: absolute; top: 0; left: 0; height: 100%; width: 300px; background: white; z-index: 1002; transform: translateX(-100%); transition: 0.3s; box-shadow: 2px 0 5px rgba(0,0,0,0.1); overflow-y: auto; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Roboto', sans-serif; overflow: hidden; }
+        #map { width: 100%; height: 100%; z-index: 1; }
+        .floating-btn { position: absolute; background: white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        #add-btn { width: 56px; height: 56px; bottom: 24px; right: 24px; font-size: 24px; color: #444; }
+        #list-btn { top: 16px; left: 16px; width: 40px; height: 40px; color: #555; border-radius: 8px; }
+        #global-toggle { top: 16px; right: 16px; padding: 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; color: #555; width: auto; }
+        #global-toggle.active { background: #e8f0fe; color: #1a73e8; }
+        #center-pin-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 900; pointer-events: none; display: none; flex-direction: column; align-items: center; }
+        .pin-icon { font-size: 40px; color: #ea4335; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+        .pin-shadow { width: 10px; height: 4px; background: rgba(0,0,0,0.3); border-radius: 50%; margin-top: -5px; }
+        #confirm-loc-btn { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 12px 24px; border-radius: 24px; font-weight: 500; z-index: 1001; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; display: none; }
+        .bottom-sheet { position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1002; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); padding-bottom: 20px; max-height: 80vh; overflow-y: auto; }
+        .bottom-sheet.open { transform: translateY(0); }
+        .sheet-content { padding: 20px; }
+        .sheet-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .action-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-danger { background: #d93025; color: white; margin-top: 5px; }
+        #sidebar { position: absolute; top: 0; left: 0; height: 100%; width: 300px; background: white; z-index: 1003; box-shadow: 2px 0 10px rgba(0,0,0,0.1); transform: translateX(-100%); transition: transform 0.3s ease; display: flex; flex-direction: column; }
         #sidebar.open { transform: translateX(0); }
-        .list-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .sidebar-header { padding: 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .list-group-title { font-size: 12px; font-weight: 700; color: #555; margin: 15px 0 5px 10px; text-transform: uppercase; }
+        .list-item { padding: 12px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; }
         .list-item:hover { background: #f5f5f5; }
+        .item-name { font-weight: 500; color: #202124; }
+        .item-meta { font-size: 12px; color: #70757a; margin-top: 2px; }
+        .global-badge { background: #e8f0fe; color: #1a73e8; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .close-sidebar { cursor: pointer; font-size: 20px; padding: 5px; }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
-
     <div id="map"></div>
-
-    <div id="btn-list" class="float-btn"><i class="fa-solid fa-bars"></i></div>
-    <div id="btn-global" class="float-btn active">Globales</div>
-    <div id="btn-add" class="float-btn"><i class="fa-solid fa-plus"></i></div>
-
-    <div id="center-pin"><i class="fa-solid fa-location-dot"></i></div>
-    <div id="btn-confirm">Confirmar Ubicación</div>
-
-    <div id="sheet">
-        <div class="sheet-body">
+    <div id="list-btn" class="floating-btn"><i class="fa-solid fa-bars"></i></div>
+    <div id="global-toggle" class="floating-btn active"><i class="fa-solid fa-globe" style="margin-right: 5px;"></i> Globales</div>
+    <div id="add-btn" class="floating-btn"><i class="fa-solid fa-plus"></i></div>
+    <div id="center-pin-container"><i class="fa-solid fa-location-dot pin-icon"></i><div class="pin-shadow"></div></div>
+    <div id="confirm-loc-btn">Confirmar Ubicación</div>
+    
+    <div id="details-sheet" class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-content">
             <div id="form-view" style="display:none;">
-                <h3>Dirección</h3>
-                <input id="inp-name" placeholder="Nombre (ej. Kiosco Pepe)">
-                <input id="inp-notes" placeholder="Notas">
-                <input id="inp-link" placeholder="Link Google Maps">
-                
-                <div id="box-members" style="display:none; margin-bottom:10px;">
-                    <small>Compartir con:</small>
+                <h3 id="form-title" style="margin-top:0;">Nueva Dirección</h3>
+                <div class="form-group"><label>Nombre</label><input type="text" id="input-name" class="form-input"></div>
+                <div class="form-group"><label>Notas</label><input type="text" id="input-notes" class="form-input"></div>
+                <div class="form-group"><label>Google Maps Link</label><input type="text" id="input-gmaps" class="form-input"></div>
+                <div id="members-section" class="form-group" style="display:none;">
+                    <label>Compartir (Emails)</label>
                     <div style="display:flex; gap:5px;">
-                        <input id="inp-invite" placeholder="email@vendedor.com" style="margin:0;">
-                        <button id="btn-invite-add" style="width:40px;">+</button>
+                        <input type="email" id="input-invite" class="form-input" placeholder="email@gmail.com">
+                        <button id="btn-invite" style="border:none; background:#eee; border-radius:8px; width:40px;">+</button>
                     </div>
-                    <ul id="list-members" style="padding-left:20px; margin-top:5px; font-size:14px;"></ul>
+                    <ul id="members-list" style="list-style:none; padding:0; margin-top:5px; font-size:13px;"></ul>
                 </div>
-
-                <button id="btn-save" class="btn-blue">Guardar</button>
-                <button id="btn-delete" class="btn-red" style="display:none;">Eliminar</button>
-                <button onclick="closeSheet()" class="btn-gray">Cancelar</button>
+                <button id="save-btn" class="action-btn btn-primary">Guardar</button>
+                <button id="delete-btn" class="action-btn btn-danger" style="display:none;">Eliminar</button>
+                <button id="cancel-btn" class="action-btn" style="background:#f1f3f4; color:#3c4043;">Cancelar</button>
             </div>
-
             <div id="read-view" style="display:none;">
-                <h2 id="txt-name" style="margin-top:0;"></h2>
-                <p id="txt-notes" style="color:#666;"></p>
-                <a id="lnk-maps" href="#" target="_blank" style="display:block; margin-bottom:15px; color:#1a73e8;">Ver en Google Maps</a>
-                <button id="btn-edit" class="btn-gray">Editar</button>
-                <button id="btn-leave" class="btn-red" style="display:none;">Dejar de seguir</button>
+                <h2 id="view-name" style="margin:0;"></h2>
+                <p id="view-notes" style="color:#555; margin-bottom:15px;"></p>
+                <a id="view-gmaps" href="#" target="_blank" class="action-btn btn-primary" style="display:block; text-align:center; text-decoration:none; margin-bottom:10px;">Abrir Maps</a>
+                <button id="edit-btn" class="action-btn" style="background:#f1f3f4; color:#3c4043;">Editar / Invitar</button>
+                <button id="leave-btn" class="action-btn btn-danger" style="display:none;">Salir</button>
             </div>
         </div>
     </div>
-
-    <div id="sidebar">
-        <div style="padding:15px; font-weight:bold; border-bottom:1px solid #eee;">Mis Direcciones <span onclick="toggleSidebar()" style="float:right; cursor:pointer;">x</span></div>
-        <div id="sidebar-list"></div>
-    </div>
+    <div id="sidebar"><div class="sidebar-header"><span style="font-weight:bold; font-size:18px;">Direcciones</span><i class="fa-solid fa-xmark close-sidebar"></i></div><div class="sidebar-list" id="sidebar-content"></div></div>
+    <div id="loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- CLIENTE SIMPLE ---
-        let map, markers = [], locations = [], isAdding = false, showGlobals = true;
-        let token, myId, myEmail;
+        // --- CONFIGURACIÓN ---
+        // Aquí apuntamos directamente a tu servidor real
+        const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com';
 
-        // 1. Obtener Token del Login (LocalStorage estándar de Supabase)
-        function getSession() {
+        let map, markers = [], allLocations = [], isAddingMode = false, showGlobals = true;
+        let authToken = null, currentUser = null;
+
+        // Recuperar Token de LocalStorage
+        function getAuthSession() {
             for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
-                    return JSON.parse(localStorage.getItem(k));
+                const key = localStorage.key(i);
+                if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                    const session = JSON.parse(localStorage.getItem(key));
+                    return session ? { token: session.access_token, user: session.user } : null;
                 }
             }
             return null;
         }
 
-        // 2. Fetch Centralizado (Usa tu backend)
-        async function api(url, method = 'GET', data = null) {
-            const opts = { method, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
-            if (data) opts.body = JSON.stringify(data);
-            const res = await fetch(url, opts);
-            if (res.status === 401) window.location.href = 'login.html';
+        // Función Fetch Centralizada (Con API_URL correcta)
+        async function api(endpoint, method = 'GET', body = null) {
+            const opts = {
+                method,
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+            };
+            if(body) opts.body = JSON.stringify(body);
+            
+            // Usamos la API_URL base + el endpoint
+            const res = await fetch(`${API_URL}${endpoint}`, opts);
+            
+            if(res.status === 401) window.location.href = 'login.html';
+            if(!res.ok) throw new Error('Error API');
             return res.json();
         }
 
         async function init() {
-            const session = getSession();
+            const session = getAuthSession();
             if (!session) return window.location.href = 'login.html';
-            token = session.access_token;
-            myId = session.user.id;
-            myEmail = session.user.email;
-
+            
+            authToken = session.token;
+            currentUser = session.user;
+            
+            document.getElementById('loader').style.display = 'none';
             initMap();
-            loadData();
+            loadLocations();
         }
 
         function initMap() {
             map = L.map('map', { zoomControl: false }).setView([-31.5375, -68.5364], 14);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
         }
 
-        async function loadData() {
+        async function loadLocations() {
             try {
-                locations = await api('/api/direcciones'); // Llama a tu server.js
-                renderMap();
+                allLocations = await api('/api/direcciones'); 
+                renderMarkers();
             } catch (e) { console.error(e); }
         }
 
-        function renderMap() {
+        function renderMarkers() {
             markers.forEach(m => map.removeLayer(m)); markers = [];
-            
-            locations.forEach(loc => {
+            allLocations.forEach(loc => {
                 if (loc.is_global && !showGlobals) return;
+                const isMine = loc.created_by === currentUser.id;
+                const color = loc.is_global ? '#1a73e8' : (isMine ? '#d93025' : '#f9ab00');
                 
-                const isMine = loc.created_by === myId;
-                const color = loc.is_global ? '#1a73e8' : (isMine ? '#d93025' : '#f9ab00'); // Azul, Rojo, Naranja
-                
-                const icon = L.divIcon({
-                    className: 'custom-pin',
-                    html: `<div style="background:${color};width:14px;height:14px;border:2px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.5);"></div>`,
-                    iconSize: [18, 18]
-                });
-
+                const icon = L.divIcon({ className: 'c-mark', html: `<div style="background:${color};width:16px;height:16px;border:2px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
                 const m = L.marker([loc.lat, loc.lng], { icon }).addTo(map);
-                m.on('click', () => { showDetails(loc); map.setView([loc.lat, loc.lng], 16); });
+                m.on('click', () => { openDetails(loc); map.flyTo([loc.lat, loc.lng], 16); });
                 markers.push(m);
             });
         }
 
-        // --- UI & Lógica ---
-        
-        // Agregar
-        document.getElementById('btn-add').onclick = () => {
-            isAdding = !isAdding;
-            document.getElementById('center-pin').style.display = isAdding ? 'block' : 'none';
-            document.getElementById('btn-confirm').style.display = isAdding ? 'block' : 'none';
-            closeSheet();
+        // --- UI ---
+        const addBtn = document.getElementById('add-btn');
+        addBtn.onclick = () => {
+            isAddingMode = !isAddingMode;
+            document.getElementById('center-pin-container').style.display = isAddingMode ? 'flex' : 'none';
+            document.getElementById('confirm-loc-btn').style.display = isAddingMode ? 'block' : 'none';
+            addBtn.innerHTML = isAddingMode ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-plus"></i>';
+            if(isAddingMode) closeSheet();
         };
 
-        document.getElementById('btn-confirm').onclick = () => {
+        document.getElementById('confirm-loc-btn').onclick = () => {
             const c = map.getCenter();
-            document.getElementById('btn-add').click(); // Salir modo agregar
+            addBtn.click();
             openForm(null, c);
         };
 
-        // Formulario
-        const sheet = document.getElementById('sheet');
+        const sheet = document.getElementById('details-sheet');
         const closeSheet = () => sheet.classList.remove('open');
+        document.getElementById('cancel-btn').onclick = closeSheet;
 
         function openForm(loc, coords) {
             document.getElementById('read-view').style.display = 'none';
             document.getElementById('form-view').style.display = 'block';
-            
-            // Llenar campos
-            document.getElementById('inp-name').value = loc ? loc.name : '';
-            document.getElementById('inp-notes').value = loc ? loc.notes || '' : '';
-            document.getElementById('inp-link').value = loc ? loc.gmaps_link || '' : '';
+            document.getElementById('form-title').innerText = loc ? 'Editar' : 'Nueva';
+            document.getElementById('input-name').value = loc ? loc.name : '';
+            document.getElementById('input-notes').value = loc ? loc.notes || '' : '';
+            document.getElementById('input-gmaps').value = loc ? loc.gmaps_link || '' : '';
 
-            // Lógica Miembros (Solo si soy dueño)
-            const memBox = document.getElementById('box-members');
-            const memList = document.getElementById('list-members');
+            const memSec = document.getElementById('members-section');
+            const memList = document.getElementById('members-list');
             memList.innerHTML = '';
 
-            if (loc && loc.created_by === myId) {
-                memBox.style.display = 'block';
-                document.getElementById('btn-delete').style.display = 'block';
-                
-                (loc.members || []).forEach(m => {
-                    memList.innerHTML += `<li>${m} <span style="color:red;cursor:pointer" onclick="modMember('${loc.id}', '${m}', 'del')">x</span></li>`;
+            if(loc && loc.created_by === currentUser.id) {
+                memSec.style.display = 'block';
+                document.getElementById('delete-btn').style.display = 'block';
+                (loc.members || []).forEach(email => {
+                    memList.innerHTML += `<li>${email} <span style="color:red;cursor:pointer;" onclick="manageMember('${loc.id}', '${email}', 'remove')">x</span></li>`;
                 });
-
-                document.getElementById('btn-invite-add').onclick = () => {
-                    const mail = document.getElementById('inp-invite').value;
-                    if(mail) modMember(loc.id, mail, 'add');
+                document.getElementById('btn-invite').onclick = () => {
+                    const mail = document.getElementById('input-invite').value;
+                    if(mail) manageMember(loc.id, mail, 'add');
                 };
-                
-                document.getElementById('btn-save').onclick = () => saveData(loc.id);
-                document.getElementById('btn-delete').onclick = () => deleteData(loc.id);
+                document.getElementById('save-btn').onclick = () => saveLoc(loc.id);
+                document.getElementById('delete-btn').onclick = () => deleteLoc(loc.id);
             } else {
-                memBox.style.display = 'none';
-                document.getElementById('btn-delete').style.display = 'none';
-                document.getElementById('btn-save').onclick = () => saveData(null, coords);
+                memSec.style.display = 'none';
+                document.getElementById('delete-btn').style.display = 'none';
+                document.getElementById('save-btn').onclick = () => saveLoc(null, coords);
             }
             sheet.classList.add('open');
         }
 
-        function showDetails(loc) {
+        function openDetails(loc) {
             document.getElementById('form-view').style.display = 'none';
             document.getElementById('read-view').style.display = 'block';
-            
-            document.getElementById('txt-name').innerText = loc.name;
-            document.getElementById('txt-notes').innerText = loc.notes || '';
-            const lnk = document.getElementById('lnk-maps');
-            lnk.href = loc.gmaps_link || '#';
-            lnk.style.display = loc.gmaps_link ? 'block' : 'none';
+            document.getElementById('view-name').innerText = loc.name;
+            document.getElementById('view-notes').innerText = loc.notes || '';
+            const btnLink = document.getElementById('view-gmaps');
+            btnLink.href = loc.gmaps_link || '#';
+            btnLink.style.display = loc.gmaps_link ? 'block' : 'none';
 
-            const btnEdit = document.getElementById('btn-edit');
-            const btnLeave = document.getElementById('btn-leave');
+            const editBtn = document.getElementById('edit-btn');
+            const leaveBtn = document.getElementById('leave-btn');
 
-            if (loc.created_by === myId) {
-                btnEdit.style.display = 'block'; btnEdit.onclick = () => openForm(loc);
-                btnLeave.style.display = 'none';
+            if (loc.created_by === currentUser.id) {
+                editBtn.style.display = 'block'; editBtn.onclick = () => openForm(loc);
+                leaveBtn.style.display = 'none';
             } else if (loc.is_global) {
-                btnEdit.style.display = 'none'; btnLeave.style.display = 'none';
+                editBtn.style.display = 'none'; leaveBtn.style.display = 'none';
             } else {
-                btnEdit.style.display = 'none';
-                btnLeave.style.display = 'block';
-                btnLeave.onclick = () => modMember(loc.id, myEmail, 'del'); // Salir
+                editBtn.style.display = 'none'; 
+                leaveBtn.style.display = 'block';
+                leaveBtn.onclick = () => manageMember(loc.id, currentUser.email, 'remove'); 
             }
             sheet.classList.add('open');
         }
 
-        // Operaciones
-        async function saveData(id, coords) {
+        async function saveLoc(id, coords) {
             const body = {
-                name: document.getElementById('inp-name').value,
-                notes: document.getElementById('inp-notes').value,
-                gmaps_link: document.getElementById('inp-link').value
+                name: document.getElementById('input-name').value,
+                notes: document.getElementById('input-notes').value,
+                gmaps_link: document.getElementById('input-gmaps').value
             };
             if(!body.name) return;
-
-            if (id) await api(`/api/direcciones/${id}`, 'PUT', body);
-            else await api('/api/direcciones', 'POST', { ...body, lat: coords.lat, lng: coords.lng });
             
-            closeSheet(); loadData();
+            try {
+                if(id) await api(`/api/direcciones/${id}`, 'PUT', body);
+                else await api('/api/direcciones', 'POST', { ...body, lat: coords.lat, lng: coords.lng });
+                closeSheet(); loadLocations();
+            } catch(e) { alert('Error guardando'); }
         }
 
-        async function deleteData(id) {
-            if(confirm('¿Borrar?')) { await api(`/api/direcciones/${id}`, 'DELETE'); closeSheet(); loadData(); }
+        async function deleteLoc(id) {
+            if(!confirm('¿Borrar?')) return;
+            try { await api(`/api/direcciones/${id}`, 'DELETE'); closeSheet(); loadLocations(); } catch(e){}
         }
 
-        async function modMember(id, email, action) {
-            const loc = locations.find(l => l.id === id);
-            let mems = loc.members || [];
-            if (action === 'add') { if(!mems.includes(email)) mems.push(email); }
-            else { mems = mems.filter(m => m !== email); }
+        async function manageMember(id, email, action) {
+            try {
+                const loc = allLocations.find(l => l.id === id);
+                let mems = loc.members || [];
+                if(action === 'add') { if(!mems.includes(email)) mems.push(email); }
+                else { mems = mems.filter(m => m !== email); }
 
-            await api(`/api/direcciones/${id}`, 'PUT', { members: mems });
-            
-            if (action === 'del' && email === myEmail) { closeSheet(); } // Me fui
-            else { loc.members = mems; openForm(loc); } // Refrescar
-            loadData();
+                await api(`/api/direcciones/${id}`, 'PUT', { members: mems });
+                
+                loc.members = mems; 
+                if(action === 'remove' && email === currentUser.email) { closeSheet(); loadLocations(); }
+                else openForm(loc);
+            } catch(e){ alert('No tienes permisos'); }
         }
 
-        // Globales / Lista
-        document.getElementById('btn-global').onclick = (e) => {
-            showGlobals = !showGlobals;
-            e.target.classList.toggle('active');
-            renderMap();
-        };
-
+        // Sidebar & Toggles
         const sb = document.getElementById('sidebar');
-        function toggleSidebar() { sb.classList.toggle('open'); renderList(); }
-        document.getElementById('btn-list').onclick = toggleSidebar;
-
-        function renderList() {
-            const list = document.getElementById('sidebar-list'); list.innerHTML = '';
-            
-            const createItem = (l) => {
+        document.getElementById('list-btn').onclick = () => {
+            const c = document.getElementById('sidebar-content'); c.innerHTML = '';
+            const mkItem = (l, b) => {
                 const d = document.createElement('div'); d.className = 'list-item';
-                d.innerText = l.name + (l.is_global ? ' (Global)' : '');
-                d.onclick = () => { toggleSidebar(); map.setView([l.lat, l.lng], 16); showDetails(l); };
-                list.appendChild(d);
+                d.innerHTML = `<div class="item-name">${l.name} ${b?'<span class="global-badge">'+b+'</span>':''}</div><div class="item-meta">${l.notes||''}</div>`;
+                d.onclick = () => { sb.classList.remove('open'); map.flyTo([l.lat, l.lng], 16); openDetails(l); };
+                c.appendChild(d);
             };
-
-            locations.filter(l => l.is_global && showGlobals).forEach(createItem);
-            locations.filter(l => l.created_by === myId && !l.is_global).forEach(createItem);
-            locations.filter(l => l.created_by !== myId && !l.is_global).forEach(createItem);
-        }
+            
+            allLocations.filter(l => l.is_global && showGlobals).forEach(l => mkItem(l, 'Global'));
+            allLocations.filter(l => l.created_by === currentUser.id && !l.is_global).forEach(l => mkItem(l));
+            allLocations.filter(l => l.created_by !== currentUser.id && !l.is_global).forEach(l => mkItem(l, l.owner_email));
+            sb.classList.add('open');
+        };
+        document.querySelector('.close-sidebar').onclick = () => sb.classList.remove('open');
+        document.getElementById('global-toggle').onclick = (e) => { showGlobals = !showGlobals; e.target.classList.toggle('active'); renderMarkers(); };
 
         init();
     </script>
