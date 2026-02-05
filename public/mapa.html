@@ -4,593 +4,289 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Logística San Juan</title>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
-        /* ESTETICA GOOGLE MAPS */
+        /* ESTILOS (Mismos de antes) */
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Roboto', sans-serif; overflow: hidden; }
-        
         #map { width: 100%; height: 100%; z-index: 1; }
-
-        /* Controles Flotantes */
-        .floating-btn {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            cursor: pointer;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        .floating-btn:active { background: #f1f1f1; }
-
-        /* Boton Plus (Inferior Derecha) */
-        #add-btn {
-            width: 56px;
-            height: 56px;
-            bottom: 24px;
-            right: 24px;
-            font-size: 24px;
-            color: #444;
-        }
-
-        /* Boton Menu Listado (Superior Izquierda) */
-        #list-btn {
-            top: 16px;
-            left: 16px;
-            width: 40px;
-            height: 40px;
-            color: #555;
-            border-radius: 8px;
-        }
-
-        /* Boton Toggle Globales (Superior Derecha) */
-        #global-toggle {
-            top: 16px;
-            right: 16px;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #555;
-            width: auto;
-        }
+        .floating-btn { position: absolute; background: white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        #add-btn { width: 56px; height: 56px; bottom: 24px; right: 24px; font-size: 24px; color: #444; }
+        #list-btn { top: 16px; left: 16px; width: 40px; height: 40px; color: #555; border-radius: 8px; }
+        #global-toggle { top: 16px; right: 16px; padding: 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; color: #555; width: auto; }
         #global-toggle.active { background: #e8f0fe; color: #1a73e8; }
-
-        /* UI de "Uber" - Pin central fijo */
-        #center-pin-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -100%);
-            z-index: 900;
-            pointer-events: none;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-        }
+        #center-pin-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 900; pointer-events: none; display: none; flex-direction: column; align-items: center; }
         .pin-icon { font-size: 40px; color: #ea4335; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
         .pin-shadow { width: 10px; height: 4px; background: rgba(0,0,0,0.3); border-radius: 50%; margin-top: -5px; }
-
-        /* Boton Confirmar Ubicación */
-        #confirm-loc-btn {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1a1a1a;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 24px;
-            font-weight: 500;
-            z-index: 1001;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            cursor: pointer;
-            display: none;
-        }
-
-        /* Bottom Sheet */
-        .bottom-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: white;
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 1002;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-            padding-bottom: 20px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
+        #confirm-loc-btn { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 12px 24px; border-radius: 24px; font-weight: 500; z-index: 1001; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; display: none; }
+        .bottom-sheet { position: absolute; bottom: 0; left: 0; width: 100%; background: white; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1002; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); padding-bottom: 20px; max-height: 80vh; overflow-y: auto; }
         .bottom-sheet.open { transform: translateY(0); }
-
         .sheet-content { padding: 20px; }
         .sheet-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px auto; }
-        
-        /* Formularios */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 12px; color: #777; margin-bottom: 4px; }
-        .form-input { 
-            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; 
-        }
-        .form-input:focus { border-color: #1a73e8; outline: none; }
-        .action-btn {
-            width: 100%; padding: 12px; border: none; border-radius: 8px; 
-            font-size: 16px; font-weight: 500; cursor: pointer; margin-top: 10px;
-        }
+        .form-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .action-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; margin-top: 10px; }
         .btn-primary { background: #1a73e8; color: white; }
         .btn-danger { background: #d93025; color: white; margin-top: 5px; }
-
-        /* Sidebar */
-        #sidebar {
-            position: absolute;
-            top: 0; left: 0; height: 100%; width: 300px;
-            background: white;
-            z-index: 1003;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-            display: flex;
-            flex-direction: column;
-        }
+        #sidebar { position: absolute; top: 0; left: 0; height: 100%; width: 300px; background: white; z-index: 1003; box-shadow: 2px 0 10px rgba(0,0,0,0.1); transform: translateX(-100%); transition: transform 0.3s ease; display: flex; flex-direction: column; }
         #sidebar.open { transform: translateX(0); }
         .sidebar-header { padding: 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; }
-        
         .list-group-title { font-size: 12px; font-weight: 700; color: #555; margin: 15px 0 5px 10px; text-transform: uppercase; }
-        .list-item { 
-            padding: 12px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; transition: background 0.1s; 
-        }
+        .list-item { padding: 12px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; }
         .list-item:hover { background: #f5f5f5; }
         .item-name { font-weight: 500; color: #202124; }
         .item-meta { font-size: 12px; color: #70757a; margin-top: 2px; }
-        .global-badge { display: inline-block; background: #e8f0fe; color: #1a73e8; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
-
+        .global-badge { background: #e8f0fe; color: #1a73e8; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
         .close-sidebar { cursor: pointer; font-size: 20px; padding: 5px; }
-
-        #loader { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(255,255,255,0.8); z-index: 2000; 
-            display: flex; justify-content: center; align-items: center; 
-        }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
-
     <div id="map"></div>
-
-    <div id="list-btn" class="floating-btn" title="Mis Direcciones">
-        <i class="fa-solid fa-bars"></i>
-    </div>
-
-    <div id="global-toggle" class="floating-btn active">
-        <i class="fa-solid fa-globe" style="margin-right: 5px;"></i> Globales
-    </div>
-
-    <div id="add-btn" class="floating-btn">
-        <i class="fa-solid fa-plus"></i>
-    </div>
-
-    <div id="center-pin-container">
-        <i class="fa-solid fa-location-dot pin-icon"></i>
-        <div class="pin-shadow"></div>
-    </div>
+    <div id="list-btn" class="floating-btn"><i class="fa-solid fa-bars"></i></div>
+    <div id="global-toggle" class="floating-btn active"><i class="fa-solid fa-globe" style="margin-right: 5px;"></i> Globales</div>
+    <div id="add-btn" class="floating-btn"><i class="fa-solid fa-plus"></i></div>
+    <div id="center-pin-container"><i class="fa-solid fa-location-dot pin-icon"></i><div class="pin-shadow"></div></div>
     <div id="confirm-loc-btn">Confirmar Ubicación</div>
-
+    
     <div id="details-sheet" class="bottom-sheet">
         <div class="sheet-handle"></div>
         <div class="sheet-content">
             <div id="form-view" style="display:none;">
                 <h3 id="form-title" style="margin-top:0;">Nueva Dirección</h3>
-                <div class="form-group">
-                    <label>Nombre del Negocio</label>
-                    <input type="text" id="input-name" class="form-input" placeholder="Ej. Kiosco Pepe">
-                </div>
-                <div class="form-group">
-                    <label>Notas Adicionales</label>
-                    <input type="text" id="input-notes" class="form-input" placeholder="Horario, contacto...">
-                </div>
-                <div class="form-group">
-                    <label>Link Google Maps (Opcional)</label>
-                    <input type="text" id="input-gmaps" class="form-input" placeholder="https://maps.google.com/...">
-                </div>
-                
+                <div class="form-group"><label>Nombre</label><input type="text" id="input-name" class="form-input"></div>
+                <div class="form-group"><label>Notas</label><input type="text" id="input-notes" class="form-input"></div>
+                <div class="form-group"><label>Google Maps Link</label><input type="text" id="input-gmaps" class="form-input"></div>
                 <div id="members-section" class="form-group" style="display:none;">
-                    <label>Compartir con (Emails de usuarios)</label>
+                    <label>Compartir (Emails)</label>
                     <div style="display:flex; gap:5px;">
-                        <input type="email" id="input-invite" class="form-input" placeholder="vendedor@gmail.com">
+                        <input type="email" id="input-invite" class="form-input" placeholder="email@gmail.com">
                         <button id="btn-invite" style="border:none; background:#eee; border-radius:8px; width:40px;">+</button>
                     </div>
                     <ul id="members-list" style="list-style:none; padding:0; margin-top:5px; font-size:13px;"></ul>
                 </div>
-
-                <button id="save-btn" class="action-btn btn-primary">Guardar Dirección</button>
+                <button id="save-btn" class="action-btn btn-primary">Guardar</button>
                 <button id="delete-btn" class="action-btn btn-danger" style="display:none;">Eliminar</button>
                 <button id="cancel-btn" class="action-btn" style="background:#f1f3f4; color:#3c4043;">Cancelar</button>
             </div>
-
             <div id="read-view" style="display:none;">
-                <h2 id="view-name" style="margin:0 0 5px 0;">Nombre</h2>
-                <p id="view-notes" style="color:#555; margin:0 0 15px 0;">Notas...</p>
-                <a id="view-gmaps" href="#" target="_blank" class="action-btn btn-primary" style="display:block; text-align:center; text-decoration:none; margin-bottom:10px;">
-                    <i class="fa-solid fa-map-location-dot"></i> Abrir en Google Maps
-                </a>
+                <h2 id="view-name" style="margin:0;"></h2>
+                <p id="view-notes" style="color:#555; margin-bottom:15px;"></p>
+                <a id="view-gmaps" href="#" target="_blank" class="action-btn btn-primary" style="display:block; text-align:center; text-decoration:none; margin-bottom:10px;">Abrir Maps</a>
                 <button id="edit-btn" class="action-btn" style="background:#f1f3f4; color:#3c4043;">Editar / Invitar</button>
-                <button id="leave-btn" class="action-btn btn-danger" style="display:none;">Salir de esta dirección</button>
+                <button id="leave-btn" class="action-btn btn-danger" style="display:none;">Salir</button>
             </div>
         </div>
     </div>
-
-    <div id="sidebar">
-        <div class="sidebar-header">
-            <span style="font-weight:bold; font-size:18px;">Direcciones</span>
-            <i class="fa-solid fa-xmark close-sidebar"></i>
-        </div>
-        <div class="sidebar-list" id="sidebar-content"></div>
-    </div>
-
+    <div id="sidebar"><div class="sidebar-header"><span style="font-weight:bold; font-size:18px;">Direcciones</span><i class="fa-solid fa-xmark close-sidebar"></i></div><div class="sidebar-list" id="sidebar-content"></div></div>
     <div id="loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
     <script>
-        // CONFIGURACION SUPABASE 
-        // ¡IMPORTANTE! Asegúrate de que process.env reemplace esto, o usa tus strings aquí.
-        const SUPABASE_URL = 'process.env.SUPABASE_URL'; 
-        const SUPABASE_KEY = 'process.env.SUPABASE_SERVICE_ROLE_KEY'; 
-        
-        // CORRECCIÓN: Usamos _supabase para no chocar con la variable global 'supabase' de la librería
-        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // --- CLIENTE PURO (SIN LIBRERÍA SUPABASE) ---
+        let map, markers = [], allLocations = [], isAddingMode = false, showGlobals = true;
+        let token = null;
+        let myEmail = null;
+        let myId = null;
 
-        let map, currentUser = null;
-        let markers = [];
-        let allLocations = [];
-        let isAddingMode = false;
-        let showGlobals = true;
-
-        // --- 1. AUTH & INIT ---
-        async function init() {
-            // Usamos _supabase
-            const { data: { session } } = await _supabase.auth.getSession();
-            if (!session) {
-                window.location.href = 'login.html'; // Redirección
-                return;
+        // Recuperar Token del LocalStorage (Supabase Auth guarda ahí por defecto)
+        function getToken() {
+            // Busca cualquier clave que empiece con "sb-" y termine en "-token"
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                    const session = JSON.parse(localStorage.getItem(key));
+                    return session ? { token: session.access_token, user: session.user } : null;
+                }
             }
-            currentUser = session.user;
+            return null;
+        }
+
+        async function init() {
+            const sessionData = getToken();
+            if (!sessionData) return window.location.href = 'login.html'; // Si no hay token, al login
+            
+            token = sessionData.token;
+            myEmail = sessionData.user.email;
+            myId = sessionData.user.id;
+
             document.getElementById('loader').style.display = 'none';
             initMap();
             loadLocations();
         }
 
-        // --- 2. MAPA ---
+        // Helper para hacer fetch con el token
+        async function apiCall(url, method = 'GET', body = null) {
+            const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+            const opts = { method, headers };
+            if (body) opts.body = JSON.stringify(body);
+            
+            const res = await fetch(url, opts);
+            if (!res.ok) {
+                if(res.status === 401) window.location.href = 'login.html'; // Token expirado
+                throw new Error('Error API');
+            }
+            return res.json();
+        }
+
         function initMap() {
-            // San Juan, Argentina
             map = L.map('map', { zoomControl: false }).setView([-31.5375, -68.5364], 14);
-
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap contributors © CARTO',
-                subdomains: 'abcd',
-                maxZoom: 20
-            }).addTo(map);
-
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
         }
 
-        // --- 3. LOGICA DE DATOS ---
         async function loadLocations() {
-            // Usamos _supabase
-            let { data: direcciones, error } = await _supabase
-                .from('direcciones')
-                .select('*');
-
-            if (error) { console.error(error); return; }
-
-            allLocations = direcciones;
-            renderMarkers();
+            try {
+                allLocations = await apiCall('/api/mapa/direcciones');
+                renderMarkers();
+            } catch (e) { console.error(e); }
         }
 
         function renderMarkers() {
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
-
+            markers.forEach(m => map.removeLayer(m)); markers = [];
             allLocations.forEach(loc => {
                 if (loc.is_global && !showGlobals) return;
-
-                let color = '#d93025'; 
-                if (loc.is_global) color = '#1a73e8'; 
-                else if (loc.created_by !== currentUser.id) color = '#f9ab00';
-
-                const iconHtml = `<div style="background:${color}; width:16px; height:16px; border:2px solid white; border-radius:50%; box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`;
-                const customIcon = L.divIcon({
-                    className: 'custom-marker',
-                    html: iconHtml,
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                });
-
-                const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
+                const isMine = loc.created_by === myId;
+                const color = loc.is_global ? '#1a73e8' : (isMine ? '#d93025' : '#f9ab00');
                 
-                marker.on('click', () => {
-                    openDetails(loc);
-                    map.flyTo([loc.lat, loc.lng], 16, { duration: 0.8 });
-                });
-
-                markers.push(marker);
+                const icon = L.divIcon({ className: 'c-mark', html: `<div style="background:${color};width:16px;height:16px;border:2px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+                const m = L.marker([loc.lat, loc.lng], { icon }).addTo(map);
+                m.on('click', () => { openDetails(loc); map.flyTo([loc.lat, loc.lng], 16); });
+                markers.push(m);
             });
         }
 
-        // --- 4. UI INTERACTIONS ---
-
+        // --- UI ---
         const addBtn = document.getElementById('add-btn');
-        const centerPin = document.getElementById('center-pin-container');
-        const confirmBtn = document.getElementById('confirm-loc-btn');
-
-        addBtn.addEventListener('click', () => {
+        addBtn.onclick = () => {
             isAddingMode = !isAddingMode;
-            if (isAddingMode) {
-                centerPin.style.display = 'flex';
-                confirmBtn.style.display = 'block';
-                addBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-                closeSheet();
-            } else {
-                exitAddMode();
-            }
-        });
+            document.getElementById('center-pin-container').style.display = isAddingMode ? 'flex' : 'none';
+            document.getElementById('confirm-loc-btn').style.display = isAddingMode ? 'block' : 'none';
+            addBtn.innerHTML = isAddingMode ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-plus"></i>';
+            if(isAddingMode) closeSheet();
+        };
 
-        function exitAddMode() {
-            isAddingMode = false;
-            centerPin.style.display = 'none';
-            confirmBtn.style.display = 'none';
-            addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
-        }
-
-        confirmBtn.addEventListener('click', () => {
-            const center = map.getCenter();
-            exitAddMode();
-            openForm(null, center);
-        });
+        document.getElementById('confirm-loc-btn').onclick = () => {
+            const c = map.getCenter();
+            addBtn.click();
+            openForm(null, c);
+        };
 
         const sheet = document.getElementById('details-sheet');
-        const formView = document.getElementById('form-view');
-        const readView = document.getElementById('read-view');
+        const closeSheet = () => sheet.classList.remove('open');
+        document.getElementById('cancel-btn').onclick = closeSheet;
 
-        function openSheet() { sheet.classList.add('open'); }
-        function closeSheet() { sheet.classList.remove('open'); }
+        function openForm(loc, coords) {
+            document.getElementById('read-view').style.display = 'none';
+            document.getElementById('form-view').style.display = 'block';
+            document.getElementById('form-title').innerText = loc ? 'Editar' : 'Nueva';
+            document.getElementById('input-name').value = loc ? loc.name : '';
+            document.getElementById('input-notes').value = loc ? loc.notes || '' : '';
+            document.getElementById('input-gmaps').value = loc ? loc.gmaps_link || '' : '';
 
-        function openForm(locationData, coords = null) {
-            readView.style.display = 'none';
-            formView.style.display = 'block';
-            
-            const isEdit = !!locationData;
-            document.getElementById('form-title').innerText = isEdit ? 'Editar Dirección' : 'Nueva Dirección';
-            
-            document.getElementById('input-name').value = isEdit ? locationData.name : '';
-            document.getElementById('input-notes').value = isEdit ? locationData.notes || '' : '';
-            document.getElementById('input-gmaps').value = isEdit ? locationData.gmaps_link || '' : '';
-            
-            const membersSec = document.getElementById('members-section');
-            const membersList = document.getElementById('members-list');
-            const deleteBtn = document.getElementById('delete-btn');
-            
-            membersList.innerHTML = '';
-            
-            if (isEdit) {
-                if(locationData.created_by === currentUser.id) {
-                    membersSec.style.display = 'block';
-                    deleteBtn.style.display = 'block';
-                    
-                    (locationData.members || []).forEach(email => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `${email} <span style="color:red; cursor:pointer; margin-left:5px;" onclick="removeMember('${locationData.id}', '${email}')">x</span>`;
-                        membersList.appendChild(li);
-                    });
+            const memSec = document.getElementById('members-section');
+            const memList = document.getElementById('members-list');
+            memList.innerHTML = '';
 
-                    document.getElementById('btn-invite').onclick = () => inviteMember(locationData);
-                } else {
-                    membersSec.style.display = 'none';
-                    deleteBtn.style.display = 'none';
-                }
-                
-                document.getElementById('save-btn').onclick = () => saveLocation(locationData.id);
-                document.getElementById('delete-btn').onclick = () => deleteLocation(locationData.id);
-
+            if(loc && loc.created_by === myId) {
+                memSec.style.display = 'block';
+                document.getElementById('delete-btn').style.display = 'block';
+                (loc.members || []).forEach(email => {
+                    memList.innerHTML += `<li>${email} <span style="color:red;cursor:pointer;" onclick="manageMember('${loc.id}', '${email}', 'remove')">x</span></li>`;
+                });
+                document.getElementById('btn-invite').onclick = () => {
+                    const mail = document.getElementById('input-invite').value;
+                    if(mail) manageMember(loc.id, mail, 'add');
+                };
+                document.getElementById('save-btn').onclick = () => saveLoc(loc.id);
+                document.getElementById('delete-btn').onclick = () => deleteLoc(loc.id);
             } else {
-                membersSec.style.display = 'none';
-                deleteBtn.style.display = 'none';
-                document.getElementById('save-btn').onclick = () => saveLocation(null, coords);
+                memSec.style.display = 'none';
+                document.getElementById('delete-btn').style.display = 'none';
+                document.getElementById('save-btn').onclick = () => saveLoc(null, coords);
             }
-
-            document.getElementById('cancel-btn').onclick = closeSheet;
-            openSheet();
+            sheet.classList.add('open');
         }
 
         function openDetails(loc) {
-            formView.style.display = 'none';
-            readView.style.display = 'block';
-
+            document.getElementById('form-view').style.display = 'none';
+            document.getElementById('read-view').style.display = 'block';
             document.getElementById('view-name').innerText = loc.name;
-            document.getElementById('view-notes').innerText = loc.notes || 'Sin notas';
-            
-            const gmapsBtn = document.getElementById('view-gmaps');
-            if (loc.gmaps_link) {
-                gmapsBtn.href = loc.gmaps_link;
-                gmapsBtn.style.display = 'block';
-            } else {
-                gmapsBtn.style.display = 'none';
-            }
+            document.getElementById('view-notes').innerText = loc.notes || '';
+            const btnLink = document.getElementById('view-gmaps');
+            btnLink.href = loc.gmaps_link || '#';
+            btnLink.style.display = loc.gmaps_link ? 'block' : 'none';
 
             const editBtn = document.getElementById('edit-btn');
             const leaveBtn = document.getElementById('leave-btn');
 
-            if (loc.created_by === currentUser.id) {
-                editBtn.innerText = 'Editar / Invitar';
-                editBtn.style.display = 'block';
-                editBtn.onclick = () => openForm(loc);
+            if (loc.created_by === myId) {
+                editBtn.style.display = 'block'; editBtn.onclick = () => openForm(loc);
                 leaveBtn.style.display = 'none';
             } else if (loc.is_global) {
-                editBtn.style.display = 'none';
-                leaveBtn.style.display = 'none';
+                editBtn.style.display = 'none'; leaveBtn.style.display = 'none';
             } else {
                 editBtn.style.display = 'none'; 
                 leaveBtn.style.display = 'block';
-                leaveBtn.onclick = () => leaveLocation(loc);
+                leaveBtn.onclick = () => manageMember(loc.id, myEmail, 'remove'); // Salir
             }
-
-            openSheet();
+            sheet.classList.add('open');
         }
 
-        // --- 5. OPERACIONES DB (usando _supabase) ---
-        
-        async function saveLocation(id, coords = null) {
-            const name = document.getElementById('input-name').value;
-            const notes = document.getElementById('input-notes').value;
-            const link = document.getElementById('input-gmaps').value;
-
-            if(!name) return alert('Ponle un nombre');
-
-            let error;
-            if (id) {
-                // Update
-                ({ error } = await _supabase.from('direcciones').update({
-                    name, notes, gmaps_link: link
-                }).eq('id', id));
-            } else {
-                // Insert
-                ({ error } = await _supabase.from('direcciones').insert({
-                    name, notes, gmaps_link: link,
-                    lat: coords.lat, lng: coords.lng,
-                    owner_email: currentUser.email
-                }));
-            }
-
-            if (error) alert('Error: ' + error.message);
-            else {
-                closeSheet();
-                loadLocations();
-            }
-        }
-
-        async function deleteLocation(id) {
-            if(!confirm('¿Borrar dirección?')) return;
-            const { error } = await _supabase.from('direcciones').delete().eq('id', id);
-            if (!error) { closeSheet(); loadLocations(); }
-        }
-
-        async function inviteMember(loc) {
-            const email = document.getElementById('input-invite').value;
-            if(!email) return;
-            
-            const newMembers = [...(loc.members || []), email];
-            const { error } = await _supabase.from('direcciones')
-                .update({ members: newMembers })
-                .eq('id', loc.id);
-            
-            if(!error) {
-                loc.members = newMembers;
-                openForm(loc); 
-            }
-        }
-
-        async function removeMember(id, emailToRemove) {
-            const loc = allLocations.find(l => l.id === id);
-            const newMembers = loc.members.filter(m => m !== emailToRemove);
-            
-            const { error } = await _supabase.from('direcciones').update({ members: newMembers }).eq('id', id);
-            if(!error) {
-                loc.members = newMembers;
-                openForm(loc);
-            }
-        }
-
-        async function leaveLocation(loc) {
-            if(!confirm('¿Dejar de ver esta dirección?')) return;
-            const newMembers = loc.members.filter(m => m !== currentUser.email);
-            const { error } = await _supabase.from('direcciones').update({ members: newMembers }).eq('id', loc.id);
-            if(!error) {
-                closeSheet();
-                loadLocations();
-            }
-        }
-
-        // --- 6. SIDEBAR & FILTROS ---
-        const listBtn = document.getElementById('list-btn');
-        const sidebar = document.getElementById('sidebar');
-        const closeSidebar = document.querySelector('.close-sidebar');
-        const sidebarContent = document.getElementById('sidebar-content');
-
-        listBtn.onclick = () => { renderList(); sidebar.classList.add('open'); };
-        closeSidebar.onclick = () => sidebar.classList.remove('open');
-
-        const globalToggle = document.getElementById('global-toggle');
-        globalToggle.onclick = () => {
-            showGlobals = !showGlobals;
-            globalToggle.classList.toggle('active');
-            renderMarkers();
-            if(sidebar.classList.contains('open')) renderList();
-        };
-
-        function renderList() {
-            sidebarContent.innerHTML = '';
-            const myLocs = [];
-            const globalLocs = [];
-            const sharedGroups = {};
-
-            allLocations.forEach(loc => {
-                if (loc.is_global) {
-                    if(showGlobals) globalLocs.push(loc);
-                } else if (loc.created_by === currentUser.id) {
-                    myLocs.push(loc);
-                } else {
-                    const owner = loc.owner_email || 'Desconocido';
-                    if(!sharedGroups[owner]) sharedGroups[owner] = [];
-                    sharedGroups[owner].push(loc);
-                }
-            });
-
-            const createItem = (loc) => {
-                const div = document.createElement('div');
-                div.className = 'list-item';
-                div.innerHTML = `
-                    <div class="item-name">${loc.name} ${loc.is_global ? '<span class="global-badge">Global</span>' : ''}</div>
-                    <div class="item-meta">${loc.notes || ''}</div>
-                `;
-                div.onclick = () => {
-                    sidebar.classList.remove('open');
-                    map.flyTo([loc.lat, loc.lng], 16);
-                    openDetails(loc);
-                };
-                return div;
+        async function saveLoc(id, coords) {
+            const body = {
+                name: document.getElementById('input-name').value,
+                notes: document.getElementById('input-notes').value,
+                gmaps_link: document.getElementById('input-gmaps').value
             };
-
-            if (globalLocs.length > 0) {
-                sidebarContent.innerHTML += `<div class="list-group-title">Globales</div>`;
-                globalLocs.forEach(l => sidebarContent.appendChild(createItem(l)));
-            }
-
-            if (myLocs.length > 0) {
-                sidebarContent.innerHTML += `<div class="list-group-title">Mis Direcciones</div>`;
-                myLocs.forEach(l => sidebarContent.appendChild(createItem(l)));
-            }
-
-            Object.keys(sharedGroups).forEach(owner => {
-                sidebarContent.innerHTML += `<div class="list-group-title">De: ${owner}</div>`;
-                sharedGroups[owner].forEach(l => sidebarContent.appendChild(createItem(l)));
-            });
+            if(!body.name) return;
+            
+            try {
+                if(id) await apiCall(`/api/mapa/direcciones/${id}`, 'PUT', body);
+                else await apiCall('/api/mapa/direcciones', 'POST', { ...body, lat: coords.lat, lng: coords.lng });
+                closeSheet(); loadLocations();
+            } catch(e) { alert(e.message); }
         }
+
+        async function deleteLoc(id) {
+            if(!confirm('¿Borrar?')) return;
+            try { await apiCall(`/api/mapa/direcciones/${id}`, 'DELETE'); closeSheet(); loadLocations(); } catch(e){}
+        }
+
+        async function manageMember(id, email, action) {
+            try {
+                const res = await apiCall('/api/mapa/members', 'POST', { id, email, action });
+                // Actualizar UI local
+                const loc = allLocations.find(l => l.id === id);
+                loc.members = res.members;
+                if(action === 'remove' && email === myEmail) { closeSheet(); loadLocations(); }
+                else openForm(loc);
+            } catch(e){}
+        }
+
+        // Sidebar & Toggles
+        const sb = document.getElementById('sidebar');
+        document.getElementById('list-btn').onclick = () => {
+            const c = document.getElementById('sidebar-content'); c.innerHTML = '';
+            const mkItem = (l, b) => {
+                const d = document.createElement('div'); d.className = 'list-item';
+                d.innerHTML = `<div class="item-name">${l.name} ${b?'<span class="global-badge">'+b+'</span>':''}</div><div class="item-meta">${l.notes||''}</div>`;
+                d.onclick = () => { sb.classList.remove('open'); map.flyTo([l.lat, l.lng], 16); openDetails(l); };
+                c.appendChild(d);
+            };
+            
+            allLocations.filter(l => l.is_global && showGlobals).forEach(l => mkItem(l, 'Global'));
+            allLocations.filter(l => l.created_by === myId && !l.is_global).forEach(l => mkItem(l));
+            allLocations.filter(l => l.created_by !== myId && !l.is_global).forEach(l => mkItem(l, l.owner_email));
+            sb.classList.add('open');
+        };
+        document.querySelector('.close-sidebar').onclick = () => sb.classList.remove('open');
+        document.getElementById('global-toggle').onclick = (e) => { showGlobals = !showGlobals; e.target.classList.toggle('active'); renderMarkers(); };
 
         init();
-
     </script>
 </body>
 </html>
