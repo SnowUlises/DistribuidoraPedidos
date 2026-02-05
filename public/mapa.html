@@ -47,7 +47,7 @@
             width: 40px;
             height: 40px;
             color: #555;
-            border-radius: 8px; /* Más cuadrado estilo search bar de Maps */
+            border-radius: 8px;
         }
 
         /* Boton Toggle Globales (Superior Derecha) */
@@ -68,17 +68,17 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -100%); /* La punta del pin en el centro */
+            transform: translate(-50%, -100%);
             z-index: 900;
-            pointer-events: none; /* Dejar pasar clicks al mapa */
-            display: none; /* Oculto por defecto */
+            pointer-events: none;
+            display: none;
             flex-direction: column;
             align-items: center;
         }
         .pin-icon { font-size: 40px; color: #ea4335; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
         .pin-shadow { width: 10px; height: 4px; background: rgba(0,0,0,0.3); border-radius: 50%; margin-top: -5px; }
 
-        /* Boton Confirmar Ubicación (Aparece al añadir) */
+        /* Boton Confirmar Ubicación */
         #confirm-loc-btn {
             position: absolute;
             bottom: 40px;
@@ -95,7 +95,7 @@
             display: none;
         }
 
-        /* Modal / Bottom Sheet para Detalles */
+        /* Bottom Sheet */
         .bottom-sheet {
             position: absolute;
             bottom: 0;
@@ -131,7 +131,7 @@
         .btn-primary { background: #1a73e8; color: white; }
         .btn-danger { background: #d93025; color: white; margin-top: 5px; }
 
-        /* Lista Lateral (Sidebar) */
+        /* Sidebar */
         #sidebar {
             position: absolute;
             top: 0; left: 0; height: 100%; width: 300px;
@@ -156,10 +156,8 @@
         .item-meta { font-size: 12px; color: #70757a; margin-top: 2px; }
         .global-badge { display: inline-block; background: #e8f0fe; color: #1a73e8; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
 
-        /* Boton Cerrar Sidebar */
         .close-sidebar { cursor: pointer; font-size: 20px; padding: 5px; }
 
-        /* Loader */
         #loader { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(255,255,255,0.8); z-index: 2000; 
@@ -238,8 +236,7 @@
             <span style="font-weight:bold; font-size:18px;">Direcciones</span>
             <i class="fa-solid fa-xmark close-sidebar"></i>
         </div>
-        <div class="sidebar-list" id="sidebar-content">
-            </div>
+        <div class="sidebar-list" id="sidebar-content"></div>
     </div>
 
     <div id="loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
@@ -248,14 +245,13 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <script>
-        // CONFIGURACION SUPABASE (Rellena esto si no se inyecta por servidor)
-        // NOTA: Usa la ANON_KEY para seguridad del cliente. Si usas SERVICE_ROLE, cualquiera puede borrar tu DB.
-        const SUPABASE_URL = 'process.env.SUPABASE_URL'; // Reemplazar o asegurar inyeccion
-        const SUPABASE_KEY = 'process.env.SUPABASE_SERVICE_ROLE_KEY'; // O process.env.SUPABASE_KEY
+        // CONFIGURACION SUPABASE 
+        // ¡IMPORTANTE! Asegúrate de que process.env reemplace esto, o usa tus strings aquí.
+        const SUPABASE_URL = 'process.env.SUPABASE_URL'; 
+        const SUPABASE_KEY = 'process.env.SUPABASE_SERVICE_ROLE_KEY'; 
         
-        // Inicializar Cliente
-        // (En un entorno real sin process.env en navegador, estas variables deben ser strings reales)
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // CORRECCIÓN: Usamos _supabase para no chocar con la variable global 'supabase' de la librería
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let map, currentUser = null;
         let markers = [];
@@ -265,7 +261,8 @@
 
         // --- 1. AUTH & INIT ---
         async function init() {
-            const { data: { session } } = await supabase.auth.getSession();
+            // Usamos _supabase
+            const { data: { session } } = await _supabase.auth.getSession();
             if (!session) {
                 window.location.href = 'login.html'; // Redirección
                 return;
@@ -281,26 +278,19 @@
             // San Juan, Argentina
             map = L.map('map', { zoomControl: false }).setView([-31.5375, -68.5364], 14);
 
-            // Tiles: CartoDB Positron (Limpio, sin negocios)
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                attribution: '© OpenStreetMap contributors © CARTO',
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(map);
 
-            // Zoom abajo derecha para no estorbar arriba
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
-
-            // Evento: Al mover el mapa en modo añadir
-            map.on('move', () => {
-                // Solo estético si quisieramos animar el pin
-            });
         }
 
         // --- 3. LOGICA DE DATOS ---
         async function loadLocations() {
-            // Consulta: Trae todo lo que la RLS permita (Propios, Compartidos, Globales)
-            let { data: direcciones, error } = await supabase
+            // Usamos _supabase
+            let { data: direcciones, error } = await _supabase
                 .from('direcciones')
                 .select('*');
 
@@ -311,20 +301,16 @@
         }
 
         function renderMarkers() {
-            // Limpiar marcadores
             markers.forEach(m => map.removeLayer(m));
             markers = [];
 
             allLocations.forEach(loc => {
-                // Filtro visual de Globales
                 if (loc.is_global && !showGlobals) return;
 
-                // Color del marcador: Global(Azul Oscuro), Propio(Rojo), Compartido(Naranja)
-                let color = '#d93025'; // Default rojo
-                if (loc.is_global) color = '#1a73e8'; // Azul
-                else if (loc.created_by !== currentUser.id) color = '#f9ab00'; // Naranja (Compartido)
+                let color = '#d93025'; 
+                if (loc.is_global) color = '#1a73e8'; 
+                else if (loc.created_by !== currentUser.id) color = '#f9ab00';
 
-                // Crear icono circular simple
                 const iconHtml = `<div style="background:${color}; width:16px; height:16px; border:2px solid white; border-radius:50%; box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`;
                 const customIcon = L.divIcon({
                     className: 'custom-marker',
@@ -335,7 +321,6 @@
 
                 const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
                 
-                // Click en marcador
                 marker.on('click', () => {
                     openDetails(loc);
                     map.flyTo([loc.lat, loc.lng], 16, { duration: 0.8 });
@@ -347,7 +332,6 @@
 
         // --- 4. UI INTERACTIONS ---
 
-        // A. MODO AÑADIR (UBER STYLE)
         const addBtn = document.getElementById('add-btn');
         const centerPin = document.getElementById('center-pin-container');
         const confirmBtn = document.getElementById('confirm-loc-btn');
@@ -374,10 +358,9 @@
         confirmBtn.addEventListener('click', () => {
             const center = map.getCenter();
             exitAddMode();
-            openForm(null, center); // Null ID = Nueva
+            openForm(null, center);
         });
 
-        // B. DETALLES / FORMULARIO
         const sheet = document.getElementById('details-sheet');
         const formView = document.getElementById('form-view');
         const readView = document.getElementById('read-view');
@@ -385,7 +368,6 @@
         function openSheet() { sheet.classList.add('open'); }
         function closeSheet() { sheet.classList.remove('open'); }
 
-        // Abrir Formulario (Crear o Editar)
         function openForm(locationData, coords = null) {
             readView.style.display = 'none';
             formView.style.display = 'block';
@@ -393,12 +375,10 @@
             const isEdit = !!locationData;
             document.getElementById('form-title').innerText = isEdit ? 'Editar Dirección' : 'Nueva Dirección';
             
-            // Llenar datos
             document.getElementById('input-name').value = isEdit ? locationData.name : '';
             document.getElementById('input-notes').value = isEdit ? locationData.notes || '' : '';
             document.getElementById('input-gmaps').value = isEdit ? locationData.gmaps_link || '' : '';
             
-            // Logica Miembros
             const membersSec = document.getElementById('members-section');
             const membersList = document.getElementById('members-list');
             const deleteBtn = document.getElementById('delete-btn');
@@ -406,31 +386,26 @@
             membersList.innerHTML = '';
             
             if (isEdit) {
-                // Solo mostrar seccion miembros si soy el creador
                 if(locationData.created_by === currentUser.id) {
                     membersSec.style.display = 'block';
                     deleteBtn.style.display = 'block';
                     
-                    // Renderizar lista
                     (locationData.members || []).forEach(email => {
                         const li = document.createElement('li');
                         li.innerHTML = `${email} <span style="color:red; cursor:pointer; margin-left:5px;" onclick="removeMember('${locationData.id}', '${email}')">x</span>`;
                         membersList.appendChild(li);
                     });
 
-                    // Setup boton invitar
                     document.getElementById('btn-invite').onclick = () => inviteMember(locationData);
                 } else {
                     membersSec.style.display = 'none';
                     deleteBtn.style.display = 'none';
                 }
                 
-                // Guardar ID en boton
                 document.getElementById('save-btn').onclick = () => saveLocation(locationData.id);
                 document.getElementById('delete-btn').onclick = () => deleteLocation(locationData.id);
 
             } else {
-                // Nuevo
                 membersSec.style.display = 'none';
                 deleteBtn.style.display = 'none';
                 document.getElementById('save-btn').onclick = () => saveLocation(null, coords);
@@ -440,7 +415,6 @@
             openSheet();
         }
 
-        // Abrir Vista Lectura
         function openDetails(loc) {
             formView.style.display = 'none';
             readView.style.display = 'block';
@@ -459,18 +433,16 @@
             const editBtn = document.getElementById('edit-btn');
             const leaveBtn = document.getElementById('leave-btn');
 
-            // Permisos
             if (loc.created_by === currentUser.id) {
                 editBtn.innerText = 'Editar / Invitar';
                 editBtn.style.display = 'block';
                 editBtn.onclick = () => openForm(loc);
                 leaveBtn.style.display = 'none';
             } else if (loc.is_global) {
-                editBtn.style.display = 'none'; // Globales solo lectura
+                editBtn.style.display = 'none';
                 leaveBtn.style.display = 'none';
             } else {
-                // Compartido
-                editBtn.style.display = 'none'; // Solo lectura para invitados segun instruccion
+                editBtn.style.display = 'none'; 
                 leaveBtn.style.display = 'block';
                 leaveBtn.onclick = () => leaveLocation(loc);
             }
@@ -478,7 +450,7 @@
             openSheet();
         }
 
-        // --- 5. OPERACIONES DB ---
+        // --- 5. OPERACIONES DB (usando _supabase) ---
         
         async function saveLocation(id, coords = null) {
             const name = document.getElementById('input-name').value;
@@ -490,15 +462,15 @@
             let error;
             if (id) {
                 // Update
-                ({ error } = await supabase.from('direcciones').update({
+                ({ error } = await _supabase.from('direcciones').update({
                     name, notes, gmaps_link: link
                 }).eq('id', id));
             } else {
                 // Insert
-                ({ error } = await supabase.from('direcciones').insert({
+                ({ error } = await _supabase.from('direcciones').insert({
                     name, notes, gmaps_link: link,
                     lat: coords.lat, lng: coords.lng,
-                    owner_email: currentUser.email // Guardamos email para agrupar
+                    owner_email: currentUser.email
                 }));
             }
 
@@ -511,7 +483,7 @@
 
         async function deleteLocation(id) {
             if(!confirm('¿Borrar dirección?')) return;
-            const { error } = await supabase.from('direcciones').delete().eq('id', id);
+            const { error } = await _supabase.from('direcciones').delete().eq('id', id);
             if (!error) { closeSheet(); loadLocations(); }
         }
 
@@ -520,23 +492,21 @@
             if(!email) return;
             
             const newMembers = [...(loc.members || []), email];
-            const { error } = await supabase.from('direcciones')
+            const { error } = await _supabase.from('direcciones')
                 .update({ members: newMembers })
                 .eq('id', loc.id);
             
             if(!error) {
-                // Actualizar UI localmente rapido
                 loc.members = newMembers;
                 openForm(loc); 
             }
         }
 
         async function removeMember(id, emailToRemove) {
-            // Logica: leer members actuales, filtrar, update
             const loc = allLocations.find(l => l.id === id);
             const newMembers = loc.members.filter(m => m !== emailToRemove);
             
-            const { error } = await supabase.from('direcciones').update({ members: newMembers }).eq('id', id);
+            const { error } = await _supabase.from('direcciones').update({ members: newMembers }).eq('id', id);
             if(!error) {
                 loc.members = newMembers;
                 openForm(loc);
@@ -545,9 +515,8 @@
 
         async function leaveLocation(loc) {
             if(!confirm('¿Dejar de ver esta dirección?')) return;
-            // Sacar mi email de la lista
             const newMembers = loc.members.filter(m => m !== currentUser.email);
-            const { error } = await supabase.from('direcciones').update({ members: newMembers }).eq('id', loc.id);
+            const { error } = await _supabase.from('direcciones').update({ members: newMembers }).eq('id', loc.id);
             if(!error) {
                 closeSheet();
                 loadLocations();
@@ -563,22 +532,19 @@
         listBtn.onclick = () => { renderList(); sidebar.classList.add('open'); };
         closeSidebar.onclick = () => sidebar.classList.remove('open');
 
-        // Toggle Globales
         const globalToggle = document.getElementById('global-toggle');
         globalToggle.onclick = () => {
             showGlobals = !showGlobals;
             globalToggle.classList.toggle('active');
-            renderMarkers(); // Re-renderizar mapa
-            if(sidebar.classList.contains('open')) renderList(); // Re-renderizar lista
+            renderMarkers();
+            if(sidebar.classList.contains('open')) renderList();
         };
 
         function renderList() {
             sidebarContent.innerHTML = '';
-
-            // Agrupar
             const myLocs = [];
             const globalLocs = [];
-            const sharedGroups = {}; // { 'email_owner': [loc, loc] }
+            const sharedGroups = {};
 
             allLocations.forEach(loc => {
                 if (loc.is_global) {
@@ -586,14 +552,12 @@
                 } else if (loc.created_by === currentUser.id) {
                     myLocs.push(loc);
                 } else {
-                    // Compartido
                     const owner = loc.owner_email || 'Desconocido';
                     if(!sharedGroups[owner]) sharedGroups[owner] = [];
                     sharedGroups[owner].push(loc);
                 }
             });
 
-            // Función Helper para crear items
             const createItem = (loc) => {
                 const div = document.createElement('div');
                 div.className = 'list-item';
@@ -609,26 +573,22 @@
                 return div;
             };
 
-            // Render Globales
             if (globalLocs.length > 0) {
                 sidebarContent.innerHTML += `<div class="list-group-title">Globales</div>`;
                 globalLocs.forEach(l => sidebarContent.appendChild(createItem(l)));
             }
 
-            // Render Mías
             if (myLocs.length > 0) {
                 sidebarContent.innerHTML += `<div class="list-group-title">Mis Direcciones</div>`;
                 myLocs.forEach(l => sidebarContent.appendChild(createItem(l)));
             }
 
-            // Render Compartidas (Por usuario)
             Object.keys(sharedGroups).forEach(owner => {
                 sidebarContent.innerHTML += `<div class="list-group-title">De: ${owner}</div>`;
                 sharedGroups[owner].forEach(l => sidebarContent.appendChild(createItem(l)));
             });
         }
 
-        // --- ARRANQUE ---
         init();
 
     </script>
