@@ -17,38 +17,56 @@
         #map { width: 100%; height: 100%; z-index: 1; }
         .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 
-        /* ETIQUETAS DE NOMBRE (TAGS) */
+        /* --- ETIQUETAS TIPO BURBUJA (NUEVO ESTILO) --- */
         .lbl-tag {
-            background: rgba(255, 255, 255, 0.9);
+            background: #fff;
             border: 1px solid #ccc;
             border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
             color: #333;
             font-family: 'Inter', sans-serif;
             font-weight: 600;
             text-align: center;
             white-space: nowrap;
+            position: relative;
+            /* Quitamos márgenes forzados de leaflet */
+            margin-top: 0 !important;
+            margin-left: 0 !important;
+            margin-bottom: 6px !important; /* Espacio para el pico */
         }
-        /* Eliminar flechita por defecto de leaflet tooltip */
-        .leaflet-tooltip-top:before { display: none; }
 
-        /* Estilos dinámicos según Zoom (Clases agregadas por JS al mapa) */
+        /* El "pico" de la burbuja */
+        .lbl-tag::after {
+            content: '';
+            position: absolute;
+            bottom: -5px; /* Posición debajo de la caja */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #fff; /* Color del fondo de la burbuja */
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1)); /* Sombra sutil para el pico */
+        }
+        
+        /* Estilos dinámicos según Zoom */
         .zoom-low .lbl-tag { display: none; } /* Lejos: Oculto */
         
-        .zoom-mid .lbl-tag { /* Medio: Pequeño y cortado */
-            font-size: 10px;
-            padding: 0 4px;
-            max-width: 60px;
+        .zoom-mid .lbl-tag { /* Medio: Muy pequeño y cortado */
+            font-size: 9px;
+            padding: 1px 3px;
+            max-width: 50px;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-top: -38px !important; /* Ajuste altura */
         }
 
-        .zoom-high .lbl-tag { /* Cerca: Grande y completo */
-            font-size: 12px;
-            padding: 2px 6px;
-            max-width: none;
-            margin-top: -42px !important;
+        .zoom-high .lbl-tag { /* Cerca: Pequeño pero legible */
+            font-size: 11px;
+            padding: 2px 5px;
+            max-width: 120px; /* Límite para nombres muy largos */
+            overflow: hidden;
+            text-overflow: ellipsis;
             z-index: 1000;
         }
 
@@ -355,8 +373,8 @@
                 const icon = L.divIcon({ className:'c-pin', html:`<div style="background:${color};width:16px;height:16px;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>`, iconSize:[24,24], iconAnchor:[12,12] });
                 const m = L.marker([loc.lat, loc.lng], {icon}).addTo(map);
                 
-                // TAG BINDING
-                m.bindTooltip(loc.name, { permanent: true, direction: 'top', className: 'lbl-tag', offset: [0, -10] });
+                // TAG BINDING (Ajustado offset para que pegue con la burbuja)
+                m.bindTooltip(loc.name, { permanent: true, direction: 'top', className: 'lbl-tag', offset: [0, -2] });
 
                 m.on('click', () => { currentLoc=loc; openSheet('details'); map.flyTo([loc.lat, loc.lng], 16); });
                 markers.push(m);
