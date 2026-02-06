@@ -86,6 +86,10 @@
         </div>
 
         <div class="header-buttons flex items-center gap-2">
+            <a href="mapa.html" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
+                <i data-lucide="map" class="w-4 h-4"></i> <span>Mapa</span>
+            </a>
+
             <a id="btnUsuario" href="login.html" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors">
                 <i data-lucide="user" class="w-4 h-4"></i> <span>Ingresar</span>
             </a>
@@ -565,9 +569,6 @@ actualizarContadorCarrito();
 cargarProductos();
 checkUser(); 
 
-// --- ACTUALIZACIÓN DE STOCK EN SEGUNDO PLANO ---
-// Se ejecuta cada 10 minutos (600,000 ms) para traer los datos nuevos del servidor
-// sin que el usuario tenga que recargar la página.
 setInterval(() => {
     console.log("Actualizando stock en segundo plano...");
     cargarProductos();
@@ -588,7 +589,3 @@ faviconLink.href = getImageUrl('icono.png');
 </script>
 </body>
 </html>
-
-
-
-
