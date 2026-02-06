@@ -10,196 +10,133 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* --- RESET & BASICS --- */
+        /* ESTILOS BASE */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #f5f5f5; color: #1f1f1f; }
         
-        /* --- MAPA --- */
         #map { width: 100%; height: 100%; z-index: 1; }
+        .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
+
+        /* UI SUPERIOR */
+        .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         
-        /* Ocultar controles feos de Leaflet */
-        .leaflet-control-attribution { display: none !important; } 
-        .leaflet-control-zoom { display: none !important; }
-
-        /* --- TOP UI (Barra estilo Google Maps) --- */
-        .top-ui {
-            position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000;
-            display: flex; flex-direction: column; gap: 10px; pointer-events: none;
-        }
-
-        /* Barra de búsqueda falsa (Botón Menú) */
         .search-bar {
-            background: white;
-            border-radius: 12px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            pointer-events: auto;
-            cursor: pointer;
-            transition: transform 0.1s;
+            background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: transform 0.1s;
         }
         .search-bar:active { transform: scale(0.98); }
         .search-icon { color: #5f6368; font-size: 18px; margin-right: 12px; }
-        .search-text { font-size: 15px; color: #3c4043; font-weight: 500; }
-        .menu-dots { margin-left: auto; color: #5f6368; }
+        .search-text { font-size: 15px; color: #3c4043; font-weight: 600; }
 
-        /* Filtros (Chips) */
-        .filters-row {
-            display: flex; gap: 8px; pointer-events: none;
-        }
+        .filters-row { display: flex; gap: 8px; pointer-events: none; }
         .filter-chip {
-            background: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #5f6368;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-            pointer-events: auto;
-            cursor: pointer;
-            display: flex; align-items: center; gap: 6px;
-            transition: all 0.2s;
-            border: 1px solid transparent;
+            background: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #5f6368;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid transparent;
         }
-        .filter-chip.active {
-            background: #e8f0fe;
-            color: #1a73e8;
-            border-color: #1a73e8;
-        }
+        .filter-chip.active { background: #e8f0fe; color: #1a73e8; border-color: #1a73e8; }
 
-        /* --- BOTÓN FLOTANTE (FAB) --- */
-        .fab-container {
-            position: absolute; bottom: 32px; right: 20px; z-index: 1000;
-        }
+        /* FAB (Botón +) */
+        .fab-container { position: absolute; bottom: 32px; right: 20px; z-index: 1000; }
         .fab {
-            width: 56px; height: 56px;
-            background: #1a1a1a; /* Negro moderno */
-            border-radius: 16px; /* Squircle */
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 56px; height: 56px; background: #1a1a1a; border-radius: 18px;
+            display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s;
         }
         .fab:active { transform: scale(0.90); }
 
-        /* --- UI AGREGAR (PIN CENTRAL) --- */
+        /* UI AGREGAR */
         #center-pin-container {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%);
-            z-index: 900; pointer-events: none; display: none;
-            flex-direction: column; align-items: center;
+            z-index: 900; pointer-events: none; display: none; flex-direction: column; align-items: center;
         }
-        .pin-bounce { animation: bounce 0.4s ease infinite alternate; }
-        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
-        
         .pin-head { font-size: 44px; color: #ea4335; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
         .pin-shadow { width: 12px; height: 4px; background: rgba(0,0,0,0.2); border-radius: 50%; margin-top: -6px; }
-
+        
         .confirm-btn-float {
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: #1a1a1a; color: white;
-            padding: 14px 28px; border-radius: 30px;
-            font-weight: 600; font-size: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            z-index: 1001; cursor: pointer; display: none;
-            width: max-content; text-align: center;
+            background: #1a1a1a; color: white; padding: 14px 28px; border-radius: 30px;
+            font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 1001; cursor: pointer; display: none; width: max-content;
         }
 
-        /* --- BOTTOM SHEET (PANEL) --- */
+        /* BOTTOM SHEET */
         .sheet-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 1001; opacity: 0; pointer-events: none;
-            transition: opacity 0.3s;
+            background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; pointer-events: none; transition: 0.3s;
         }
         .sheet-overlay.open { opacity: 1; pointer-events: auto; }
 
         .sheet {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: white;
-            border-radius: 24px 24px 0 0;
-            z-index: 1002;
-            transform: translateY(105%);
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-            padding-bottom: 30px;
+            position: fixed; bottom: 0; left: 0; width: 100%; background: white;
+            border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: 30px;
             max-height: 85vh; overflow-y: auto;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
         }
         .sheet.open { transform: translateY(0); }
-
-        .sheet-header {
-            display: flex; justify-content: center; padding: 12px;
-        }
-        .sheet-drag-handle {
-            width: 40px; height: 5px; background: #e0e0e0; border-radius: 10px;
-        }
+        .sheet-header { display: flex; justify-content: center; padding: 12px; }
+        .sheet-drag { width: 40px; height: 5px; background: #e0e0e0; border-radius: 10px; }
         .sheet-body { padding: 0 24px 24px 24px; }
 
-        /* Estilos de Formulario */
-        h2 { margin: 0 0 20px 0; font-size: 20px; font-weight: 700; }
-        
-        .modern-input-group { margin-bottom: 16px; }
-        .modern-input-group label { display: block; font-size: 12px; font-weight: 600; color: #5f6368; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* INPUTS & BOTONES */
+        h2 { margin: 0 0 20px 0; font-size: 22px; font-weight: 700; color: #202124; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 12px; font-weight: 700; color: #5f6368; margin-bottom: 6px; text-transform: uppercase; }
         .modern-input {
-            width: 100%; padding: 14px 16px;
-            background: #f2f2f2; border: none; border-radius: 12px;
-            font-size: 16px; color: #1f1f1f; font-family: 'Inter', sans-serif;
-            transition: background 0.2s;
+            width: 100%; padding: 14px 16px; background: #f1f3f4; border: none; border-radius: 12px;
+            font-size: 16px; color: #1f1f1f; transition: 0.2s;
         }
-        .modern-input:focus { outline: none; background: #e8e8e8; }
+        .modern-input:focus { outline: 2px solid #1a73e8; background: white; }
 
-        /* Botones del Panel */
-        .btn-block {
-            width: 100%; padding: 16px; border: none; border-radius: 12px;
-            font-size: 16px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            margin-top: 12px; transition: transform 0.1s;
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .btn {
+            flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.1s;
         }
-        .btn-block:active { transform: scale(0.98); }
-        
+        .btn:active { transform: scale(0.98); }
         .btn-primary { background: #1a73e8; color: white; }
-        .btn-secondary { background: #f1f3f4; color: #3c4043; }
+        .btn-share { background: #e8f0fe; color: #1a73e8; }
+        .btn-sec { background: #f1f3f4; color: #3c4043; }
         .btn-danger { background: #fce8e6; color: #c5221f; }
 
-        /* --- SIDEBAR (LISTA) --- */
+        /* LISTA DE USUARIOS (SHARE) */
+        .user-list-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px; border-bottom: 1px solid #f0f0f0;
+        }
+        .user-info { font-weight: 500; font-size: 15px; }
+        .user-email { font-size: 12px; color: #70757a; }
+        
+        /* Toggle Switch */
+        .toggle-switch { position: relative; width: 44px; height: 24px; }
+        .toggle-input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        .toggle-input:checked + .toggle-slider { background-color: #1a73e8; }
+        .toggle-input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* SIDEBAR (MENU) */
         .sidebar {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 2000;
-            transform: translateX(-100%); transition: transform 0.3s ease;
-            display: flex; flex-direction: column;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000;
+            transform: translateX(-100%); transition: 0.3s ease; display: flex; flex-direction: column;
         }
         .sidebar.open { transform: translateX(0); }
-        .sidebar-header {
-            padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .sidebar-title { font-size: 20px; font-weight: 700; }
-        .sidebar-close { font-size: 24px; padding: 8px; cursor: pointer; color: #5f6368; }
-        
-        .sidebar-content { flex: 1; overflow-y: auto; padding: 16px; }
-        
-        .place-item {
-            display: flex; flex-direction: column;
-            padding: 16px; border-bottom: 1px solid #f5f5f5;
-            cursor: pointer;
-        }
-        .place-item:active { background: #fafafa; }
-        .place-name { font-size: 16px; font-weight: 600; color: #202124; }
-        .place-meta { font-size: 13px; color: #70757a; margin-top: 4px; }
-        .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
-        .badge-global { background: #e8f0fe; color: #1a73e8; }
-        .badge-shared { background: #feefc3; color: #e37400; }
+        .sidebar-header { padding: 20px; font-size: 20px; font-weight: 700; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .place-item { padding: 16px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .place-item:active { background: #f0f0f0; }
+        .place-title { font-weight: 600; font-size: 16px; }
+        .badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+        .bg-global { background: #e8f0fe; color: #1a73e8; }
+        .bg-shared { background: #feefc3; color: #e37400; }
 
-        /* Loader */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 3000;
-            display: flex; justify-content: center; align-items: center;
-        }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -210,9 +147,7 @@
         <div class="search-bar" id="btn-menu">
             <i class="fa-solid fa-bars search-icon"></i>
             <span class="search-text">Mis Direcciones</span>
-            <i class="fa-solid fa-ellipsis-vertical menu-dots"></i>
         </div>
-        
         <div class="filters-row">
             <div class="filter-chip active" id="filter-global">
                 <i class="fa-solid fa-globe"></i> Globales
@@ -220,391 +155,294 @@
         </div>
     </div>
 
-    <div id="center-pin-container">
-        <i class="fa-solid fa-location-dot pin-head pin-bounce"></i>
-        <div class="pin-shadow"></div>
-    </div>
-    <div class="confirm-btn-float" id="btn-confirm-pos">
-        Confirmar Ubicación <i class="fa-solid fa-arrow-right" style="margin-left:8px;"></i>
-    </div>
+    <div id="center-pin-container"><i class="fa-solid fa-location-dot pin-head"></i><div class="pin-shadow"></div></div>
+    <div class="confirm-btn-float" id="btn-confirm-pos">Confirmar Ubicación</div>
 
-    <div class="fab-container">
-        <div class="fab" id="btn-add-mode">
-            <i class="fa-solid fa-plus"></i>
-        </div>
-    </div>
+    <div class="fab-container"><div class="fab" id="btn-add-mode"><i class="fa-solid fa-plus"></i></div></div>
 
-    <div class="sheet-overlay" id="sheet-overlay"></div>
-    <div class="sheet" id="main-sheet">
-        <div class="sheet-header">
-            <div class="sheet-drag-handle"></div>
-        </div>
+    <div class="sheet-overlay" id="overlay"></div>
+    <div class="sheet" id="sheet">
+        <div class="sheet-header"><div class="sheet-drag"></div></div>
         <div class="sheet-body">
             
             <div id="view-form" style="display:none;">
-                <h2 id="form-title">Nueva Ubicación</h2>
-                
-                <div class="modern-input-group">
-                    <label>Nombre del Negocio</label>
-                    <input type="text" id="inp-name" class="modern-input" placeholder="Ej. Maxikiosco">
-                </div>
-                
-                <div class="modern-input-group">
-                    <label>Notas / Detalles</label>
-                    <input type="text" id="inp-notes" class="modern-input" placeholder="Horario, contacto...">
-                </div>
-
-                <div class="modern-input-group">
-                    <label>Link Google Maps</label>
-                    <input type="text" id="inp-link" class="modern-input" placeholder="Pegar enlace...">
-                </div>
-
-                <div id="sec-members" style="display:none; margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
-                    <label style="font-size:12px; font-weight:700; color:#5f6368;">COMPARTIDO CON:</label>
-                    <ul id="list-members" style="list-style:none; padding:0; margin:10px 0;"></ul>
-                    
-                    <div style="display:flex; gap:10px;">
-                        <input id="inp-invite" class="modern-input" placeholder="email@vendedor.com" style="font-size:14px;">
-                        <button id="btn-invite-add" style="background:#eee; border:none; border-radius:12px; width:50px; cursor:pointer;"><i class="fa-solid fa-user-plus"></i></button>
-                    </div>
-                </div>
-
-                <button id="btn-save" class="btn-block btn-primary">Guardar</button>
-                <button id="btn-delete" class="btn-block btn-danger" style="display:none;">Eliminar</button>
+                <h2 id="form-title">Nueva Dirección</h2>
+                <div class="input-group"><label>Nombre</label><input type="text" id="inp-name" class="modern-input" placeholder="Ej. Kiosco Pepe"></div>
+                <div class="input-group"><label>Notas</label><input type="text" id="inp-notes" class="modern-input" placeholder="Horario, ref..."></div>
+                <div class="input-group"><label>Link Maps</label><input type="text" id="inp-link" class="modern-input" placeholder="Pegar enlace..."></div>
+                <button id="btn-save" class="btn btn-primary" style="width:100%; margin-top:10px;">Guardar</button>
             </div>
 
             <div id="view-details" style="display:none;">
-                <h2 id="txt-title" style="margin-bottom:8px; font-size:24px;"></h2>
-                <p id="txt-desc" style="color:#5f6368; margin-bottom:20px; line-height:1.5;"></p>
+                <h2 id="txt-title" style="margin-bottom:5px;"></h2>
+                <p id="txt-desc" style="color:#5f6368; margin-bottom:20px;"></p>
                 
-                <a id="btn-gmaps" href="#" target="_blank" class="btn-block btn-primary" style="text-decoration:none;">
-                    <i class="fa-solid fa-map-location-dot"></i> Abrir en Google Maps
-                </a>
-                
-                <button id="btn-edit" class="btn-block btn-secondary">
-                    <i class="fa-solid fa-pen"></i> Editar
-                </button>
-                
-                <button id="btn-leave" class="btn-block btn-danger" style="display:none;">
-                    <i class="fa-solid fa-right-from-bracket"></i> Dejar de seguir
-                </button>
+                <div class="btn-row">
+                    <a id="btn-gmaps" href="#" target="_blank" class="btn btn-primary">
+                        <i class="fa-solid fa-map-location-dot"></i> Ir
+                    </a>
+                    <button id="btn-share-main" class="btn btn-share">
+                        <i class="fa-solid fa-users"></i> Compartir
+                    </button>
+                </div>
+
+                <div class="btn-row">
+                    <button id="btn-edit" class="btn btn-sec"><i class="fa-solid fa-pen"></i> Editar</button>
+                    <button id="btn-delete" class="btn btn-danger"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+
+            <div id="view-share" style="display:none;">
+                <h2>Gestionar Acceso</h2>
+                <p style="color:#666; font-size:13px; margin-bottom:15px;">Activa el interruptor para dar acceso a esta dirección.</p>
+                <div id="users-list-container">
+                    </div>
+                <button class="btn btn-sec" style="width:100%; margin-top:15px;" onclick="backToDetails()">Volver</button>
             </div>
 
         </div>
     </div>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <span class="sidebar-title">Mis Lugares</span>
-            <i class="fa-solid fa-xmark sidebar-close" id="btn-close-sidebar"></i>
-        </div>
-        <div class="sidebar-content" id="list-container">
-            </div>
+        <div class="sidebar-header"><span>Mis Lugares</span> <i class="fa-solid fa-xmark" onclick="toggleSidebar()"></i></div>
+        <div id="sidebar-list" style="overflow-y:auto; flex:1;"></div>
     </div>
 
     <div id="loader"><div class="spinner"></div></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // CONFIGURACIÓN API
         const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com';
+        
+        let map, markers=[], locations=[], allUsers=[];
+        let token, myId, myEmail;
+        let isAdding = false, showGlobals = true;
+        let currentLoc = null; // Para saber qué local estamos editando/compartiendo
 
-        // Variables Estado
-        let map;
-        let markers = [];
-        let locations = [];
-        let isAdding = false;
-        let showGlobals = true;
-        let token, currentUser;
-
-        // --- AUTH ---
+        // --- AUTH & INIT ---
         function getSession() {
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
-                    return JSON.parse(localStorage.getItem(k));
-                }
+            for(let i=0; i<localStorage.length; i++) {
+                let k = localStorage.key(i);
+                if(k.startsWith('sb-') && k.endsWith('-auth-token')) return JSON.parse(localStorage.getItem(k));
             }
             return null;
         }
 
-        async function init() {
-            const s = getSession();
-            if(!s) return window.location.href = 'login.html';
-            token = s.access_token;
-            currentUser = s.user;
-            
-            document.getElementById('loader').style.display = 'none';
-            initMap();
-            loadData();
-        }
-
-        // --- API CALL ---
-        async function api(endpoint, method = 'GET', body = null) {
+        async function api(path, method='GET', data=null) {
             const opts = { method, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
-            if(body) opts.body = JSON.stringify(body);
-            const res = await fetch(`${API_URL}${endpoint}`, opts);
-            if(res.status === 401) { alert('Sesión expirada'); window.location.href = 'login.html'; }
-            if(!res.ok) throw new Error('Error API');
+            if(data) opts.body = JSON.stringify(data);
+            const res = await fetch(`${API_URL}${path}`, opts);
+            if(res.status === 401) { localStorage.clear(); window.location.href='login.html'; }
             return res.json();
         }
 
-        // --- MAPA ---
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([-31.5375, -68.5364], 14);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '' }).addTo(map);
+        async function init() {
+            const s = getSession();
+            if(!s) return window.location.href='login.html';
+            token = s.access_token; myId = s.user.id; myEmail = s.user.email;
+
+            document.getElementById('loader').style.display='none';
+            initMap();
+            await Promise.all([loadLocations(), loadUsers()]);
         }
 
-        async function loadData() {
-            try {
-                const data = await api('/api/direcciones');
-                locations = data || [];
-                renderMap();
-            } catch(e) { console.error(e); }
+        function initMap() {
+            map = L.map('map', {zoomControl:false}).setView([-31.5375, -68.5364], 14);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+        }
+
+        async function loadLocations() {
+            try { locations = await api('/api/direcciones') || []; renderMap(); } catch(e){}
+        }
+
+        async function loadUsers() {
+            try { allUsers = await api('/api/usuarios') || []; } catch(e){}
         }
 
         function renderMap() {
-            // Limpiar
-            markers.forEach(m => map.removeLayer(m)); markers = [];
-            
+            markers.forEach(m => map.removeLayer(m)); markers=[];
             locations.forEach(loc => {
                 if(loc.is_global && !showGlobals) return;
-
-                // Estilo del pin
-                const isMine = loc.created_by === currentUser.id;
-                let color = '#d93025'; // Rojo (Mío)
-                if(loc.is_global) color = '#1a73e8'; // Azul (Global)
-                else if(!isMine) color = '#f9ab00'; // Naranja (Compartido)
-
-                const icon = L.divIcon({
-                    className: 'custom-pin',
-                    html: `<div style="background:${color};width:18px;height:18px;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4);"></div>`,
-                    iconSize: [24, 24], iconAnchor: [12, 12]
-                });
-
-                const m = L.marker([loc.lat, loc.lng], { icon }).addTo(map);
-                m.on('click', () => {
-                    openSheet('details', loc);
-                    map.flyTo([loc.lat, loc.lng], 16, { duration: 0.6 });
+                const isMine = loc.created_by === myId;
+                const color = loc.is_global ? '#1a73e8' : (isMine ? '#d93025' : '#f9ab00');
+                const icon = L.divIcon({ className:'c-pin', html:`<div style="background:${color};width:18px;height:18px;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>`, iconSize:[24,24], iconAnchor:[12,12] });
+                const m = L.marker([loc.lat, loc.lng], {icon}).addTo(map);
+                m.on('click', () => { 
+                    currentLoc = loc;
+                    openSheet('details'); 
+                    map.flyTo([loc.lat, loc.lng], 16); 
                 });
                 markers.push(m);
             });
         }
 
-        // --- INTERACCIÓN UI ---
-        
-        // 1. Botón Agregar (FAB)
+        // --- SHEET & VIEWS ---
+        const sheet = document.getElementById('sheet');
+        const overlay = document.getElementById('overlay');
+        const closeSheet = () => { sheet.classList.remove('open'); overlay.classList.remove('open'); };
+        overlay.onclick = closeSheet;
+
+        function openSheet(view) {
+            sheet.classList.add('open'); overlay.classList.add('open');
+            ['view-form','view-details','view-share'].forEach(id => document.getElementById(id).style.display='none');
+            document.getElementById(`view-${view}`).style.display='block';
+
+            if(view === 'details') renderDetails();
+            if(view === 'share') renderShareList();
+        }
+
+        // --- LOGICA DETALLES ---
+        function renderDetails() {
+            if(!currentLoc) return;
+            document.getElementById('txt-title').innerText = currentLoc.name;
+            document.getElementById('txt-desc').innerText = currentLoc.notes || 'Sin notas';
+            
+            const btnMap = document.getElementById('btn-gmaps');
+            if(currentLoc.gmaps_link) { btnMap.href = currentLoc.gmaps_link; btnMap.style.display='flex'; } 
+            else { btnMap.style.display='none'; }
+
+            const isMine = currentLoc.created_by === myId;
+            document.getElementById('btn-share-main').style.display = isMine ? 'flex' : 'none'; // Solo dueño comparte
+            document.getElementById('btn-edit').style.display = isMine ? 'flex' : 'none';
+            document.getElementById('btn-delete').style.display = isMine ? 'flex' : 'none';
+        }
+
+        // --- LOGICA COMPARTIR (LISTA USUARIOS) ---
+        function renderShareList() {
+            const list = document.getElementById('users-list-container');
+            list.innerHTML = '';
+            
+            const members = currentLoc.members || [];
+
+            allUsers.forEach(u => {
+                if(u.email === myEmail) return; // No mostrarse a uno mismo
+
+                const isShared = members.includes(u.email);
+                const div = document.createElement('div');
+                div.className = 'user-list-item';
+                div.innerHTML = `
+                    <div>
+                        <div class="user-info">${u.nombre || u.email}</div>
+                        <div class="user-email">${u.email}</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="toggle-input" ${isShared ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                `;
+                
+                // Evento Toggle
+                const checkbox = div.querySelector('input');
+                checkbox.onchange = async () => {
+                    let newMembers = [...(currentLoc.members || [])];
+                    if(checkbox.checked) {
+                        if(!newMembers.includes(u.email)) newMembers.push(u.email);
+                    } else {
+                        newMembers = newMembers.filter(m => m !== u.email);
+                    }
+                    
+                    // Actualizar UI rápido
+                    currentLoc.members = newMembers; 
+                    // Enviar al server
+                    await api(`/api/direcciones/${currentLoc.id}`, 'PUT', { members: newMembers });
+                };
+                
+                list.appendChild(div);
+            });
+        }
+
+        window.backToDetails = () => openSheet('details');
+
+        document.getElementById('btn-share-main').onclick = () => openSheet('share');
+
+        // --- CRUD ---
+        document.getElementById('btn-edit').onclick = () => {
+            document.getElementById('inp-name').value = currentLoc.name;
+            document.getElementById('inp-notes').value = currentLoc.notes;
+            document.getElementById('inp-link').value = currentLoc.gmaps_link;
+            document.getElementById('form-title').innerText = 'Editar';
+            openSheet('form');
+        };
+
+        document.getElementById('btn-delete').onclick = async () => {
+            if(confirm('¿Eliminar?')) {
+                await api(`/api/direcciones/${currentLoc.id}`, 'DELETE');
+                closeSheet(); loadLocations();
+            }
+        };
+
+        // Guardar (Nuevo o Editar)
+        document.getElementById('btn-save').onclick = async () => {
+            const body = {
+                name: document.getElementById('inp-name').value,
+                notes: document.getElementById('inp-notes').value,
+                gmaps_link: document.getElementById('inp-link').value
+            };
+            if(!body.name) return alert('Nombre obligatorio');
+
+            if(currentLoc && currentLoc.id) {
+                // Editar existente
+                await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
+            } else {
+                // Nuevo
+                const c = map.getCenter();
+                await api('/api/direcciones', 'POST', { ...body, lat: c.lat, lng: c.lng });
+            }
+            closeSheet(); loadLocations();
+        };
+
+        // --- MODO AGREGAR ---
         document.getElementById('btn-add-mode').onclick = () => {
             isAdding = !isAdding;
             const fab = document.getElementById('btn-add-mode');
-            const pin = document.getElementById('center-pin-container');
-            const confirm = document.getElementById('btn-confirm-pos');
-            
             if(isAdding) {
-                fab.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-                fab.style.background = '#d93025';
-                pin.style.display = 'flex';
-                confirm.style.display = 'block';
+                fab.innerHTML='<i class="fa-solid fa-xmark"></i>'; fab.style.background='#d93025';
+                document.getElementById('center-pin-container').style.display='flex';
+                document.getElementById('btn-confirm-pos').style.display='block';
                 closeSheet();
             } else {
-                fab.innerHTML = '<i class="fa-solid fa-plus"></i>';
-                fab.style.background = '#1a1a1a';
-                pin.style.display = 'none';
-                confirm.style.display = 'none';
+                fab.innerHTML='<i class="fa-solid fa-plus"></i>'; fab.style.background='#1a1a1a';
+                document.getElementById('center-pin-container').style.display='none';
+                document.getElementById('btn-confirm-pos').style.display='none';
             }
         };
 
-        // 2. Confirmar Ubicación
         document.getElementById('btn-confirm-pos').onclick = () => {
-            const center = map.getCenter();
-            document.getElementById('btn-add-mode').click(); // Cerrar modo agregar
-            openSheet('form', null, center);
+            currentLoc = null; // Reset para indicar que es nuevo
+            document.getElementById('btn-add-mode').click(); // Salir modo mapa
+            
+            document.getElementById('inp-name').value='';
+            document.getElementById('inp-notes').value='';
+            document.getElementById('inp-link').value='';
+            document.getElementById('form-title').innerText = 'Nueva Dirección';
+            
+            openSheet('form');
         };
 
-        // 3. Bottom Sheet Control
-        const sheet = document.getElementById('main-sheet');
-        const overlay = document.getElementById('sheet-overlay');
+        // --- SIDEBAR & GLOBAL ---
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); renderList(); }
+        document.getElementById('btn-menu').onclick = toggleSidebar;
         
-        function openSheet(mode, data = null, coords = null) {
-            sheet.classList.add('open');
-            overlay.classList.add('open');
-            
-            document.getElementById('view-form').style.display = 'none';
-            document.getElementById('view-details').style.display = 'none';
-
-            if(mode === 'form') setupForm(data, coords);
-            else setupDetails(data);
-        }
-
-        function closeSheet() {
-            sheet.classList.remove('open');
-            overlay.classList.remove('open');
-        }
-        overlay.onclick = closeSheet;
-
-        // 4. Lógica Formulario
-        function setupForm(loc, coords) {
-            document.getElementById('view-form').style.display = 'block';
-            const isEdit = !!loc;
-            
-            document.getElementById('form-title').innerText = isEdit ? 'Editar Lugar' : 'Nuevo Lugar';
-            document.getElementById('inp-name').value = isEdit ? loc.name : '';
-            document.getElementById('inp-notes').value = isEdit ? loc.notes || '' : '';
-            document.getElementById('inp-link').value = isEdit ? loc.gmaps_link || '' : '';
-
-            // Botones
-            const btnSave = document.getElementById('btn-save');
-            const btnDel = document.getElementById('btn-delete');
-            const memSec = document.getElementById('sec-members');
-
-            // Guardar
-            btnSave.onclick = async () => {
-                const body = {
-                    name: document.getElementById('inp-name').value,
-                    notes: document.getElementById('inp-notes').value,
-                    gmaps_link: document.getElementById('inp-link').value
-                };
-                if(!body.name) return alert('Falta el nombre');
-
-                try {
-                    if(isEdit) await api(`/api/direcciones/${loc.id}`, 'PUT', body);
-                    else await api('/api/direcciones', 'POST', { ...body, lat: coords.lat, lng: coords.lng });
-                    closeSheet(); loadData();
-                } catch(e) { alert('Error al guardar'); }
-            };
-
-            // Eliminar y Miembros (Solo si es mío y es edición)
-            if(isEdit && loc.created_by === currentUser.id) {
-                btnDel.style.display = 'flex';
-                btnDel.onclick = async () => {
-                    if(confirm('¿Eliminar?')) { await api(`/api/direcciones/${loc.id}`, 'DELETE'); closeSheet(); loadData(); }
-                };
-
-                memSec.style.display = 'block';
-                const list = document.getElementById('list-members'); list.innerHTML = '';
-                (loc.members || []).forEach(m => {
-                    list.innerHTML += `<li style="margin-bottom:5px; font-size:14px; display:flex; justify-content:space-between;">${m} <span style="color:#d93025; cursor:pointer;" onclick="modMember('${loc.id}', '${m}', 'del')">Quitar</span></li>`;
-                });
-                
-                document.getElementById('btn-invite-add').onclick = () => {
-                    const mail = document.getElementById('inp-invite').value;
-                    if(mail) modMember(loc.id, mail, 'add');
-                };
-
-            } else {
-                btnDel.style.display = 'none';
-                memSec.style.display = 'none';
-            }
-        }
-
-        // 5. Lógica Detalles
-        function setupDetails(loc) {
-            document.getElementById('view-details').style.display = 'block';
-            document.getElementById('txt-title').innerText = loc.name;
-            document.getElementById('txt-desc').innerText = loc.notes || 'Sin notas adicionales.';
-            
-            const btnMap = document.getElementById('btn-gmaps');
-            if(loc.gmaps_link) {
-                btnMap.href = loc.gmaps_link;
-                btnMap.style.display = 'flex';
-            } else {
-                btnMap.style.display = 'none';
-            }
-
-            const btnEdit = document.getElementById('btn-edit');
-            const btnLeave = document.getElementById('btn-leave');
-
-            if(loc.created_by === currentUser.id) {
-                btnEdit.style.display = 'flex';
-                btnEdit.onclick = () => setupForm(loc);
-                btnLeave.style.display = 'none';
-            } else if(loc.is_global) {
-                btnEdit.style.display = 'none';
-                btnLeave.style.display = 'none';
-            } else {
-                btnEdit.style.display = 'none';
-                btnLeave.style.display = 'flex';
-                btnLeave.onclick = () => modMember(loc.id, currentUser.email, 'del');
-            }
-        }
-
-        async function modMember(id, email, type) {
-            const loc = locations.find(l => l.id === id);
-            let mems = loc.members || [];
-            
-            if(type === 'add') {
-                if(!mems.includes(email)) mems.push(email);
-            } else {
-                mems = mems.filter(m => m !== email);
-            }
-
-            try {
-                await api(`/api/direcciones/${id}`, 'PUT', { members: mems });
-                // Optimista
-                loc.members = mems;
-                if(type === 'del' && email === currentUser.email) { closeSheet(); loadData(); }
-                else setupForm(loc);
-            } catch(e) { alert('No permitido'); }
-        }
-
-        // --- SIDEBAR (MENU) ---
-        const sidebar = document.getElementById('sidebar');
-        document.getElementById('btn-menu').onclick = () => {
-            sidebar.classList.add('open');
-            renderList();
+        document.getElementById('filter-global').onclick = function() {
+            showGlobals = !showGlobals; this.classList.toggle('active'); renderMap();
         };
-        document.getElementById('btn-close-sidebar').onclick = () => sidebar.classList.remove('open');
 
         function renderList() {
-            const c = document.getElementById('list-container'); c.innerHTML = '';
+            const list = document.getElementById('sidebar-list'); list.innerHTML='';
             
-            const addItem = (l, type) => {
-                const div = document.createElement('div'); div.className = 'place-item';
-                let badge = '';
-                if(type === 'global') badge = '<span class="badge badge-global">Global</span>';
-                if(type === 'shared') badge = '<span class="badge badge-shared">Compartido</span>';
-                
-                div.innerHTML = `<div class="place-name">${l.name} ${badge}</div><div class="place-meta">${l.notes || ''}</div>`;
-                div.onclick = () => {
-                    sidebar.classList.remove('open');
-                    map.setView([l.lat, l.lng], 16);
-                    openSheet('details', l);
-                };
-                c.appendChild(div);
+            const addItem = (l, tag, cls) => {
+                const d = document.createElement('div'); d.className='place-item';
+                d.innerHTML = `<div class="place-title">${l.name} ${tag?`<span class="badge ${cls}">${tag}</span>`:''}</div><div style="font-size:12px;color:#777">${l.notes||''}</div>`;
+                d.onclick = () => { toggleSidebar(); currentLoc=l; openSheet('details'); map.setView([l.lat, l.lng], 16); };
+                list.appendChild(d);
             };
 
-            // Ordenar: Mis lugares primero
-            const mine = locations.filter(l => l.created_by === currentUser.id && !l.is_global);
-            if(mine.length) {
-                c.innerHTML += `<div style="font-weight:700; font-size:12px; color:#5f6368; margin-top:10px;">MIS LUGARES</div>`;
-                mine.forEach(l => addItem(l, 'mine'));
-            }
-
-            const shared = locations.filter(l => l.created_by !== currentUser.id && !l.is_global);
-            if(shared.length) {
-                c.innerHTML += `<div style="font-weight:700; font-size:12px; color:#5f6368; margin-top:20px;">COMPARTIDOS</div>`;
-                shared.forEach(l => addItem(l, 'shared'));
-            }
-
-            if(showGlobals) {
-                const globals = locations.filter(l => l.is_global);
-                if(globals.length) {
-                    c.innerHTML += `<div style="font-weight:700; font-size:12px; color:#5f6368; margin-top:20px;">GLOBALES</div>`;
-                    globals.forEach(l => addItem(l, 'global'));
-                }
-            }
+            locations.filter(l => l.is_global && showGlobals).forEach(l => addItem(l, 'Global', 'bg-global'));
+            locations.filter(l => l.created_by === myId && !l.is_global).forEach(l => addItem(l));
+            locations.filter(l => l.created_by !== myId && !l.is_global).forEach(l => addItem(l, 'Compartido', 'bg-shared'));
         }
 
-        // Filtro Global
-        document.getElementById('filter-global').onclick = function() {
-            showGlobals = !showGlobals;
-            this.classList.toggle('active');
-            renderMap();
-        };
-
-        // INICIAR
         init();
-
     </script>
 </body>
 </html>
