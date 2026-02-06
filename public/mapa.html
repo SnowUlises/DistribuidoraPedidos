@@ -10,129 +10,93 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* ESTILOS BASE */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #f5f5f5; color: #1f1f1f; }
         
-        #map { width: 100%; height: 100%; z-index: 1; }
+        #map { width: 100%; height: 100%; z-index: 1; user-select: none; -webkit-user-select: none; }
         .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 
-        /* UI SUPERIOR */
+        /* TOP UI */
         .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        
-        .search-bar {
-            background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: transform 0.1s;
-        }
+        .search-bar { background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: transform 0.1s; }
         .search-bar:active { transform: scale(0.98); }
         .search-icon { color: #5f6368; font-size: 18px; margin-right: 12px; }
         .search-text { font-size: 15px; color: #3c4043; font-weight: 600; }
-
-        .filters-row { display: flex; gap: 8px; pointer-events: none; }
-        .filter-chip {
-            background: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #5f6368;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid transparent;
-        }
+        
+        .filters-row { display: flex; gap: 8px; pointer-events: none; overflow-x: auto; padding-bottom: 5px; }
+        .filter-chip { background: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #5f6368; box-shadow: 0 2px 6px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 6px; border: 1px solid transparent; white-space: nowrap; }
         .filter-chip.active { background: #e8f0fe; color: #1a73e8; border-color: #1a73e8; }
 
-        /* FAB (Botón +) */
-        .fab-container { position: absolute; bottom: 32px; right: 20px; z-index: 1000; }
-        .fab {
-            width: 56px; height: 56px; background: #1a1a1a; border-radius: 18px;
-            display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s;
-        }
+        /* FABs */
+        .fab-container { position: absolute; bottom: 32px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 12px; }
+        .fab { width: 56px; height: 56px; background: #1a1a1a; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
         .fab:active { transform: scale(0.90); }
+        .fab-mini { width: 48px; height: 48px; background: white; color: #555; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; }
+        .fab-mini:active { background: #f5f5f5; }
 
         /* UI AGREGAR */
-        #center-pin-container {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%);
-            z-index: 900; pointer-events: none; display: none; flex-direction: column; align-items: center;
-        }
+        #center-pin-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 900; pointer-events: none; display: none; flex-direction: column; align-items: center; }
         .pin-head { font-size: 44px; color: #ea4335; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
         .pin-shadow { width: 12px; height: 4px; background: rgba(0,0,0,0.2); border-radius: 50%; margin-top: -6px; }
-        
-        .confirm-btn-float {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: #1a1a1a; color: white; padding: 14px 28px; border-radius: 30px;
-            font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            z-index: 1001; cursor: pointer; display: none; width: max-content;
-        }
+        .confirm-btn-float { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 14px 28px; border-radius: 30px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1001; cursor: pointer; display: none; width: max-content; }
 
-        /* BOTTOM SHEET */
-        .sheet-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; pointer-events: none; transition: 0.3s;
-        }
+        /* SHEET */
+        .sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; pointer-events: none; transition: 0.3s; }
         .sheet-overlay.open { opacity: 1; pointer-events: auto; }
-
-        .sheet {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: white;
-            border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%);
-            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: 30px;
-            max-height: 85vh; overflow-y: auto;
-        }
+        .sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: 30px; max-height: 85vh; overflow-y: auto; }
         .sheet.open { transform: translateY(0); }
         .sheet-header { display: flex; justify-content: center; padding: 12px; }
         .sheet-drag { width: 40px; height: 5px; background: #e0e0e0; border-radius: 10px; }
         .sheet-body { padding: 0 24px 24px 24px; }
 
-        /* INPUTS & BOTONES */
+        /* INPUTS & COLORS */
         h2 { margin: 0 0 20px 0; font-size: 22px; font-weight: 700; color: #202124; }
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 12px; font-weight: 700; color: #5f6368; margin-bottom: 6px; text-transform: uppercase; }
-        .modern-input {
-            width: 100%; padding: 14px 16px; background: #f1f3f4; border: none; border-radius: 12px;
-            font-size: 16px; color: #1f1f1f; transition: 0.2s;
-        }
+        .modern-input { width: 100%; padding: 14px 16px; background: #f1f3f4; border: none; border-radius: 12px; font-size: 16px; color: #1f1f1f; transition: 0.2s; }
         .modern-input:focus { outline: 2px solid #1a73e8; background: white; }
 
+        /* Color Picker */
+        .color-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; }
+        .color-opt { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
+        .color-opt.selected { border-color: #1a1a1a; transform: scale(1.1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        /* Colores base */
+        .c-red { background: #d93025; }
+        .c-blue { background: #1a73e8; }
+        .c-green { background: #1e8e3e; }
+        .c-yellow { background: #f9ab00; }
+        .c-purple { background: #9334e6; }
+        .c-orange { background: #e37400; }
+        .c-teal { background: #00897b; }
+        .c-pink { background: #e91e63; }
+
+        /* Sugerencias de Grupo */
+        .group-suggestions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .group-tag { font-size: 11px; background: #eee; padding: 4px 8px; border-radius: 12px; cursor: pointer; color: #555; }
+        .group-tag:hover { background: #ddd; }
+
         .btn-row { display: flex; gap: 10px; margin-top: 15px; }
-        .btn {
-            flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600;
-            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.1s;
-        }
-        .btn:active { transform: scale(0.98); }
+        .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: #1a73e8; color: white; }
         .btn-share { background: #e8f0fe; color: #1a73e8; }
         .btn-sec { background: #f1f3f4; color: #3c4043; }
         .btn-danger { background: #fce8e6; color: #c5221f; }
 
-        /* LISTA DE USUARIOS (SHARE) */
-        .user-list-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px; border-bottom: 1px solid #f0f0f0;
-        }
-        .user-info { font-weight: 500; font-size: 15px; }
-        .user-email { font-size: 12px; color: #70757a; }
-        
-        /* Toggle Switch */
+        .user-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; }
         .toggle-switch { position: relative; width: 44px; height: 24px; }
         .toggle-input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .4s; border-radius: 24px;
-        }
-        .toggle-slider:before {
-            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-            background-color: white; transition: .4s; border-radius: 50%;
-        }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         .toggle-input:checked + .toggle-slider { background-color: #1a73e8; }
         .toggle-input:checked + .toggle-slider:before { transform: translateX(20px); }
 
-        /* SIDEBAR (MENU) */
-        .sidebar {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000;
-            transform: translateX(-100%); transition: 0.3s ease; display: flex; flex-direction: column;
-        }
+        .sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; transform: translateX(-100%); transition: 0.3s ease; display: flex; flex-direction: column; }
         .sidebar.open { transform: translateX(0); }
         .sidebar-header { padding: 20px; font-size: 20px; font-weight: 700; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
         .place-item { padding: 16px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
-        .place-item:active { background: #f0f0f0; }
         .place-title { font-weight: 600; font-size: 16px; }
         .badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
-        .bg-global { background: #e8f0fe; color: #1a73e8; }
-        .bg-shared { background: #feefc3; color: #e37400; }
+        .badge-group { border: 1px solid #ddd; color: #555; background: #fff; }
 
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -148,17 +112,18 @@
             <i class="fa-solid fa-bars search-icon"></i>
             <span class="search-text">Mis Direcciones</span>
         </div>
-        <div class="filters-row">
-            <div class="filter-chip active" id="filter-global">
-                <i class="fa-solid fa-globe"></i> Globales
+        <div class="filters-row" id="filters-container">
+            <div class="filter-chip active" id="filter-global"><i class="fa-solid fa-globe"></i> Globales</div>
             </div>
-        </div>
     </div>
 
     <div id="center-pin-container"><i class="fa-solid fa-location-dot pin-head"></i><div class="pin-shadow"></div></div>
     <div class="confirm-btn-float" id="btn-confirm-pos">Confirmar Ubicación</div>
 
-    <div class="fab-container"><div class="fab" id="btn-add-mode"><i class="fa-solid fa-plus"></i></div></div>
+    <div class="fab-container">
+        <div class="fab-mini" id="btn-gps" title="Mi Ubicación"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <div class="fab" id="btn-add-mode"><i class="fa-solid fa-plus"></i></div>
+    </div>
 
     <div class="sheet-overlay" id="overlay"></div>
     <div class="sheet" id="sheet">
@@ -168,6 +133,18 @@
             <div id="view-form" style="display:none;">
                 <h2 id="form-title">Nueva Dirección</h2>
                 <div class="input-group"><label>Nombre</label><input type="text" id="inp-name" class="modern-input" placeholder="Ej. Kiosco Pepe"></div>
+                
+                <div class="input-group">
+                    <label>Grupo / Categoría</label>
+                    <input type="text" id="inp-group" class="modern-input" placeholder="Ej. Repartos Sur">
+                    <div class="group-suggestions" id="group-suggestions"></div>
+                </div>
+                <div class="input-group">
+                    <label>Color del Marcador</label>
+                    <div class="color-grid" id="color-grid">
+                        </div>
+                </div>
+
                 <div class="input-group"><label>Notas</label><input type="text" id="inp-notes" class="modern-input" placeholder="Horario, ref..."></div>
                 <div class="input-group"><label>Link Maps</label><input type="text" id="inp-link" class="modern-input" placeholder="Pegar enlace..."></div>
                 <button id="btn-save" class="btn btn-primary" style="width:100%; margin-top:10px;">Guardar</button>
@@ -175,17 +152,12 @@
 
             <div id="view-details" style="display:none;">
                 <h2 id="txt-title" style="margin-bottom:5px;"></h2>
+                <div id="txt-group-badge" style="margin-bottom:10px;"></div>
                 <p id="txt-desc" style="color:#5f6368; margin-bottom:20px;"></p>
-                
                 <div class="btn-row">
-                    <a id="btn-gmaps" href="#" target="_blank" class="btn btn-primary">
-                        <i class="fa-solid fa-map-location-dot"></i> Ir
-                    </a>
-                    <button id="btn-share-main" class="btn btn-share">
-                        <i class="fa-solid fa-users"></i> Compartir
-                    </button>
+                    <a id="btn-gmaps" href="#" target="_blank" class="btn btn-primary"><i class="fa-solid fa-map-location-dot"></i> Ir</a>
+                    <button id="btn-share-main" class="btn btn-share"><i class="fa-solid fa-users"></i> Compartir</button>
                 </div>
-
                 <div class="btn-row">
                     <button id="btn-edit" class="btn btn-sec"><i class="fa-solid fa-pen"></i> Editar</button>
                     <button id="btn-delete" class="btn btn-danger"><i class="fa-solid fa-trash"></i></button>
@@ -194,12 +166,9 @@
 
             <div id="view-share" style="display:none;">
                 <h2>Gestionar Acceso</h2>
-                <p style="color:#666; font-size:13px; margin-bottom:15px;">Activa el interruptor para dar acceso a esta dirección.</p>
-                <div id="users-list-container">
-                    </div>
+                <div id="users-list-container"></div>
                 <button class="btn btn-sec" style="width:100%; margin-top:15px;" onclick="backToDetails()">Volver</button>
             </div>
-
         </div>
     </div>
 
@@ -217,7 +186,16 @@
         let map, markers=[], locations=[], allUsers=[];
         let token, myId, myEmail;
         let isAdding = false, showGlobals = true;
-        let currentLoc = null; // Para saber qué local estamos editando/compartiendo
+        let currentLoc = null;
+        let selectedColor = '#d93025';
+        let holdTimer; // Para el long press
+
+        // COLORES BASE
+        const COLORS = [
+            { c: '#d93025', n: 'Rojo' }, { c: '#1a73e8', n: 'Azul' }, { c: '#1e8e3e', n: 'Verde' },
+            { c: '#f9ab00', n: 'Amarillo' }, { c: '#9334e6', n: 'Violeta' }, { c: '#e37400', n: 'Naranja' },
+            { c: '#00897b', n: 'Turquesa' }, { c: '#e91e63', n: 'Rosa' }
+        ];
 
         // --- AUTH & INIT ---
         function getSession() {
@@ -246,13 +224,33 @@
             await Promise.all([loadLocations(), loadUsers()]);
         }
 
+        // --- MAPA & EVENTOS ---
         function initMap() {
             map = L.map('map', {zoomControl:false}).setView([-31.5375, -68.5364], 14);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+            // LOGICA LONG PRESS (MANTENER APRETADO)
+            map.on('mousedown touchstart', (e) => {
+                // Si ya estamos agregando o hay algo abierto, ignorar
+                if(isAdding || document.getElementById('sheet').classList.contains('open')) return;
+                
+                holdTimer = setTimeout(() => {
+                    // Acción al cumplir 1 segundo
+                    navigator.vibrate?.(50); // Vibrar si es celu
+                    openFormNew(e.latlng); // Abrir form directo en esa pos
+                }, 800); 
+            });
+
+            // Cancelar timer si mueve o suelta antes de tiempo
+            const clearT = () => clearTimeout(holdTimer);
+            map.on('mouseup touchend dragstart', clearT);
         }
 
         async function loadLocations() {
-            try { locations = await api('/api/direcciones') || []; renderMap(); } catch(e){}
+            try { 
+                locations = await api('/api/direcciones') || []; 
+                renderMap(); renderGroupsFilter();
+            } catch(e){}
         }
 
         async function loadUsers() {
@@ -263,8 +261,15 @@
             markers.forEach(m => map.removeLayer(m)); markers=[];
             locations.forEach(loc => {
                 if(loc.is_global && !showGlobals) return;
-                const isMine = loc.created_by === myId;
-                const color = loc.is_global ? '#1a73e8' : (isMine ? '#d93025' : '#f9ab00');
+                
+                // Color prioritario: El definido en BD, sino defaults
+                let color = loc.color;
+                if(!color) {
+                    if(loc.is_global) color = '#1a73e8';
+                    else if(loc.created_by === myId) color = '#d93025';
+                    else color = '#f9ab00';
+                }
+
                 const icon = L.divIcon({ className:'c-pin', html:`<div style="background:${color};width:18px;height:18px;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>`, iconSize:[24,24], iconAnchor:[12,12] });
                 const m = L.marker([loc.lat, loc.lng], {icon}).addTo(map);
                 m.on('click', () => { 
@@ -291,107 +296,161 @@
             if(view === 'share') renderShareList();
         }
 
-        // --- LOGICA DETALLES ---
+        // --- DETALLES ---
         function renderDetails() {
             if(!currentLoc) return;
             document.getElementById('txt-title').innerText = currentLoc.name;
             document.getElementById('txt-desc').innerText = currentLoc.notes || 'Sin notas';
             
+            // Badge de grupo
+            const badgeDiv = document.getElementById('txt-group-badge');
+            badgeDiv.innerHTML = '';
+            if(currentLoc.group_name) {
+                badgeDiv.innerHTML = `<span class="badge" style="background:${currentLoc.color || '#ddd'}; color:white;">${currentLoc.group_name}</span>`;
+            }
+
             const btnMap = document.getElementById('btn-gmaps');
-            if(currentLoc.gmaps_link) { btnMap.href = currentLoc.gmaps_link; btnMap.style.display='flex'; } 
-            else { btnMap.style.display='none'; }
+            if(currentLoc.gmaps_link) { btnMap.href = currentLoc.gmaps_link; btnMap.style.display='flex'; } else { btnMap.style.display='none'; }
 
             const isMine = currentLoc.created_by === myId;
-            document.getElementById('btn-share-main').style.display = isMine ? 'flex' : 'none'; // Solo dueño comparte
+            document.getElementById('btn-share-main').style.display = isMine ? 'flex' : 'none'; 
             document.getElementById('btn-edit').style.display = isMine ? 'flex' : 'none';
             document.getElementById('btn-delete').style.display = isMine ? 'flex' : 'none';
         }
 
-        // --- LOGICA COMPARTIR (LISTA USUARIOS) ---
-        function renderShareList() {
-            const list = document.getElementById('users-list-container');
-            list.innerHTML = '';
+        // --- FORMULARIO (NUEVO/EDITAR) ---
+        function openFormNew(latlng) {
+            currentLoc = null; // Nuevo
+            // Reset campos
+            document.getElementById('inp-name').value='';
+            document.getElementById('inp-notes').value='';
+            document.getElementById('inp-link').value='';
+            document.getElementById('inp-group').value='';
+            document.getElementById('form-title').innerText = 'Nueva Dirección';
             
-            const members = currentLoc.members || [];
-
-            allUsers.forEach(u => {
-                if(u.email === myEmail) return; // No mostrarse a uno mismo
-
-                const isShared = members.includes(u.email);
-                const div = document.createElement('div');
-                div.className = 'user-list-item';
-                div.innerHTML = `
-                    <div>
-                        <div class="user-info">${u.nombre || u.email}</div>
-                        <div class="user-email">${u.email}</div>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" class="toggle-input" ${isShared ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                `;
-                
-                // Evento Toggle
-                const checkbox = div.querySelector('input');
-                checkbox.onchange = async () => {
-                    let newMembers = [...(currentLoc.members || [])];
-                    if(checkbox.checked) {
-                        if(!newMembers.includes(u.email)) newMembers.push(u.email);
-                    } else {
-                        newMembers = newMembers.filter(m => m !== u.email);
-                    }
-                    
-                    // Actualizar UI rápido
-                    currentLoc.members = newMembers; 
-                    // Enviar al server
-                    await api(`/api/direcciones/${currentLoc.id}`, 'PUT', { members: newMembers });
-                };
-                
-                list.appendChild(div);
-            });
+            // Guardar coords temporales en el objeto sheet para usarlas al guardar
+            sheet.dataset.lat = latlng.lat;
+            sheet.dataset.lng = latlng.lng;
+            
+            renderColorGrid('#d93025');
+            renderGroupSuggestions();
+            openSheet('form');
         }
 
-        window.backToDetails = () => openSheet('details');
-
-        document.getElementById('btn-share-main').onclick = () => openSheet('share');
-
-        // --- CRUD ---
-        document.getElementById('btn-edit').onclick = () => {
+        function openFormEdit() {
             document.getElementById('inp-name').value = currentLoc.name;
             document.getElementById('inp-notes').value = currentLoc.notes;
             document.getElementById('inp-link').value = currentLoc.gmaps_link;
+            document.getElementById('inp-group').value = currentLoc.group_name || '';
             document.getElementById('form-title').innerText = 'Editar';
+            
+            renderColorGrid(currentLoc.color || '#d93025');
+            renderGroupSuggestions();
             openSheet('form');
+        }
+
+        // Renderizar Colores
+        function renderColorGrid(preSelected) {
+            const grid = document.getElementById('color-grid'); grid.innerHTML = '';
+            selectedColor = preSelected;
+            COLORS.forEach(c => {
+                const div = document.createElement('div');
+                div.className = `color-opt ${c.c === preSelected ? 'selected' : ''}`;
+                div.style.backgroundColor = c.c;
+                div.onclick = () => {
+                    selectedColor = c.c;
+                    document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('selected'));
+                    div.classList.add('selected');
+                };
+                grid.appendChild(div);
+            });
+        }
+
+        // Renderizar Sugerencias de Grupos (Basado en lo que ya existe)
+        function renderGroupSuggestions() {
+            const container = document.getElementById('group-suggestions'); container.innerHTML = '';
+            // Obtener grupos unicos del usuario
+            const myGroups = [...new Set(locations.filter(l => l.created_by === myId && l.group_name).map(l => l.group_name))];
+            
+            myGroups.forEach(g => {
+                const tag = document.createElement('span'); tag.className = 'group-tag'; tag.innerText = g;
+                tag.onclick = () => document.getElementById('inp-group').value = g;
+                container.appendChild(tag);
+            });
+        }
+
+        // --- BOTON GPS (UBICACION ACTUAL) ---
+        document.getElementById('btn-gps').onclick = () => {
+            if(!navigator.geolocation) return alert('GPS no soportado');
+            document.getElementById('btn-gps').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                map.flyTo([latitude, longitude], 16);
+                // Opcional: Poner un marcador azul de "Yo"
+                L.circleMarker([latitude, longitude], { radius: 8, color: 'white', fillColor: '#4285F4', fillOpacity: 1 }).addTo(map);
+                document.getElementById('btn-gps').innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+            }, err => {
+                alert('No se pudo obtener ubicación');
+                document.getElementById('btn-gps').innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+            });
         };
 
-        document.getElementById('btn-delete').onclick = async () => {
-            if(confirm('¿Eliminar?')) {
-                await api(`/api/direcciones/${currentLoc.id}`, 'DELETE');
-                closeSheet(); loadLocations();
-            }
-        };
-
-        // Guardar (Nuevo o Editar)
+        // --- GUARDAR ---
         document.getElementById('btn-save').onclick = async () => {
             const body = {
                 name: document.getElementById('inp-name').value,
                 notes: document.getElementById('inp-notes').value,
-                gmaps_link: document.getElementById('inp-link').value
+                gmaps_link: document.getElementById('inp-link').value,
+                group_name: document.getElementById('inp-group').value,
+                color: selectedColor
             };
             if(!body.name) return alert('Nombre obligatorio');
 
             if(currentLoc && currentLoc.id) {
-                // Editar existente
                 await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
             } else {
-                // Nuevo
-                const c = map.getCenter();
-                await api('/api/direcciones', 'POST', { ...body, lat: c.lat, lng: c.lng });
+                const lat = parseFloat(sheet.dataset.lat);
+                const lng = parseFloat(sheet.dataset.lng);
+                await api('/api/direcciones', 'POST', { ...body, lat, lng });
             }
             closeSheet(); loadLocations();
         };
 
-        // --- MODO AGREGAR ---
+        // --- BORRAR / EDITAR / COMPARTIR ---
+        document.getElementById('btn-edit').onclick = openFormEdit;
+        document.getElementById('btn-delete').onclick = async () => {
+            if(confirm('¿Eliminar?')) { await api(`/api/direcciones/${currentLoc.id}`, 'DELETE'); closeSheet(); loadLocations(); }
+        };
+        document.getElementById('btn-share-main').onclick = () => openSheet('share');
+        window.backToDetails = () => openSheet('details');
+
+        // --- COMPARTIR (LISTA) ---
+        function renderShareList() {
+            const list = document.getElementById('users-list-container'); list.innerHTML = '';
+            const members = currentLoc.members || [];
+
+            allUsers.forEach(u => {
+                if(u.email === myEmail) return; 
+                const isShared = members.includes(u.email);
+                const div = document.createElement('div');
+                div.className = 'user-list-item';
+                div.innerHTML = `
+                    <div><div style="font-weight:500">${u.nombre || u.email}</div><div style="font-size:12px;color:#777">${u.email}</div></div>
+                    <label class="toggle-switch"><input type="checkbox" class="toggle-input" ${isShared ? 'checked' : ''}><span class="toggle-slider"></span></label>
+                `;
+                div.querySelector('input').onchange = async (e) => {
+                    let newMems = [...(currentLoc.members || [])];
+                    if(e.target.checked) { if(!newMems.includes(u.email)) newMems.push(u.email); }
+                    else { newMems = newMems.filter(m => m !== u.email); }
+                    currentLoc.members = newMems;
+                    await api(`/api/direcciones/${currentLoc.id}`, 'PUT', { members: newMems });
+                };
+                list.appendChild(div);
+            });
+        }
+
+        // --- MODO AGREGAR MANUAL (FAB) ---
         document.getElementById('btn-add-mode').onclick = () => {
             isAdding = !isAdding;
             const fab = document.getElementById('btn-add-mode');
@@ -408,38 +467,52 @@
         };
 
         document.getElementById('btn-confirm-pos').onclick = () => {
-            currentLoc = null; // Reset para indicar que es nuevo
-            document.getElementById('btn-add-mode').click(); // Salir modo mapa
-            
-            document.getElementById('inp-name').value='';
-            document.getElementById('inp-notes').value='';
-            document.getElementById('inp-link').value='';
-            document.getElementById('form-title').innerText = 'Nueva Dirección';
-            
-            openSheet('form');
+            const c = map.getCenter();
+            document.getElementById('btn-add-mode').click(); // Salir modo manual
+            openFormNew(c);
         };
 
-        // --- SIDEBAR & GLOBAL ---
+        // --- SIDEBAR & FILTROS ---
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); renderList(); }
         document.getElementById('btn-menu').onclick = toggleSidebar;
-        
-        document.getElementById('filter-global').onclick = function() {
-            showGlobals = !showGlobals; this.classList.toggle('active'); renderMap();
-        };
+        document.getElementById('filter-global').onclick = function() { showGlobals = !showGlobals; this.classList.toggle('active'); renderMap(); };
+
+        function renderGroupsFilter() {
+            // Eliminar filtros viejos (mantener el global)
+            const container = document.getElementById('filters-container');
+            while(container.children.length > 1) container.removeChild(container.lastChild);
+            
+            const myGroups = [...new Set(locations.filter(l => l.created_by === myId && l.group_name).map(l => l.group_name))];
+            
+            myGroups.forEach(g => {
+                const chip = document.createElement('div'); chip.className = 'filter-chip'; 
+                chip.innerHTML = g;
+                chip.onclick = () => {
+                    // Logica de filtrado visual simple: Ocultar los que no son de este grupo
+                    markers.forEach(m => map.removeLayer(m));
+                    const filtered = locations.filter(l => l.group_name === g && l.created_by === myId);
+                    filtered.forEach(loc => {
+                        const icon = L.divIcon({ className:'c-pin', html:`<div style="background:${loc.color};width:18px;height:18px;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>`, iconSize:[24,24], iconAnchor:[12,12] });
+                        const m = L.marker([loc.lat, loc.lng], {icon}).addTo(map);
+                        m.on('click', () => { currentLoc=loc; openSheet('details'); });
+                        markers.push(m);
+                    });
+                };
+                container.appendChild(chip);
+            });
+        }
 
         function renderList() {
             const list = document.getElementById('sidebar-list'); list.innerHTML='';
-            
-            const addItem = (l, tag, cls) => {
+            const addItem = (l, tag) => {
                 const d = document.createElement('div'); d.className='place-item';
-                d.innerHTML = `<div class="place-title">${l.name} ${tag?`<span class="badge ${cls}">${tag}</span>`:''}</div><div style="font-size:12px;color:#777">${l.notes||''}</div>`;
+                const grp = l.group_name ? `<span class="badge badge-group" style="border-color:${l.color}; color:${l.color}">${l.group_name}</span>` : '';
+                d.innerHTML = `<div class="place-title">${l.name} ${grp} ${tag?`<span class="badge bg-shared">${tag}</span>`:''}</div>`;
                 d.onclick = () => { toggleSidebar(); currentLoc=l; openSheet('details'); map.setView([l.lat, l.lng], 16); };
                 list.appendChild(d);
             };
-
-            locations.filter(l => l.is_global && showGlobals).forEach(l => addItem(l, 'Global', 'bg-global'));
-            locations.filter(l => l.created_by === myId && !l.is_global).forEach(l => addItem(l));
-            locations.filter(l => l.created_by !== myId && !l.is_global).forEach(l => addItem(l, 'Compartido', 'bg-shared'));
+            locations.filter(l => l.created_by === myId).forEach(l => addItem(l));
+            locations.filter(l => l.created_by !== myId && !l.is_global).forEach(l => addItem(l, 'Compartido'));
         }
 
         init();
