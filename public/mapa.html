@@ -19,15 +19,8 @@
 
         /* UI SUPERIOR */
         .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; gap: 10px; pointer-events: none; }
-        
-        /* Botón Volver */
-        .btn-back {
-            background: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; color: #333; text-decoration: none; font-size: 18px; transition: 0.1s;
-        }
+        .btn-back { background: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; color: #333; text-decoration: none; font-size: 18px; transition: 0.1s; }
         .btn-back:active { transform: scale(0.95); background: #f0f0f0; }
-
-        /* Barra Búsqueda */
         .search-bar { flex: 1; background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: 0.1s; }
         .search-bar:active { transform: scale(0.98); }
         .search-icon { color: #5f6368; font-size: 18px; margin-right: 12px; }
@@ -48,7 +41,6 @@
         .group-name-input:focus { background: #f0f0f0; border-radius: 4px; padding: 2px 5px; }
         .group-actions { opacity: 0.3; transition: 0.2s; cursor: pointer; }
         .group-header:hover .group-actions { opacity: 1; }
-
         .items-container { min-height: 50px; padding: 0; }
         
         /* ITEMS */
@@ -57,6 +49,15 @@
         .place-title { font-size: 14px; font-weight: 500; color: #202124; }
         .place-notes { font-size: 12px; color: #70757a; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
         .drag-handle { color: #ccc; margin-left: 10px; cursor: grab; }
+
+        /* COMPARTIR (LISTA USUARIOS) */
+        .user-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; }
+        .toggle-input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .toggle-input:checked + .toggle-slider { background-color: #1a73e8; }
+        .toggle-input:checked + .toggle-slider:before { transform: translateX(20px); }
 
         /* POPUPS */
         .color-picker-pop { position: absolute; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; gap: 8px; flex-wrap: wrap; width: 140px; z-index: 3000; }
@@ -86,6 +87,7 @@
         .modern-input { width: 100%; padding: 12px; background: #f1f3f4; border: none; border-radius: 8px; margin-bottom: 10px; font-size: 16px; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: #1a73e8; color: white; }
+        .btn-share { background: #e8f0fe; color: #1a73e8; }
         .btn-danger { background: #fce8e6; color: #c5221f; }
         .btn-sec { background: #f1f3f4; color: #333; }
 
@@ -99,10 +101,7 @@
     <div id="map"></div>
 
     <div class="top-ui">
-        <a href="index.html" class="btn-back">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-
+        <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
         <div class="search-bar" id="btn-menu">
             <i class="fa-solid fa-bars search-icon"></i>
             <span class="search-text">Mis Direcciones</span>
@@ -121,9 +120,7 @@
         <div class="sidebar-header">
             <span class="sidebar-title">Mis Lugares</span>
             <div style="display:flex; gap:15px; align-items:center;">
-                <div id="btn-new-group" style="font-size:13px; font-weight:600; color:#1a73e8; cursor:pointer; background:#e8f0fe; padding:6px 12px; border-radius:20px;">
-                    + Grupo
-                </div>
+                <div id="btn-new-group" style="font-size:13px; font-weight:600; color:#1a73e8; cursor:pointer; background:#e8f0fe; padding:6px 12px; border-radius:20px;">+ Grupo</div>
                 <i class="fa-solid fa-xmark" onclick="toggleSidebar()" style="font-size:20px; cursor:pointer; color:#5f6368;"></i>
             </div>
         </div>
@@ -136,23 +133,36 @@
     <div class="sheet" id="sheet">
         <div class="sheet-header"><div class="sheet-drag"></div></div>
         <div class="sheet-body">
+            
             <div id="view-form" style="display:none;">
                 <h2 id="form-title">Nueva Dirección</h2>
                 <input type="text" id="inp-name" class="modern-input" placeholder="Nombre">
                 <input type="text" id="inp-notes" class="modern-input" placeholder="Notas">
-                <input type="text" id="inp-link" class="modern-input" placeholder="Link Maps">
                 <button id="btn-save" class="btn btn-primary">Guardar</button>
                 <button id="cancel-btn" class="btn btn-sec">Cancelar</button>
             </div>
+
             <div id="view-details" style="display:none;">
                 <h2 id="txt-title" style="margin-bottom:5px;"></h2>
                 <p id="txt-desc" style="color:#666; margin-bottom:20px;"></p>
-                <a id="btn-gmaps" href="#" target="_blank" class="btn btn-primary"><i class="fa-solid fa-map-location-dot"></i> Ir a Maps</a>
-                <div style="display:flex; gap:10px; margin-top:10px;">
+                
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <a id="btn-gmaps" href="#" target="_blank" class="btn btn-primary" style="flex:1;"><i class="fa-solid fa-map-location-dot"></i> Ir</a>
+                    <button id="btn-share-main" class="btn btn-share" style="flex:1;"><i class="fa-solid fa-users"></i> Compartir</button>
+                </div>
+
+                <div style="display:flex; gap:10px;">
                     <button id="btn-edit" class="btn btn-sec">Editar</button>
                     <button id="btn-delete" class="btn btn-danger">Eliminar</button>
                 </div>
             </div>
+
+            <div id="view-share" style="display:none;">
+                <h2>Gestionar Acceso</h2>
+                <div id="users-list-container"></div>
+                <button class="btn btn-sec" style="width:100%; margin-top:15px;" onclick="openSheet('details')">Volver</button>
+            </div>
+
         </div>
     </div>
 
@@ -163,11 +173,10 @@
         const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com';
         const COLORS = ['#d93025', '#1a73e8', '#1e8e3e', '#f9ab00', '#9334e6', '#e37400', '#00897b', '#e91e63'];
         
-        let map, markers=[], locations=[], isAdding=false, token, myId;
+        let map, markers=[], locations=[], allUsers=[], isAdding=false, token, myId, myEmail;
         let currentLoc = null, holdTimer;
         let knownGroups = []; 
 
-        // AUTH
         function getSession() {
             for(let i=0; i<localStorage.length; i++) {
                 let k = localStorage.key(i);
@@ -188,54 +197,44 @@
         async function init() {
             const s = getSession();
             if(!s) return window.location.href='login.html';
-            token = s.access_token; myId = s.user.id;
+            token = s.access_token; myId = s.user.id; myEmail = s.user.email;
+            
             document.getElementById('loader').style.display='none';
             initMap();
-            loadData();
+            // Cargar datos y usuarios para compartir
+            await Promise.all([loadData(), loadUsers()]);
         }
 
         function initMap() {
             map = L.map('map', {zoomControl:false}).setView([-31.5375, -68.5364], 14);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-            // LOGICA MEJORADA DE MANTENER APRETADO (CELULAR)
             const mapContainer = document.getElementById('map');
             let startX, startY;
 
-            // 1. Detectar toque inicial
+            // Touch events
             mapContainer.addEventListener('touchstart', (e) => {
                 if(isAdding || document.getElementById('sheet').classList.contains('open') || e.touches.length > 1) return;
-                
                 const touch = e.touches[0];
-                startX = touch.clientX;
-                startY = touch.clientY;
-
+                startX = touch.clientX; startY = touch.clientY;
                 holdTimer = setTimeout(() => {
                     navigator.vibrate?.(50);
-                    // Convertir px a latlng
                     const latlng = map.containerPointToLatLng([touch.clientX, touch.clientY]);
                     openFormNew(latlng);
                 }, 800); 
             }, { passive: true });
 
-            // 2. Si mueve el dedo (scroll/pan), cancelar
             mapContainer.addEventListener('touchmove', (e) => {
                 const touch = e.touches[0];
-                // Margen de error de 10px para dedos temblorosos
-                if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
-                    clearTimeout(holdTimer);
-                }
+                if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) clearTimeout(holdTimer);
             }, { passive: true });
 
-            // 3. Si suelta, cancelar
             mapContainer.addEventListener('touchend', () => clearTimeout(holdTimer));
             
-            // 4. Desktop (Click derecho)
+            // Desktop
             map.on('mousedown', (e) => {
                 if(isAdding) return;
-                holdTimer = setTimeout(() => {
-                    openFormNew(e.latlng);
-                }, 800);
+                holdTimer = setTimeout(() => openFormNew(e.latlng), 800);
             });
             map.on('mouseup dragstart', () => clearTimeout(holdTimer));
         }
@@ -243,7 +242,6 @@
         async function loadData() {
             try { 
                 locations = await api('/api/direcciones') || [];
-                
                 const groupsFromDB = [...new Set(locations.filter(l => l.group_name).map(l => l.group_name))];
                 const localGroups = JSON.parse(localStorage.getItem('saved_groups_' + myId)) || [];
 
@@ -253,10 +251,7 @@
                         knownGroups.push({ name: gName, color: item ? item.group_color : '#1a73e8' });
                     }
                 });
-                
-                localGroups.forEach(lg => {
-                     if(!knownGroups.find(g => g.name === lg.name)) knownGroups.push(lg);
-                });
+                localGroups.forEach(lg => { if(!knownGroups.find(g => g.name === lg.name)) knownGroups.push(lg); });
 
                 saveGroupsToLocal();
                 renderMap();
@@ -264,9 +259,11 @@
             } catch(e) { console.error(e); }
         }
 
-        function saveGroupsToLocal() {
-            localStorage.setItem('saved_groups_' + myId, JSON.stringify(knownGroups));
+        async function loadUsers() {
+            try { allUsers = await api('/api/usuarios') || []; } catch(e){}
         }
+
+        function saveGroupsToLocal() { localStorage.setItem('saved_groups_' + myId, JSON.stringify(knownGroups)); }
 
         function renderMap() {
             markers.forEach(m => map.removeLayer(m)); markers=[];
@@ -279,19 +276,14 @@
             });
         }
 
-        // --- RENDER SIDEBAR ---
         function renderSidebar() {
-            const container = document.getElementById('sidebar-content');
-            container.innerHTML = '';
-
+            const container = document.getElementById('sidebar-content'); container.innerHTML = '';
             knownGroups.forEach(grp => {
                 const items = locations.filter(l => l.group_name === grp.name);
                 container.appendChild(createGroupSection(grp.name, grp.color, items));
             });
-
             const noGroupItems = locations.filter(l => !l.group_name && l.created_by === myId);
             container.appendChild(createGroupSection(null, '#777', noGroupItems));
-
             initSortable();
         }
 
@@ -313,11 +305,9 @@
                 input.className = 'group-name-input';
                 input.value = name;
                 input.onblur = (e) => renameGroup(name, e.target.value);
-                
                 const trash = document.createElement('i');
                 trash.className = 'fa-solid fa-trash group-actions';
                 trash.onclick = () => deleteGroup(name);
-
                 header.append(dot, input, trash);
             } else {
                 header.innerHTML = `<span style="font-size:12px; font-weight:700; color:#999;">SIN AGRUPAR</span>`;
@@ -325,7 +315,6 @@
             
             const list = document.createElement('div');
             list.className = 'items-container';
-            
             items.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'place-item';
@@ -333,18 +322,44 @@
                 row.innerHTML = `<div class="place-info" onclick="jumpTo(${item.lat},${item.lng}, '${item.id}')"><div class="place-title">${item.name}</div><div class="place-notes">${item.notes || ''}</div></div><i class="fa-solid fa-grip-lines drag-handle"></i>`;
                 list.appendChild(row);
             });
-            sec.appendChild(header);
-            sec.appendChild(list);
+            sec.append(header, list);
             return sec;
         }
 
+        // --- COMPARTIR ---
+        document.getElementById('btn-share-main').onclick = () => {
+            renderShareList();
+            openSheet('share');
+        };
+
+        function renderShareList() {
+            const list = document.getElementById('users-list-container'); list.innerHTML = '';
+            const members = currentLoc.members || [];
+
+            allUsers.forEach(u => {
+                if(u.email === myEmail) return; 
+                const isShared = members.includes(u.email);
+                const div = document.createElement('div');
+                div.className = 'user-list-item';
+                div.innerHTML = `
+                    <div><div style="font-weight:500">${u.nombre || u.email}</div><div style="font-size:12px;color:#777">${u.email}</div></div>
+                    <label class="toggle-switch"><input type="checkbox" class="toggle-input" ${isShared ? 'checked' : ''}><span class="toggle-slider"></span></label>
+                `;
+                div.querySelector('input').onchange = async (e) => {
+                    let newMems = [...(currentLoc.members || [])];
+                    if(e.target.checked) { if(!newMems.includes(u.email)) newMems.push(u.email); }
+                    else { newMems = newMems.filter(m => m !== u.email); }
+                    currentLoc.members = newMems;
+                    await api(`/api/direcciones/${currentLoc.id}`, 'PUT', { members: newMems });
+                };
+                list.appendChild(div);
+            });
+        }
+
         function initSortable() {
-            const containers = document.querySelectorAll('.items-container');
-            containers.forEach(c => {
+            document.querySelectorAll('.items-container').forEach(c => {
                 new Sortable(c, {
-                    group: 'shared',
-                    handle: '.drag-handle',
-                    animation: 150,
+                    group: 'shared', handle: '.drag-handle', animation: 150,
                     onEnd: async (evt) => {
                         const itemEl = evt.item;
                         const newGroupSec = itemEl.closest('.group-section');
@@ -353,30 +368,20 @@
                         const itemId = itemEl.dataset.id;
 
                         const loc = locations.find(l => l.id === itemId);
-                        if(loc) {
-                            loc.group_name = newGName;
-                            loc.group_color = newGColor;
-                        }
+                        if(loc) { loc.group_name = newGName; loc.group_color = newGColor; }
                         renderMap();
 
                         try {
-                            await api(`/api/direcciones/${itemId}`, 'PUT', { 
-                                group_name: newGName,
-                                group_color: newGColor
-                            });
-                        } catch(e) {
-                            alert('Error al guardar movimiento. Recarga la página.');
-                        }
+                            await api(`/api/direcciones/${itemId}`, 'PUT', { group_name: newGName, group_color: newGColor });
+                        } catch(e) { alert('Error al guardar movimiento.'); }
                     }
                 });
             });
         }
 
-        // --- GESTIÓN GRUPOS ---
         document.getElementById('btn-new-group').onclick = () => {
             const baseName = "Nuevo Grupo";
-            let name = baseName;
-            let i = 1;
+            let name = baseName; let i = 1;
             while(knownGroups.find(g => g.name === name)) { name = `${baseName} ${i++}`; }
             knownGroups.push({ name: name, color: '#1a73e8' });
             saveGroupsToLocal();
@@ -385,32 +390,23 @@
 
         async function renameGroup(oldName, newName) {
             if(oldName === newName || !newName.trim()) return renderSidebar();
-            
             const idx = knownGroups.findIndex(g => g.name === oldName);
             if(idx !== -1) knownGroups[idx].name = newName;
             saveGroupsToLocal();
-
-            const itemsToUpdate = locations.filter(l => l.group_name === oldName);
-            itemsToUpdate.forEach(l => l.group_name = newName);
-            
+            locations.forEach(l => { if(l.group_name === oldName) l.group_name = newName; });
             renderSidebar();
-
-            for (const item of itemsToUpdate) {
+            for (const item of locations.filter(l => l.group_name === newName)) {
                 await api(`/api/direcciones/${item.id}`, 'PUT', { group_name: newName });
             }
         }
 
         async function deleteGroup(name) {
             if(!confirm('¿Desagrupar items?')) return;
-            
             knownGroups = knownGroups.filter(g => g.name !== name);
             saveGroupsToLocal();
-            
             const itemsToUpdate = locations.filter(l => l.group_name === name);
             itemsToUpdate.forEach(l => l.group_name = null);
-            
             renderSidebar(); renderMap();
-
             for (const item of itemsToUpdate) {
                 await api(`/api/direcciones/${item.id}`, 'PUT', { group_name: null });
             }
@@ -425,12 +421,9 @@
                     const grp = knownGroups.find(g => g.name === gName);
                     if(grp) grp.color = c;
                     saveGroupsToLocal();
-
                     const itemsToUpdate = locations.filter(l => l.group_name === gName);
                     itemsToUpdate.forEach(l => l.group_color = c);
-                    
                     renderSidebar(); renderMap(); cp.style.display='none';
-
                     for (const item of itemsToUpdate) {
                         await api(`/api/direcciones/${item.id}`, 'PUT', { group_color: c });
                     }
@@ -441,48 +434,61 @@
             function closeCp() { cp.style.display='none'; document.removeEventListener('click', closeCp); }
         }
 
-        // --- GPS ---
-        document.getElementById('btn-gps').onclick = () => {
-            navigator.geolocation.getCurrentPosition(pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16));
-        };
+        document.getElementById('btn-gps').onclick = () => navigator.geolocation.getCurrentPosition(pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16));
 
-        // --- FORMULARIOS ---
         function openFormNew(latlng) {
             currentLoc = null;
             document.getElementById('inp-name').value='';
             document.getElementById('inp-notes').value='';
-            document.getElementById('inp-link').value='';
             document.getElementById('sheet').dataset.lat = latlng.lat;
             document.getElementById('sheet').dataset.lng = latlng.lng;
             openSheet('form');
         }
+
         function openSheet(view) {
             document.getElementById('sheet').classList.add('open');
             document.getElementById('overlay').classList.add('open');
             document.getElementById('view-form').style.display = view==='form'?'block':'none';
             document.getElementById('view-details').style.display = view==='details'?'block':'none';
+            document.getElementById('view-share').style.display = view==='share'?'block':'none';
+            
             if(view==='details' && currentLoc) {
                 document.getElementById('txt-title').innerText = currentLoc.name;
                 document.getElementById('txt-desc').innerText = currentLoc.notes || '';
                 document.getElementById('btn-gmaps').href = currentLoc.gmaps_link || '#';
+                
+                // Mostrar/Ocultar controles segun dueño
+                const isMine = currentLoc.created_by === myId;
+                document.getElementById('btn-share-main').style.display = isMine ? 'block' : 'none';
+                document.getElementById('btn-edit').style.display = isMine ? 'block' : 'none';
+                document.getElementById('btn-delete').style.display = isMine ? 'block' : 'none';
             }
         }
+
         document.getElementById('btn-save').onclick = async () => {
-            const body = { name: document.getElementById('inp-name').value, notes: document.getElementById('inp-notes').value, gmaps_link: document.getElementById('inp-link').value };
+            const lat = currentLoc ? currentLoc.lat : parseFloat(document.getElementById('sheet').dataset.lat);
+            const lng = currentLoc ? currentLoc.lng : parseFloat(document.getElementById('sheet').dataset.lng);
+            const autoLink = `https://www.google.com/maps?q=${lat},${lng}`; // CORREGIDO LINK OFICIAL
+
+            const body = { 
+                name: document.getElementById('inp-name').value, 
+                notes: document.getElementById('inp-notes').value, 
+                gmaps_link: autoLink 
+            };
             if(!body.name) return;
-            if(currentLoc) await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
-            else {
-                const lat = parseFloat(document.getElementById('sheet').dataset.lat);
-                const lng = parseFloat(document.getElementById('sheet').dataset.lng);
+
+            if(currentLoc) {
+                await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
+            } else {
                 await api('/api/direcciones', 'POST', { ...body, lat, lng });
             }
             closeSheet(); loadData();
         };
+
         document.getElementById('btn-delete').onclick = async () => { if(confirm('Borrar?')) { await api(`/api/direcciones/${currentLoc.id}`, 'DELETE'); closeSheet(); loadData(); } };
         document.getElementById('btn-edit').onclick = () => {
             document.getElementById('inp-name').value = currentLoc.name;
             document.getElementById('inp-notes').value = currentLoc.notes;
-            document.getElementById('inp-link').value = currentLoc.gmaps_link;
             openSheet('form');
         };
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
