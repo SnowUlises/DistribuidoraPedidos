@@ -50,7 +50,7 @@
         .place-notes { font-size: 12px; color: #70757a; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
         .drag-handle { color: #ccc; margin-left: 10px; cursor: grab; }
 
-        /* COMPARTIR (LISTA USUARIOS) */
+        /* COMPARTIR */
         .user-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; }
         .toggle-switch { position: relative; width: 44px; height: 24px; }
         .toggle-input { opacity: 0; width: 0; height: 0; }
@@ -90,6 +90,17 @@
         .btn-share { background: #e8f0fe; color: #1a73e8; }
         .btn-danger { background: #fce8e6; color: #c5221f; }
         .btn-sec { background: #f1f3f4; color: #333; }
+
+        /* MARCADOR USUARIO (FLECHA AZUL) */
+        .user-marker-icon {
+            display: flex; align-items: center; justify-content: center;
+        }
+        .user-arrow-circle {
+            width: 24px; height: 24px; background: #4285F4; border: 2px solid white; border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s linear;
+        }
+        .user-arrow-circle i { color: white; font-size: 12px; }
 
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; justify-content: center; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -176,6 +187,7 @@
         let map, markers=[], locations=[], allUsers=[], isAdding=false, token, myId, myEmail;
         let currentLoc = null, holdTimer;
         let knownGroups = []; 
+        let userMarker = null; // Para la flecha del usuario
 
         function getSession() {
             for(let i=0; i<localStorage.length; i++) {
@@ -201,7 +213,7 @@
             
             document.getElementById('loader').style.display='none';
             initMap();
-            // Cargar datos y usuarios para compartir
+            trackUserLocation(); // Iniciar rastreo de usuario
             await Promise.all([loadData(), loadUsers()]);
         }
 
@@ -212,31 +224,70 @@
             const mapContainer = document.getElementById('map');
             let startX, startY;
 
-            // Touch events
+            // LOGICA MANTENER APRETADO (CELULAR MEJORADA)
             mapContainer.addEventListener('touchstart', (e) => {
+                // Si estamos agregando o hay un panel abierto, no hacemos nada
                 if(isAdding || document.getElementById('sheet').classList.contains('open') || e.touches.length > 1) return;
+                
                 const touch = e.touches[0];
-                startX = touch.clientX; startY = touch.clientY;
+                startX = touch.clientX; 
+                startY = touch.clientY;
+
+                // 500ms es más rápido y natural
                 holdTimer = setTimeout(() => {
                     navigator.vibrate?.(50);
+                    // Convertir coordenadas de pantalla a mapa
                     const latlng = map.containerPointToLatLng([touch.clientX, touch.clientY]);
                     openFormNew(latlng);
-                }, 800); 
+                }, 500); 
             }, { passive: true });
 
             mapContainer.addEventListener('touchmove', (e) => {
                 const touch = e.touches[0];
-                if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) clearTimeout(holdTimer);
+                // Si mueve el dedo más de 10px, es scroll, cancelar timer
+                if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+                    clearTimeout(holdTimer);
+                }
             }, { passive: true });
 
             mapContainer.addEventListener('touchend', () => clearTimeout(holdTimer));
             
-            // Desktop
+            // Desktop (Click derecho/hold)
             map.on('mousedown', (e) => {
                 if(isAdding) return;
-                holdTimer = setTimeout(() => openFormNew(e.latlng), 800);
+                holdTimer = setTimeout(() => openFormNew(e.latlng), 500);
             });
             map.on('mouseup dragstart', () => clearTimeout(holdTimer));
+        }
+
+        // --- RASTREO USUARIO (FLECHA) ---
+        function trackUserLocation() {
+            if (!navigator.geolocation) return;
+            
+            navigator.geolocation.watchPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const heading = pos.coords.heading; // Dirección (null en PC a veces)
+
+                if (!userMarker) {
+                    const icon = L.divIcon({
+                        className: 'user-marker-icon',
+                        html: `<div class="user-arrow-circle" id="user-arrow"><i class="fa-solid fa-location-arrow"></i></div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+                    userMarker = L.marker([lat, lng], {icon: icon, zIndexOffset: 1000}).addTo(map);
+                } else {
+                    userMarker.setLatLng([lat, lng]);
+                }
+
+                // Rotar flecha si hay heading
+                const arrow = document.getElementById('user-arrow');
+                if(arrow && heading !== null && !isNaN(heading)) {
+                    arrow.style.transform = `rotate(${heading}deg)`;
+                }
+
+            }, (err) => console.warn(err), { enableHighAccuracy: true });
         }
 
         async function loadData() {
@@ -434,7 +485,12 @@
             function closeCp() { cp.style.display='none'; document.removeEventListener('click', closeCp); }
         }
 
-        document.getElementById('btn-gps').onclick = () => navigator.geolocation.getCurrentPosition(pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16));
+        // --- GPS BOTÓN ---
+        document.getElementById('btn-gps').onclick = () => {
+            navigator.geolocation.getCurrentPosition(pos => {
+                map.flyTo([pos.coords.latitude, pos.coords.longitude], 16);
+            }, err => alert('No se pudo obtener ubicación'));
+        };
 
         function openFormNew(latlng) {
             currentLoc = null;
@@ -457,7 +513,6 @@
                 document.getElementById('txt-desc').innerText = currentLoc.notes || '';
                 document.getElementById('btn-gmaps').href = currentLoc.gmaps_link || '#';
                 
-                // Mostrar/Ocultar controles segun dueño
                 const isMine = currentLoc.created_by === myId;
                 document.getElementById('btn-share-main').style.display = isMine ? 'block' : 'none';
                 document.getElementById('btn-edit').style.display = isMine ? 'block' : 'none';
@@ -468,7 +523,7 @@
         document.getElementById('btn-save').onclick = async () => {
             const lat = currentLoc ? currentLoc.lat : parseFloat(document.getElementById('sheet').dataset.lat);
             const lng = currentLoc ? currentLoc.lng : parseFloat(document.getElementById('sheet').dataset.lng);
-            const autoLink = `https://www.google.com/maps?q=${lat},${lng}`; // CORREGIDO LINK OFICIAL
+            const autoLink = `http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`; // LINK CORREGIDO UNIVERSAL
 
             const body = { 
                 name: document.getElementById('inp-name').value, 
