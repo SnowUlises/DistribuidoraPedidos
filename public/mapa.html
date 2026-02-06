@@ -21,7 +21,9 @@
         .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .search-bar { background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: 0.1s; }
         .search-bar:active { transform: scale(0.98); }
-        
+        .search-icon { color: #5f6368; font-size: 18px; margin-right: 12px; }
+        .search-text { font-size: 15px; color: #3c4043; font-weight: 600; }
+
         /* SIDEBAR */
         .sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 2000; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
         .sidebar.open { transform: translateX(0); }
@@ -58,25 +60,33 @@
         /* FABs */
         .fab-container { position: absolute; bottom: 32px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 12px; }
         .fab { width: 56px; height: 56px; background: #1a1a1a; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
+        .fab:active { transform: scale(0.90); }
         .fab-mini { width: 48px; height: 48px; background: white; color: #555; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; }
 
         /* UI AGREGAR */
         #center-pin-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 900; pointer-events: none; display: none; flex-direction: column; align-items: center; }
-        .confirm-btn-float { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 14px 28px; border-radius: 30px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1001; cursor: pointer; display: none; }
+        .pin-head { font-size: 44px; color: #ea4335; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+        .pin-shadow { width: 12px; height: 4px; background: rgba(0,0,0,0.2); border-radius: 50%; margin-top: -6px; }
+        .confirm-btn-float { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 14px 28px; border-radius: 30px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1001; cursor: pointer; display: none; width: max-content; }
 
         /* SHEET */
         .sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; pointer-events: none; transition: 0.3s; }
         .sheet-overlay.open { opacity: 1; pointer-events: auto; }
-        .sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%); transition: 0.3s; padding-bottom: 30px; max-height: 85vh; overflow-y: auto; }
+        .sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: 30px; max-height: 85vh; overflow-y: auto; }
         .sheet.open { transform: translateY(0); }
-        .sheet-body { padding: 20px; }
+        .sheet-header { display: flex; justify-content: center; padding: 12px; }
+        .sheet-drag { width: 40px; height: 5px; background: #e0e0e0; border-radius: 10px; }
+        .sheet-body { padding: 0 24px 24px 24px; }
         
         .modern-input { width: 100%; padding: 12px; background: #f1f3f4; border: none; border-radius: 8px; margin-bottom: 10px; font-size: 16px; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 5px; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: #1a73e8; color: white; }
         .btn-danger { background: #fce8e6; color: #c5221f; }
+        .btn-sec { background: #f1f3f4; color: #333; }
 
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -85,13 +95,14 @@
 
     <div class="top-ui">
         <div class="search-bar" id="btn-menu">
-            <i class="fa-solid fa-bars" style="margin-right:12px; color:#5f6368"></i>
-            <span style="font-weight:600; color:#3c4043">Mis Direcciones</span>
+            <i class="fa-solid fa-bars search-icon"></i>
+            <span class="search-text">Mis Direcciones</span>
         </div>
     </div>
 
     <div id="center-pin-container">
-        <i class="fa-solid fa-location-dot" style="font-size:44px; color:#ea4335; filter:drop-shadow(0 4px 4px rgba(0,0,0,0.3))"></i>
+        <i class="fa-solid fa-location-dot pin-head"></i>
+        <div class="pin-shadow"></div>
     </div>
     <div class="confirm-btn-float" id="btn-confirm-pos">Confirmar</div>
 
@@ -119,14 +130,17 @@
 
     <div class="sheet-overlay" id="overlay"></div>
     <div class="sheet" id="sheet">
+        <div class="sheet-header"><div class="sheet-drag"></div></div>
         <div class="sheet-body">
+            
             <div id="view-form" style="display:none;">
                 <h2 id="form-title">Nueva Dirección</h2>
                 <input type="text" id="inp-name" class="modern-input" placeholder="Nombre (ej. Casa Juan)">
                 <input type="text" id="inp-notes" class="modern-input" placeholder="Notas">
                 <input type="text" id="inp-link" class="modern-input" placeholder="Link Maps (Opcional)">
                 <button id="btn-save" class="btn btn-primary">Guardar</button>
-            </div>
+                <button id="cancel-btn" class="btn btn-sec">Cancelar</button> </div>
+
             <div id="view-details" style="display:none;">
                 <h2 id="txt-title" style="margin-bottom:5px;"></h2>
                 <p id="txt-desc" style="color:#666; margin-bottom:20px;"></p>
@@ -134,14 +148,14 @@
                     <i class="fa-solid fa-map-location-dot"></i> Ir a Maps
                 </a>
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button id="btn-edit" class="btn" style="background:#f1f3f4; color:#333;">Editar</button>
-                    <button id="btn-delete" class="btn btn-danger">Eliminar</button>
+                    <button id="btn-edit" class="btn btn-sec"><i class="fa-solid fa-pen"></i> Editar</button>
+                    <button id="btn-delete" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Eliminar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="loader"><div>Cargando...</div></div>
+    <div id="loader"><div class="spinner"></div></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -351,19 +365,14 @@
 
         // --- GESTIÓN GRUPOS ---
         document.getElementById('btn-new-group').onclick = () => {
-            // Crea un grupo temporal en memoria agregando un item "placeholder" o simplemente renderizando
-            // Truco: Para que persista, necesitamos al menos un item o manejar grupos vacios. 
-            // Como el usuario dijo "arrastrar hacia esos grupos", crearemos una caja visual vacía en el DOM.
             const container = document.getElementById('sidebar-content');
             const newSec = createGroupSection('Nuevo Grupo', '#1a73e8', []);
-            // Insertar antes de "Sin Agrupar"
             container.insertBefore(newSec, container.lastChild);
             initSortable(); // Re-bind drag events
         };
 
         async function renameGroup(oldName, newName) {
             if(oldName === newName) return;
-            // Actualizar todos los items de ese grupo
             locations.forEach(l => { if(l.group_name === oldName) l.group_name = newName; });
             renderSidebar();
             await saveReorder();
@@ -393,7 +402,6 @@
                 };
                 cp.appendChild(d);
             });
-            // Click outside closes
             setTimeout(() => document.addEventListener('click', closeCp), 0);
             function closeCp() { cp.style.display='none'; document.removeEventListener('click', closeCp); }
         }
@@ -409,7 +417,6 @@
             document.getElementById('inp-name').value='';
             document.getElementById('inp-notes').value='';
             document.getElementById('inp-link').value='';
-            // Guardar latlng en dataset
             document.getElementById('sheet').dataset.lat = latlng.lat;
             document.getElementById('sheet').dataset.lng = latlng.lng;
             openSheet('form');
@@ -460,7 +467,10 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
         document.getElementById('btn-menu').onclick = toggleSidebar;
         document.getElementById('overlay').onclick = closeSheet;
+        
+        // --- AHORA SÍ: cancel-btn EXISTE EN EL HTML ---
         document.getElementById('cancel-btn').onclick = closeSheet;
+        
         function closeSheet() { document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
         
         window.jumpTo = (lat, lng, id) => {
