@@ -18,8 +18,17 @@
         .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 
         /* UI SUPERIOR */
-        .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .search-bar { background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: 0.1s; }
+        .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; gap: 10px; pointer-events: none; }
+        
+        /* Botón Volver */
+        .btn-back {
+            background: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; color: #333; text-decoration: none; font-size: 18px; transition: 0.1s;
+        }
+        .btn-back:active { transform: scale(0.95); background: #f0f0f0; }
+
+        /* Barra Búsqueda */
+        .search-bar { flex: 1; background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: 0.1s; }
         .search-bar:active { transform: scale(0.98); }
         .search-icon { color: #5f6368; font-size: 18px; margin-right: 12px; }
         .search-text { font-size: 15px; color: #3c4043; font-weight: 600; }
@@ -90,6 +99,10 @@
     <div id="map"></div>
 
     <div class="top-ui">
+        <a href="index.html" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+
         <div class="search-bar" id="btn-menu">
             <i class="fa-solid fa-bars search-icon"></i>
             <span class="search-text">Mis Direcciones</span>
@@ -154,6 +167,7 @@
         let currentLoc = null, holdTimer;
         let knownGroups = []; 
 
+        // AUTH
         function getSession() {
             for(let i=0; i<localStorage.length; i++) {
                 let k = localStorage.key(i);
@@ -183,11 +197,47 @@
         function initMap() {
             map = L.map('map', {zoomControl:false}).setView([-31.5375, -68.5364], 14);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-            map.on('mousedown touchstart', (e) => {
-                if(isAdding || document.getElementById('sheet').classList.contains('open')) return;
-                holdTimer = setTimeout(() => { navigator.vibrate?.(50); openFormNew(e.latlng); }, 800); 
+
+            // LOGICA MEJORADA DE MANTENER APRETADO (CELULAR)
+            const mapContainer = document.getElementById('map');
+            let startX, startY;
+
+            // 1. Detectar toque inicial
+            mapContainer.addEventListener('touchstart', (e) => {
+                if(isAdding || document.getElementById('sheet').classList.contains('open') || e.touches.length > 1) return;
+                
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+
+                holdTimer = setTimeout(() => {
+                    navigator.vibrate?.(50);
+                    // Convertir px a latlng
+                    const latlng = map.containerPointToLatLng([touch.clientX, touch.clientY]);
+                    openFormNew(latlng);
+                }, 800); 
+            }, { passive: true });
+
+            // 2. Si mueve el dedo (scroll/pan), cancelar
+            mapContainer.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                // Margen de error de 10px para dedos temblorosos
+                if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+                    clearTimeout(holdTimer);
+                }
+            }, { passive: true });
+
+            // 3. Si suelta, cancelar
+            mapContainer.addEventListener('touchend', () => clearTimeout(holdTimer));
+            
+            // 4. Desktop (Click derecho)
+            map.on('mousedown', (e) => {
+                if(isAdding) return;
+                holdTimer = setTimeout(() => {
+                    openFormNew(e.latlng);
+                }, 800);
             });
-            map.on('mouseup touchend dragstart', () => clearTimeout(holdTimer));
+            map.on('mouseup dragstart', () => clearTimeout(holdTimer));
         }
 
         async function loadData() {
@@ -288,7 +338,6 @@
             return sec;
         }
 
-        // --- SORTABLE & GUARDADO SEGURO (INDIVIDUAL) ---
         function initSortable() {
             const containers = document.querySelectorAll('.items-container');
             containers.forEach(c => {
@@ -303,15 +352,13 @@
                         const newGColor = newGroupSec.dataset.gcolor || '#d93025';
                         const itemId = itemEl.dataset.id;
 
-                        // Actualizar UI local inmediatamente
                         const loc = locations.find(l => l.id === itemId);
                         if(loc) {
                             loc.group_name = newGName;
                             loc.group_color = newGColor;
                         }
-                        renderMap(); // Actualizar color del pin
+                        renderMap();
 
-                        // GUARDAR EN SERVIDOR UNO A UNO (Más seguro si upsert falla)
                         try {
                             await api(`/api/direcciones/${itemId}`, 'PUT', { 
                                 group_name: newGName,
@@ -343,13 +390,11 @@
             if(idx !== -1) knownGroups[idx].name = newName;
             saveGroupsToLocal();
 
-            // Actualizar items en memoria
             const itemsToUpdate = locations.filter(l => l.group_name === oldName);
             itemsToUpdate.forEach(l => l.group_name = newName);
             
             renderSidebar();
 
-            // Guardar cambios en DB uno por uno
             for (const item of itemsToUpdate) {
                 await api(`/api/direcciones/${item.id}`, 'PUT', { group_name: newName });
             }
@@ -366,7 +411,6 @@
             
             renderSidebar(); renderMap();
 
-            // Guardar en DB
             for (const item of itemsToUpdate) {
                 await api(`/api/direcciones/${item.id}`, 'PUT', { group_name: null });
             }
@@ -387,7 +431,6 @@
                     
                     renderSidebar(); renderMap(); cp.style.display='none';
 
-                    // Guardar en DB
                     for (const item of itemsToUpdate) {
                         await api(`/api/direcciones/${item.id}`, 'PUT', { group_color: c });
                     }
@@ -398,8 +441,12 @@
             function closeCp() { cp.style.display='none'; document.removeEventListener('click', closeCp); }
         }
 
-        // --- UTILIDADES ---
-        document.getElementById('btn-gps').onclick = () => navigator.geolocation.getCurrentPosition(pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16));
+        // --- GPS ---
+        document.getElementById('btn-gps').onclick = () => {
+            navigator.geolocation.getCurrentPosition(pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16));
+        };
+
+        // --- FORMULARIOS ---
         function openFormNew(latlng) {
             currentLoc = null;
             document.getElementById('inp-name').value='';
@@ -444,6 +491,7 @@
         document.getElementById('cancel-btn').onclick = closeSheet;
         function closeSheet() { document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
         window.jumpTo = (lat, lng, id) => { currentLoc = locations.find(l => l.id === id); toggleSidebar(); map.setView([lat, lng], 16); openSheet('details'); };
+        
         document.getElementById('btn-add-mode').onclick = () => {
             isAdding = !isAdding;
             const fab = document.getElementById('btn-add-mode');
