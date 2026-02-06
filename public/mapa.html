@@ -38,10 +38,11 @@
         
         .group-color-dot { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); flex-shrink: 0; }
         .group-name-input { border: none; font-size: 14px; font-weight: 700; color: #333; flex: 1; background: transparent; }
+        .group-name-input:focus { background: #f0f0f0; border-radius: 4px; padding: 2px 5px; }
         .group-actions { opacity: 0.3; transition: 0.2s; cursor: pointer; }
         .group-header:hover .group-actions { opacity: 1; }
 
-        .items-container { min-height: 10px; padding: 0; }
+        .items-container { min-height: 40px; padding: 0; } /* Altura mínima para poder soltar items */
         
         /* ITEMS DE DIRECCION */
         .place-item { padding: 12px 15px; background: white; border-bottom: 1px solid #f5f5f5; cursor: grab; display: flex; align-items: center; justify-content: space-between; user-select: none; }
@@ -139,7 +140,8 @@
                 <input type="text" id="inp-notes" class="modern-input" placeholder="Notas">
                 <input type="text" id="inp-link" class="modern-input" placeholder="Link Maps (Opcional)">
                 <button id="btn-save" class="btn btn-primary">Guardar</button>
-                <button id="cancel-btn" class="btn btn-sec">Cancelar</button> </div>
+                <button id="cancel-btn" class="btn btn-sec">Cancelar</button>
+            </div>
 
             <div id="view-details" style="display:none;">
                 <h2 id="txt-title" style="margin-bottom:5px;"></h2>
@@ -164,6 +166,9 @@
         
         let map, markers=[], locations=[], isAdding=false, token, myId;
         let currentLoc = null, holdTimer;
+        
+        // Estado local de grupos (Para persistir grupos vacíos temporalmente)
+        let knownGroups = []; 
 
         // AUTH
         function getSession() {
@@ -209,7 +214,21 @@
 
         async function loadData() {
             try { 
-                locations = await api('/api/direcciones') || []; 
+                locations = await api('/api/direcciones') || [];
+                
+                // Extraer grupos existentes de las direcciones cargadas
+                // Esto asegura que al recargar la página, los grupos con items sigan ahí
+                const groupsFromDB = [...new Set(locations.filter(l => l.group_name).map(l => l.group_name))];
+                
+                // Fusionamos con los conocidos (evita duplicados)
+                groupsFromDB.forEach(gName => {
+                    if(!knownGroups.find(g => g.name === gName)) {
+                        // Buscar color de ese grupo en alguno de sus items
+                        const item = locations.find(l => l.group_name === gName);
+                        knownGroups.push({ name: gName, color: item ? item.group_color : '#1a73e8' });
+                    }
+                });
+
                 renderMap();
                 renderSidebar();
             } catch(e){}
@@ -226,63 +245,50 @@
             });
         }
 
-        // --- SIDEBAR & GRUPOS (Lógica Core) ---
+        // --- SIDEBAR & GRUPOS ---
         function renderSidebar() {
             const container = document.getElementById('sidebar-content');
             container.innerHTML = '';
 
-            // 1. Agrupar datos
-            const groupsMap = {};
-            const noGroup = [];
-
-            locations.forEach(loc => {
-                if(loc.group_name) {
-                    if(!groupsMap[loc.group_name]) groupsMap[loc.group_name] = { color: loc.group_color, items: [] };
-                    groupsMap[loc.group_name].items.push(loc);
-                } else {
-                    noGroup.push(loc);
-                }
-            });
-
-            // 2. Renderizar Secciones de Grupo
-            Object.keys(groupsMap).forEach(gName => {
-                const grp = groupsMap[gName];
-                const section = createGroupSection(gName, grp.color, grp.items);
+            // 1. Renderizar Grupos Conocidos (Vacíos o Llenos)
+            knownGroups.forEach(grp => {
+                const items = locations.filter(l => l.group_name === grp.name);
+                const section = createGroupSection(grp.name, grp.color, items);
                 container.appendChild(section);
             });
 
-            // 3. Renderizar Sin Grupo
-            const unGroupSection = createGroupSection(null, '#777', noGroup);
+            // 2. Renderizar Sin Grupo
+            const noGroupItems = locations.filter(l => !l.group_name && l.created_by === myId);
+            const unGroupSection = createGroupSection(null, '#777', noGroupItems);
             container.appendChild(unGroupSection);
 
-            // 4. Activar Sortable (Drag & Drop)
             initSortable();
         }
 
         function createGroupSection(name, color, items) {
             const sec = document.createElement('div');
             sec.className = 'group-section';
-            sec.dataset.gname = name || ''; // Dataset para saber destino al soltar
+            sec.dataset.gname = name || '';
             sec.dataset.gcolor = color || '#777';
 
-            // Header (Editable solo si es grupo)
             const header = document.createElement('div');
             header.className = 'group-header';
             
             if(name) {
-                // Color Dot
                 const dot = document.createElement('div');
                 dot.className = 'group-color-dot';
                 dot.style.background = color;
                 dot.onclick = (e) => showColorPicker(e, name);
                 
-                // Nombre Input
                 const input = document.createElement('input');
                 input.className = 'group-name-input';
                 input.value = name;
+                // Si es un grupo nuevo vacío, queremos poder editarlo sin que desaparezca
                 input.onblur = (e) => renameGroup(name, e.target.value);
                 
-                // Borrar Grupo
+                // Hack para foco automático en grupos nuevos
+                if(name.startsWith('Nuevo Grupo')) setTimeout(() => input.select(), 100);
+
                 const trash = document.createElement('i');
                 trash.className = 'fa-solid fa-trash group-actions';
                 trash.style.color = '#ccc';
@@ -318,11 +324,10 @@
             const containers = document.querySelectorAll('.items-container');
             containers.forEach(c => {
                 new Sortable(c, {
-                    group: 'shared', // Permite mover entre listas
+                    group: 'shared',
                     handle: '.drag-handle',
                     animation: 150,
                     onEnd: async (evt) => {
-                        // Al soltar, calcular nuevo estado
                         saveReorder();
                     }
                 });
@@ -333,7 +338,6 @@
             const allItems = [];
             let globalIndex = 0;
 
-            // Recorrer el DOM para ver cómo quedó todo
             document.querySelectorAll('.group-section').forEach(sec => {
                 const gName = sec.dataset.gname || null;
                 const gColor = sec.dataset.gcolor || '#d93025';
@@ -348,41 +352,58 @@
                 });
             });
 
-            // Optimismo UI (Actualizar memoria local)
             locations.forEach(l => {
                 const update = allItems.find(u => u.id === l.id);
                 if(update) {
                     l.position = update.position;
                     l.group_name = update.group_name;
-                    l.group_color = update.group_color; // Hereda color del grupo
+                    l.group_color = update.group_color;
                 }
             });
-            renderMap(); // Actualizar colores de pines
-
-            // Guardar en Server
+            renderMap();
             await api('/api/reordenar-todo', 'PUT', { items: allItems });
         }
 
         // --- GESTIÓN GRUPOS ---
         document.getElementById('btn-new-group').onclick = () => {
-            const container = document.getElementById('sidebar-content');
-            const newSec = createGroupSection('Nuevo Grupo', '#1a73e8', []);
-            container.insertBefore(newSec, container.lastChild);
-            initSortable(); // Re-bind drag events
+            const baseName = "Nuevo Grupo";
+            let name = baseName;
+            let i = 1;
+            // Generar nombre único para evitar colisiones
+            while(knownGroups.find(g => g.name === name)) { name = `${baseName} ${i++}`; }
+            
+            // Agregar a la lista LOCAL de grupos conocidos
+            knownGroups.push({ name: name, color: '#1a73e8' });
+            renderSidebar();
         };
 
         async function renameGroup(oldName, newName) {
-            if(oldName === newName) return;
+            if(oldName === newName || !newName.trim()) return renderSidebar(); // Revertir si vacío
+            
+            // 1. Actualizar lista de grupos conocidos
+            const grpIndex = knownGroups.findIndex(g => g.name === oldName);
+            if(grpIndex !== -1) knownGroups[grpIndex].name = newName;
+
+            // 2. Actualizar localmente items
             locations.forEach(l => { if(l.group_name === oldName) l.group_name = newName; });
+            
+            // 3. Renderizar inmediato
             renderSidebar();
+            
+            // 4. Guardar cambios (usamos reorder que guarda todo el estado actual)
             await saveReorder();
         }
 
         async function deleteGroup(name) {
-            if(!confirm('Se desagruparán los items. ¿Seguir?')) return;
+            if(!confirm('Se desagruparán los items.')) return;
+            
+            // Quitar de lista conocida
+            knownGroups = knownGroups.filter(g => g.name !== name);
+            
+            // Desvincular items
             locations.forEach(l => { if(l.group_name === name) l.group_name = null; });
-            renderSidebar();
-            renderMap();
+            
+            renderSidebar(); renderMap();
             await saveReorder();
         }
 
@@ -396,7 +417,13 @@
             COLORS.forEach(c => {
                 const d = document.createElement('div'); d.className='cp-dot'; d.style.background=c;
                 d.onclick = async () => {
+                    // Actualizar en knownGroups
+                    const grp = knownGroups.find(g => g.name === groupName);
+                    if(grp) grp.color = c;
+
+                    // Actualizar en locations
                     locations.forEach(l => { if(l.group_name === groupName) l.group_color = c; });
+                    
                     renderSidebar(); renderMap(); cp.style.display='none';
                     await saveReorder();
                 };
@@ -468,7 +495,7 @@
         document.getElementById('btn-menu').onclick = toggleSidebar;
         document.getElementById('overlay').onclick = closeSheet;
         
-        // --- AHORA SÍ: cancel-btn EXISTE EN EL HTML ---
+        // CANCELAR
         document.getElementById('cancel-btn').onclick = closeSheet;
         
         function closeSheet() { document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
