@@ -42,7 +42,7 @@
         .group-actions { opacity: 0.3; transition: 0.2s; cursor: pointer; }
         .group-header:hover .group-actions { opacity: 1; }
 
-        .items-container { min-height: 40px; padding: 0; } /* Altura mínima para poder soltar items */
+        .items-container { min-height: 40px; padding: 0; }
         
         /* ITEMS DE DIRECCION */
         .place-item { padding: 12px 15px; background: white; border-bottom: 1px solid #f5f5f5; cursor: grab; display: flex; align-items: center; justify-content: space-between; user-select: none; }
@@ -196,12 +196,11 @@
             loadData();
         }
 
-        // MAPA
+        // --- MAPA ---
         function initMap() {
             map = L.map('map', {zoomControl:false}).setView([-31.5375, -68.5364], 14);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-            // Long Press
             map.on('mousedown touchstart', (e) => {
                 if(isAdding || document.getElementById('sheet').classList.contains('open')) return;
                 holdTimer = setTimeout(() => {
@@ -216,22 +215,38 @@
             try { 
                 locations = await api('/api/direcciones') || [];
                 
-                // Extraer grupos existentes de las direcciones cargadas
-                // Esto asegura que al recargar la página, los grupos con items sigan ahí
+                // 1. Grupos que vienen de la DB (tienen items)
                 const groupsFromDB = [...new Set(locations.filter(l => l.group_name).map(l => l.group_name))];
                 
-                // Fusionamos con los conocidos (evita duplicados)
+                // 2. Grupos guardados en LocalStorage (pueden estar vacíos)
+                const localGroups = JSON.parse(localStorage.getItem('saved_groups_' + myId)) || [];
+
+                // 3. Fusionar DB -> Local
                 groupsFromDB.forEach(gName => {
                     if(!knownGroups.find(g => g.name === gName)) {
-                        // Buscar color de ese grupo en alguno de sus items
                         const item = locations.find(l => l.group_name === gName);
                         knownGroups.push({ name: gName, color: item ? item.group_color : '#1a73e8' });
                     }
                 });
 
+                // 4. Fusionar Local -> Local (Respetar vacíos)
+                localGroups.forEach(lg => {
+                     if(!knownGroups.find(g => g.name === lg.name)) {
+                         knownGroups.push(lg);
+                     }
+                });
+
+                // Guardar la fusión
+                saveGroupsToLocal();
+
                 renderMap();
                 renderSidebar();
             } catch(e){}
+        }
+
+        function saveGroupsToLocal() {
+            // Guardar solo el array knownGroups en localStorage para persistir vacíos
+            localStorage.setItem('saved_groups_' + myId, JSON.stringify(knownGroups));
         }
 
         function renderMap() {
@@ -250,7 +265,7 @@
             const container = document.getElementById('sidebar-content');
             container.innerHTML = '';
 
-            // 1. Renderizar Grupos Conocidos (Vacíos o Llenos)
+            // 1. Renderizar Grupos Conocidos
             knownGroups.forEach(grp => {
                 const items = locations.filter(l => l.group_name === grp.name);
                 const section = createGroupSection(grp.name, grp.color, items);
@@ -283,10 +298,8 @@
                 const input = document.createElement('input');
                 input.className = 'group-name-input';
                 input.value = name;
-                // Si es un grupo nuevo vacío, queremos poder editarlo sin que desaparezca
                 input.onblur = (e) => renameGroup(name, e.target.value);
                 
-                // Hack para foco automático en grupos nuevos
                 if(name.startsWith('Nuevo Grupo')) setTimeout(() => input.select(), 100);
 
                 const trash = document.createElement('i');
@@ -369,38 +382,37 @@
             const baseName = "Nuevo Grupo";
             let name = baseName;
             let i = 1;
-            // Generar nombre único para evitar colisiones
             while(knownGroups.find(g => g.name === name)) { name = `${baseName} ${i++}`; }
             
-            // Agregar a la lista LOCAL de grupos conocidos
+            // AGREGAR A LA LISTA LOCAL Y GUARDAR
             knownGroups.push({ name: name, color: '#1a73e8' });
+            saveGroupsToLocal();
+            
             renderSidebar();
         };
 
         async function renameGroup(oldName, newName) {
-            if(oldName === newName || !newName.trim()) return renderSidebar(); // Revertir si vacío
+            if(oldName === newName || !newName.trim()) return renderSidebar();
             
-            // 1. Actualizar lista de grupos conocidos
+            // 1. Actualizar lista local
             const grpIndex = knownGroups.findIndex(g => g.name === oldName);
             if(grpIndex !== -1) knownGroups[grpIndex].name = newName;
+            saveGroupsToLocal();
 
-            // 2. Actualizar localmente items
+            // 2. Actualizar items
             locations.forEach(l => { if(l.group_name === oldName) l.group_name = newName; });
             
-            // 3. Renderizar inmediato
             renderSidebar();
-            
-            // 4. Guardar cambios (usamos reorder que guarda todo el estado actual)
             await saveReorder();
         }
 
         async function deleteGroup(name) {
             if(!confirm('Se desagruparán los items.')) return;
             
-            // Quitar de lista conocida
+            // Borrar de local
             knownGroups = knownGroups.filter(g => g.name !== name);
+            saveGroupsToLocal();
             
-            // Desvincular items
             locations.forEach(l => { if(l.group_name === name) l.group_name = null; });
             
             renderSidebar(); renderMap();
@@ -417,11 +429,10 @@
             COLORS.forEach(c => {
                 const d = document.createElement('div'); d.className='cp-dot'; d.style.background=c;
                 d.onclick = async () => {
-                    // Actualizar en knownGroups
                     const grp = knownGroups.find(g => g.name === groupName);
                     if(grp) grp.color = c;
+                    saveGroupsToLocal();
 
-                    // Actualizar en locations
                     locations.forEach(l => { if(l.group_name === groupName) l.group_color = c; });
                     
                     renderSidebar(); renderMap(); cp.style.display='none';
@@ -494,8 +505,6 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
         document.getElementById('btn-menu').onclick = toggleSidebar;
         document.getElementById('overlay').onclick = closeSheet;
-        
-        // CANCELAR
         document.getElementById('cancel-btn').onclick = closeSheet;
         
         function closeSheet() { document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
