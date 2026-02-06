@@ -31,49 +31,44 @@
         .sidebar-title { font-size: 18px; font-weight: 700; }
         .sidebar-content { flex: 1; overflow-y: auto; padding: 15px; }
 
-        /* GRUPOS EN SIDEBAR */
+        /* GRUPOS */
         .group-section { background: white; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 2px solid transparent; transition: 0.2s; }
-        .group-section.sortable-drag { opacity: 0.5; }
         .group-header { padding: 12px 15px; display: flex; align-items: center; gap: 10px; background: #fff; border-bottom: 1px solid #f0f0f0; }
-        
         .group-color-dot { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); flex-shrink: 0; }
         .group-name-input { border: none; font-size: 14px; font-weight: 700; color: #333; flex: 1; background: transparent; }
         .group-name-input:focus { background: #f0f0f0; border-radius: 4px; padding: 2px 5px; }
         .group-actions { opacity: 0.3; transition: 0.2s; cursor: pointer; }
         .group-header:hover .group-actions { opacity: 1; }
 
-        .items-container { min-height: 40px; padding: 0; }
+        .items-container { min-height: 50px; padding: 0; }
         
-        /* ITEMS DE DIRECCION */
+        /* ITEMS */
         .place-item { padding: 12px 15px; background: white; border-bottom: 1px solid #f5f5f5; cursor: grab; display: flex; align-items: center; justify-content: space-between; user-select: none; }
         .place-item:active { cursor: grabbing; }
-        .place-item:last-child { border-bottom: none; }
-        .place-info { flex: 1; }
         .place-title { font-size: 14px; font-weight: 500; color: #202124; }
         .place-notes { font-size: 12px; color: #70757a; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
         .drag-handle { color: #ccc; margin-left: 10px; cursor: grab; }
 
-        /* COLOR PICKER POPUP */
-        .color-picker-pop { position: absolute; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; gap: 8px; flex-wrap: wrap; width: 140px; z-index: 3000; display: none; }
+        /* POPUPS */
+        .color-picker-pop { position: absolute; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; gap: 8px; flex-wrap: wrap; width: 140px; z-index: 3000; }
         .cp-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .cp-dot:hover { transform: scale(1.1); }
 
-        /* FABs */
+        /* FAB */
         .fab-container { position: absolute; bottom: 32px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 12px; }
         .fab { width: 56px; height: 56px; background: #1a1a1a; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
-        .fab:active { transform: scale(0.90); }
         .fab-mini { width: 48px; height: 48px; background: white; color: #555; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; }
 
         /* UI AGREGAR */
         #center-pin-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 900; pointer-events: none; display: none; flex-direction: column; align-items: center; }
         .pin-head { font-size: 44px; color: #ea4335; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
         .pin-shadow { width: 12px; height: 4px; background: rgba(0,0,0,0.2); border-radius: 50%; margin-top: -6px; }
-        .confirm-btn-float { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 14px 28px; border-radius: 30px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1001; cursor: pointer; display: none; width: max-content; }
+        .confirm-btn-float { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 14px 28px; border-radius: 30px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1001; cursor: pointer; display: none; }
 
         /* SHEET */
         .sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; pointer-events: none; transition: 0.3s; }
         .sheet-overlay.open { opacity: 1; pointer-events: auto; }
-        .sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: 30px; max-height: 85vh; overflow-y: auto; }
+        .sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%); transition: 0.3s; padding-bottom: 30px; max-height: 85vh; overflow-y: auto; }
         .sheet.open { transform: translateY(0); }
         .sheet-header { display: flex; justify-content: center; padding: 12px; }
         .sheet-drag { width: 40px; height: 5px; background: #e0e0e0; border-radius: 10px; }
@@ -101,10 +96,7 @@
         </div>
     </div>
 
-    <div id="center-pin-container">
-        <i class="fa-solid fa-location-dot pin-head"></i>
-        <div class="pin-shadow"></div>
-    </div>
+    <div id="center-pin-container"><i class="fa-solid fa-location-dot pin-head"></i><div class="pin-shadow"></div></div>
     <div class="confirm-btn-float" id="btn-confirm-pos">Confirmar</div>
 
     <div class="fab-container">
@@ -122,9 +114,7 @@
                 <i class="fa-solid fa-xmark" onclick="toggleSidebar()" style="font-size:20px; cursor:pointer; color:#5f6368;"></i>
             </div>
         </div>
-        
-        <div class="sidebar-content" id="sidebar-content">
-            </div>
+        <div class="sidebar-content" id="sidebar-content"></div>
     </div>
 
     <div class="color-picker-pop" id="color-picker"></div>
@@ -133,25 +123,21 @@
     <div class="sheet" id="sheet">
         <div class="sheet-header"><div class="sheet-drag"></div></div>
         <div class="sheet-body">
-            
             <div id="view-form" style="display:none;">
                 <h2 id="form-title">Nueva Dirección</h2>
-                <input type="text" id="inp-name" class="modern-input" placeholder="Nombre (ej. Casa Juan)">
+                <input type="text" id="inp-name" class="modern-input" placeholder="Nombre">
                 <input type="text" id="inp-notes" class="modern-input" placeholder="Notas">
-                <input type="text" id="inp-link" class="modern-input" placeholder="Link Maps (Opcional)">
+                <input type="text" id="inp-link" class="modern-input" placeholder="Link Maps">
                 <button id="btn-save" class="btn btn-primary">Guardar</button>
                 <button id="cancel-btn" class="btn btn-sec">Cancelar</button>
             </div>
-
             <div id="view-details" style="display:none;">
                 <h2 id="txt-title" style="margin-bottom:5px;"></h2>
                 <p id="txt-desc" style="color:#666; margin-bottom:20px;"></p>
-                <a id="btn-gmaps" href="#" target="_blank" class="btn btn-primary" style="display:flex; justify-content:center; text-decoration:none; align-items:center; gap:8px;">
-                    <i class="fa-solid fa-map-location-dot"></i> Ir a Maps
-                </a>
+                <a id="btn-gmaps" href="#" target="_blank" class="btn btn-primary"><i class="fa-solid fa-map-location-dot"></i> Ir a Maps</a>
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button id="btn-edit" class="btn btn-sec"><i class="fa-solid fa-pen"></i> Editar</button>
-                    <button id="btn-delete" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                    <button id="btn-edit" class="btn btn-sec">Editar</button>
+                    <button id="btn-delete" class="btn btn-danger">Eliminar</button>
                 </div>
             </div>
         </div>
@@ -166,11 +152,8 @@
         
         let map, markers=[], locations=[], isAdding=false, token, myId;
         let currentLoc = null, holdTimer;
-        
-        // Estado local de grupos (Para persistir grupos vacíos temporalmente)
         let knownGroups = []; 
 
-        // AUTH
         function getSession() {
             for(let i=0; i<localStorage.length; i++) {
                 let k = localStorage.key(i);
@@ -184,6 +167,7 @@
             if(data) opts.body = JSON.stringify(data);
             const res = await fetch(`${API_URL}${path}`, opts);
             if(res.status === 401) { localStorage.clear(); window.location.href='login.html'; }
+            if(!res.ok) throw new Error(`Error API: ${res.status}`);
             return res.json();
         }
 
@@ -196,17 +180,12 @@
             loadData();
         }
 
-        // --- MAPA ---
         function initMap() {
             map = L.map('map', {zoomControl:false}).setView([-31.5375, -68.5364], 14);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
             map.on('mousedown touchstart', (e) => {
                 if(isAdding || document.getElementById('sheet').classList.contains('open')) return;
-                holdTimer = setTimeout(() => {
-                    navigator.vibrate?.(50);
-                    openFormNew(e.latlng);
-                }, 800); 
+                holdTimer = setTimeout(() => { navigator.vibrate?.(50); openFormNew(e.latlng); }, 800); 
             });
             map.on('mouseup touchend dragstart', () => clearTimeout(holdTimer));
         }
@@ -215,37 +194,27 @@
             try { 
                 locations = await api('/api/direcciones') || [];
                 
-                // 1. Grupos que vienen de la DB (tienen items)
                 const groupsFromDB = [...new Set(locations.filter(l => l.group_name).map(l => l.group_name))];
-                
-                // 2. Grupos guardados en LocalStorage (pueden estar vacíos)
                 const localGroups = JSON.parse(localStorage.getItem('saved_groups_' + myId)) || [];
 
-                // 3. Fusionar DB -> Local
                 groupsFromDB.forEach(gName => {
                     if(!knownGroups.find(g => g.name === gName)) {
                         const item = locations.find(l => l.group_name === gName);
                         knownGroups.push({ name: gName, color: item ? item.group_color : '#1a73e8' });
                     }
                 });
-
-                // 4. Fusionar Local -> Local (Respetar vacíos)
+                
                 localGroups.forEach(lg => {
-                     if(!knownGroups.find(g => g.name === lg.name)) {
-                         knownGroups.push(lg);
-                     }
+                     if(!knownGroups.find(g => g.name === lg.name)) knownGroups.push(lg);
                 });
 
-                // Guardar la fusión
                 saveGroupsToLocal();
-
                 renderMap();
                 renderSidebar();
-            } catch(e){}
+            } catch(e) { console.error(e); }
         }
 
         function saveGroupsToLocal() {
-            // Guardar solo el array knownGroups en localStorage para persistir vacíos
             localStorage.setItem('saved_groups_' + myId, JSON.stringify(knownGroups));
         }
 
@@ -260,22 +229,18 @@
             });
         }
 
-        // --- SIDEBAR & GRUPOS ---
+        // --- RENDER SIDEBAR ---
         function renderSidebar() {
             const container = document.getElementById('sidebar-content');
             container.innerHTML = '';
 
-            // 1. Renderizar Grupos Conocidos
             knownGroups.forEach(grp => {
                 const items = locations.filter(l => l.group_name === grp.name);
-                const section = createGroupSection(grp.name, grp.color, items);
-                container.appendChild(section);
+                container.appendChild(createGroupSection(grp.name, grp.color, items));
             });
 
-            // 2. Renderizar Sin Grupo
             const noGroupItems = locations.filter(l => !l.group_name && l.created_by === myId);
-            const unGroupSection = createGroupSection(null, '#777', noGroupItems);
-            container.appendChild(unGroupSection);
+            container.appendChild(createGroupSection(null, '#777', noGroupItems));
 
             initSortable();
         }
@@ -291,8 +256,7 @@
             
             if(name) {
                 const dot = document.createElement('div');
-                dot.className = 'group-color-dot';
-                dot.style.background = color;
+                dot.className = 'group-color-dot'; dot.style.background = color;
                 dot.onclick = (e) => showColorPicker(e, name);
                 
                 const input = document.createElement('input');
@@ -300,11 +264,8 @@
                 input.value = name;
                 input.onblur = (e) => renameGroup(name, e.target.value);
                 
-                if(name.startsWith('Nuevo Grupo')) setTimeout(() => input.select(), 100);
-
                 const trash = document.createElement('i');
                 trash.className = 'fa-solid fa-trash group-actions';
-                trash.style.color = '#ccc';
                 trash.onclick = () => deleteGroup(name);
 
                 header.append(dot, input, trash);
@@ -319,20 +280,15 @@
                 const row = document.createElement('div');
                 row.className = 'place-item';
                 row.dataset.id = item.id;
-                row.innerHTML = `
-                    <div class="place-info" onclick="jumpTo(${item.lat},${item.lng}, '${item.id}')">
-                        <div class="place-title">${item.name}</div>
-                        <div class="place-notes">${item.notes || ''}</div>
-                    </div>
-                    <i class="fa-solid fa-grip-lines drag-handle"></i>
-                `;
+                row.innerHTML = `<div class="place-info" onclick="jumpTo(${item.lat},${item.lng}, '${item.id}')"><div class="place-title">${item.name}</div><div class="place-notes">${item.notes || ''}</div></div><i class="fa-solid fa-grip-lines drag-handle"></i>`;
                 list.appendChild(row);
             });
-
-            sec.append(header, list);
+            sec.appendChild(header);
+            sec.appendChild(list);
             return sec;
         }
 
+        // --- SORTABLE & GUARDADO SEGURO (INDIVIDUAL) ---
         function initSortable() {
             const containers = document.querySelectorAll('.items-container');
             containers.forEach(c => {
@@ -341,40 +297,32 @@
                     handle: '.drag-handle',
                     animation: 150,
                     onEnd: async (evt) => {
-                        saveReorder();
+                        const itemEl = evt.item;
+                        const newGroupSec = itemEl.closest('.group-section');
+                        const newGName = newGroupSec.dataset.gname || null;
+                        const newGColor = newGroupSec.dataset.gcolor || '#d93025';
+                        const itemId = itemEl.dataset.id;
+
+                        // Actualizar UI local inmediatamente
+                        const loc = locations.find(l => l.id === itemId);
+                        if(loc) {
+                            loc.group_name = newGName;
+                            loc.group_color = newGColor;
+                        }
+                        renderMap(); // Actualizar color del pin
+
+                        // GUARDAR EN SERVIDOR UNO A UNO (Más seguro si upsert falla)
+                        try {
+                            await api(`/api/direcciones/${itemId}`, 'PUT', { 
+                                group_name: newGName,
+                                group_color: newGColor
+                            });
+                        } catch(e) {
+                            alert('Error al guardar movimiento. Recarga la página.');
+                        }
                     }
                 });
             });
-        }
-
-        async function saveReorder() {
-            const allItems = [];
-            let globalIndex = 0;
-
-            document.querySelectorAll('.group-section').forEach(sec => {
-                const gName = sec.dataset.gname || null;
-                const gColor = sec.dataset.gcolor || '#d93025';
-                
-                sec.querySelectorAll('.place-item').forEach(row => {
-                    allItems.push({
-                        id: row.dataset.id,
-                        position: globalIndex++,
-                        group_name: gName,
-                        group_color: gColor
-                    });
-                });
-            });
-
-            locations.forEach(l => {
-                const update = allItems.find(u => u.id === l.id);
-                if(update) {
-                    l.position = update.position;
-                    l.group_name = update.group_name;
-                    l.group_color = update.group_color;
-                }
-            });
-            renderMap();
-            await api('/api/reordenar-todo', 'PUT', { items: allItems });
         }
 
         // --- GESTIÓN GRUPOS ---
@@ -383,60 +331,66 @@
             let name = baseName;
             let i = 1;
             while(knownGroups.find(g => g.name === name)) { name = `${baseName} ${i++}`; }
-            
-            // AGREGAR A LA LISTA LOCAL Y GUARDAR
             knownGroups.push({ name: name, color: '#1a73e8' });
             saveGroupsToLocal();
-            
             renderSidebar();
         };
 
         async function renameGroup(oldName, newName) {
             if(oldName === newName || !newName.trim()) return renderSidebar();
             
-            // 1. Actualizar lista local
-            const grpIndex = knownGroups.findIndex(g => g.name === oldName);
-            if(grpIndex !== -1) knownGroups[grpIndex].name = newName;
+            const idx = knownGroups.findIndex(g => g.name === oldName);
+            if(idx !== -1) knownGroups[idx].name = newName;
             saveGroupsToLocal();
 
-            // 2. Actualizar items
-            locations.forEach(l => { if(l.group_name === oldName) l.group_name = newName; });
+            // Actualizar items en memoria
+            const itemsToUpdate = locations.filter(l => l.group_name === oldName);
+            itemsToUpdate.forEach(l => l.group_name = newName);
             
             renderSidebar();
-            await saveReorder();
+
+            // Guardar cambios en DB uno por uno
+            for (const item of itemsToUpdate) {
+                await api(`/api/direcciones/${item.id}`, 'PUT', { group_name: newName });
+            }
         }
 
         async function deleteGroup(name) {
-            if(!confirm('Se desagruparán los items.')) return;
+            if(!confirm('¿Desagrupar items?')) return;
             
-            // Borrar de local
             knownGroups = knownGroups.filter(g => g.name !== name);
             saveGroupsToLocal();
             
-            locations.forEach(l => { if(l.group_name === name) l.group_name = null; });
+            const itemsToUpdate = locations.filter(l => l.group_name === name);
+            itemsToUpdate.forEach(l => l.group_name = null);
             
             renderSidebar(); renderMap();
-            await saveReorder();
+
+            // Guardar en DB
+            for (const item of itemsToUpdate) {
+                await api(`/api/direcciones/${item.id}`, 'PUT', { group_name: null });
+            }
         }
 
-        function showColorPicker(e, groupName) {
+        function showColorPicker(e, gName) {
             const cp = document.getElementById('color-picker');
-            cp.style.display = 'flex';
-            cp.style.top = e.clientY + 'px';
-            cp.style.left = e.clientX + 'px';
-            cp.innerHTML = '';
-            
+            cp.style.display='flex'; cp.style.top=e.clientY+'px'; cp.style.left=e.clientX+'px'; cp.innerHTML='';
             COLORS.forEach(c => {
                 const d = document.createElement('div'); d.className='cp-dot'; d.style.background=c;
                 d.onclick = async () => {
-                    const grp = knownGroups.find(g => g.name === groupName);
+                    const grp = knownGroups.find(g => g.name === gName);
                     if(grp) grp.color = c;
                     saveGroupsToLocal();
 
-                    locations.forEach(l => { if(l.group_name === groupName) l.group_color = c; });
+                    const itemsToUpdate = locations.filter(l => l.group_name === gName);
+                    itemsToUpdate.forEach(l => l.group_color = c);
                     
                     renderSidebar(); renderMap(); cp.style.display='none';
-                    await saveReorder();
+
+                    // Guardar en DB
+                    for (const item of itemsToUpdate) {
+                        await api(`/api/direcciones/${item.id}`, 'PUT', { group_color: c });
+                    }
                 };
                 cp.appendChild(d);
             });
@@ -444,12 +398,8 @@
             function closeCp() { cp.style.display='none'; document.removeEventListener('click', closeCp); }
         }
 
-        // --- GPS ---
-        document.getElementById('btn-gps').onclick = () => {
-            navigator.geolocation.getCurrentPosition(pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16));
-        };
-
-        // --- FORMULARIOS ---
+        // --- UTILIDADES ---
+        document.getElementById('btn-gps').onclick = () => navigator.geolocation.getCurrentPosition(pos => map.flyTo([pos.coords.latitude, pos.coords.longitude], 16));
         function openFormNew(latlng) {
             currentLoc = null;
             document.getElementById('inp-name').value='';
@@ -459,64 +409,41 @@
             document.getElementById('sheet').dataset.lng = latlng.lng;
             openSheet('form');
         }
-
         function openSheet(view) {
             document.getElementById('sheet').classList.add('open');
             document.getElementById('overlay').classList.add('open');
             document.getElementById('view-form').style.display = view==='form'?'block':'none';
             document.getElementById('view-details').style.display = view==='details'?'block':'none';
-            
             if(view==='details' && currentLoc) {
                 document.getElementById('txt-title').innerText = currentLoc.name;
                 document.getElementById('txt-desc').innerText = currentLoc.notes || '';
                 document.getElementById('btn-gmaps').href = currentLoc.gmaps_link || '#';
             }
         }
-
         document.getElementById('btn-save').onclick = async () => {
-            const body = {
-                name: document.getElementById('inp-name').value,
-                notes: document.getElementById('inp-notes').value,
-                gmaps_link: document.getElementById('inp-link').value
-            };
+            const body = { name: document.getElementById('inp-name').value, notes: document.getElementById('inp-notes').value, gmaps_link: document.getElementById('inp-link').value };
             if(!body.name) return;
-
-            if(currentLoc) {
-                await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
-            } else {
+            if(currentLoc) await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
+            else {
                 const lat = parseFloat(document.getElementById('sheet').dataset.lat);
                 const lng = parseFloat(document.getElementById('sheet').dataset.lng);
                 await api('/api/direcciones', 'POST', { ...body, lat, lng });
             }
             closeSheet(); loadData();
         };
-
-        document.getElementById('btn-delete').onclick = async () => {
-            if(confirm('Borrar?')) { await api(`/api/direcciones/${currentLoc.id}`, 'DELETE'); closeSheet(); loadData(); }
-        };
+        document.getElementById('btn-delete').onclick = async () => { if(confirm('Borrar?')) { await api(`/api/direcciones/${currentLoc.id}`, 'DELETE'); closeSheet(); loadData(); } };
         document.getElementById('btn-edit').onclick = () => {
             document.getElementById('inp-name').value = currentLoc.name;
             document.getElementById('inp-notes').value = currentLoc.notes;
             document.getElementById('inp-link').value = currentLoc.gmaps_link;
             openSheet('form');
         };
-
-        // UI Utils
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
         document.getElementById('btn-menu').onclick = toggleSidebar;
         document.getElementById('overlay').onclick = closeSheet;
         document.getElementById('cancel-btn').onclick = closeSheet;
-        
         function closeSheet() { document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
-        
-        window.jumpTo = (lat, lng, id) => {
-            currentLoc = locations.find(l => l.id === id);
-            toggleSidebar();
-            map.setView([lat, lng], 16);
-            openSheet('details');
-        };
-
-        // Add Manual
+        window.jumpTo = (lat, lng, id) => { currentLoc = locations.find(l => l.id === id); toggleSidebar(); map.setView([lat, lng], 16); openSheet('details'); };
         document.getElementById('btn-add-mode').onclick = () => {
             isAdding = !isAdding;
             const fab = document.getElementById('btn-add-mode');
