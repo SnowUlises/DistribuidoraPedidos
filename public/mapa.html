@@ -36,7 +36,8 @@
         .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; gap: 10px; pointer-events: none; }
         .btn-back { background: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; color: #333; text-decoration: none; font-size: 18px; }
         .search-bar { flex: 1; background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; }
-        
+        .search-text { font-size: 15px; color: #3c4043; font-weight: 600; }
+
         /* SIDEBAR */
         .sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 2000; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
         .sidebar.open { transform: translateX(0); }
@@ -53,7 +54,6 @@
         .group-color-dot { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); flex-shrink: 0; }
         .group-name-input { border: none; font-size: 14px; font-weight: 700; color: #333; flex: 1; background: transparent; }
         
-        /* Acciones de Grupo (Ojo, Compartir, Borrar) */
         .group-actions { display: flex; gap: 12px; opacity: 0.6; transition: 0.2s; }
         .group-section:hover .group-actions { opacity: 1; }
         .icon-btn { cursor: pointer; font-size: 14px; color: #5f6368; }
@@ -113,6 +113,8 @@
         .user-arrow-circle i { color: white; font-size: 12px; }
 
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -131,7 +133,7 @@
     <div class="confirm-btn-float" id="btn-confirm-pos">Confirmar</div>
 
     <div class="fab-container">
-        <div class="fab-mini" id="btn-gps"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <div class="fab-mini" id="btn-gps" title="Mi Ubicación"><i class="fa-solid fa-location-crosshairs"></i></div>
         <div class="fab" id="btn-add-mode"><i class="fa-solid fa-plus"></i></div>
     </div>
 
@@ -193,10 +195,7 @@
         
         let map, markers=[], locations=[], allUsers=[], isAdding=false, token, myId, myEmail;
         let currentLoc = null, holdTimer, knownGroups = [], userMarker = null, tempMarker = null;
-        
-        // Estado de Visibilidad
-        let hiddenItems = new Set(); // IDs de items ocultos
-        let hiddenGroups = new Set(); // IDs de grupos ocultos "ownerId_groupName"
+        let hiddenItems = new Set(), hiddenGroups = new Set();
 
         function getSession() {
             for(let i=0; i<localStorage.length; i++) {
@@ -221,7 +220,9 @@
             document.getElementById('loader').style.display='none';
             initMap();
             trackUserLocation();
+            // Aseguramos que se carguen usuarios y datos antes de renderizar
             await Promise.all([loadData(), loadUsers()]);
+            renderSidebar(); // Render final con nombres cargados
         }
 
         function initMap() {
@@ -287,7 +288,6 @@
 
                 saveGroupsToLocal();
                 renderMap();
-                renderSidebar();
             } catch(e) { console.error(e); }
         }
 
@@ -298,7 +298,6 @@
         function renderMap() {
             markers.forEach(m => map.removeLayer(m)); markers=[];
             locations.forEach(loc => {
-                // Chequear visibilidad
                 const groupKey = `${loc.created_by}_${loc.group_name || 'null'}`;
                 if (hiddenItems.has(loc.id) || hiddenGroups.has(groupKey)) return;
 
@@ -311,7 +310,13 @@
             });
         }
 
-        // --- SIDEBAR RENDER (SEPARADO) ---
+        // --- HELPER NOMBRE USUARIO ---
+        function getUserName(email) {
+            const u = allUsers.find(user => user.email === email);
+            return u ? (u.nombre || email.split('@')[0]) : email.split('@')[0];
+        }
+
+        // --- SIDEBAR RENDER ---
         function renderSidebar() {
             const container = document.getElementById('sidebar-content'); container.innerHTML = '';
 
@@ -321,11 +326,12 @@
 
             renderOwnerSection(container, 'Mis Lugares', myLocs, true);
 
-            // 2. COMPARTIDOS (Agrupados por dueño)
+            // 2. COMPARTIDOS
             const owners = [...new Set(sharedLocs.map(l => l.owner_email))];
             owners.forEach(owner => {
                  const ownerLocs = sharedLocs.filter(l => l.owner_email === owner);
-                 renderOwnerSection(container, `Compartido por ${owner}`, ownerLocs, false);
+                 const ownerName = getUserName(owner);
+                 renderOwnerSection(container, `Compartido por ${ownerName}`, ownerLocs, false);
             });
 
             initSortable();
@@ -336,9 +342,6 @@
             div.innerHTML = `<div class="section-divider">${title}</div>`;
             container.appendChild(div);
 
-            // Grupos
-            const groupsToRender = isMine ? knownGroups : [...new Set(locs.filter(l=>l.group_name).map(l=>({name:l.group_name, color:l.group_color})))];
-            // Para compartidos, extraemos grupos unicos
             const uniqueGroups = isMine ? knownGroups : [];
             if(!isMine) {
                 const gNames = new Set();
@@ -352,16 +355,15 @@
 
             uniqueGroups.forEach(grp => {
                 const items = locs.filter(l => l.group_name === grp.name);
-                // Si es mío muestro aunque esté vacío, si es compartido solo si tiene items
                 if(isMine || items.length > 0) {
                     const ownerId = isMine ? myId : (items[0]?.created_by || 'unknown');
                     container.appendChild(createGroupSection(grp.name, grp.color, items, isMine, ownerId));
                 }
             });
 
-            // Sin Grupo
             const noGroupItems = locs.filter(l => !l.group_name);
-            if(noGroupItems.length > 0 || isMine) {
+            // Mostrar "Sin Agrupar" solo si tiene items (correccion solicitada)
+            if(noGroupItems.length > 0) {
                 const ownerId = isMine ? myId : (noGroupItems[0]?.created_by || 'unknown');
                 container.appendChild(createGroupSection(null, '#777', noGroupItems, isMine, ownerId));
             }
@@ -374,7 +376,6 @@
 
             const header = document.createElement('div'); header.className = 'group-header';
             
-            // TITULO GRUPO
             const titleDiv = document.createElement('div');
             titleDiv.style.cssText = "display:flex; align-items:center; gap:10px; flex:1;";
             
@@ -395,10 +396,8 @@
             }
             header.appendChild(titleDiv);
 
-            // ACCIONES GRUPO
             const actionsDiv = document.createElement('div'); actionsDiv.className='group-actions';
             
-            // 1. OJO (Visibilidad Grupo)
             const groupKey = `${ownerId}_${name || 'null'}`;
             const isHidden = hiddenGroups.has(groupKey);
             const eye = document.createElement('i');
@@ -407,15 +406,11 @@
             actionsDiv.appendChild(eye);
 
             if(isEditable && name) {
-                // 2. SHARE (Solo mis grupos)
-                const share = document.createElement('i');
-                share.className = 'fa-solid fa-user-plus icon-btn';
+                const share = document.createElement('i'); share.className = 'fa-solid fa-user-plus icon-btn';
                 share.onclick = () => openShareGroup(name);
                 actionsDiv.appendChild(share);
 
-                // 3. DELETE (Solo mis grupos)
-                const trash = document.createElement('i');
-                trash.className = 'fa-solid fa-trash icon-btn';
+                const trash = document.createElement('i'); trash.className = 'fa-solid fa-trash icon-btn';
                 trash.onclick = () => deleteGroup(name);
                 actionsDiv.appendChild(trash);
             }
@@ -461,7 +456,6 @@
             const items = locations.filter(l => l.group_name === groupName && l.created_by === myId);
             if(items.length === 0) return alert('El grupo está vacío.');
             
-            // Usamos una variable global temporal para saber qué estamos compartiendo
             window.sharingTarget = { type: 'group', items: items, name: groupName };
             document.getElementById('share-subtitle').innerText = `Compartiendo grupo: "${groupName}" (${items.length} lugares)`;
             renderShareList();
@@ -471,13 +465,8 @@
         function renderShareList() {
             const list = document.getElementById('users-list-container'); list.innerHTML = '';
             
-            // Determinamos qué miembros ya tienen acceso
-            // Si es un grupo, vemos si TODOS los items tienen al usuario
-            // Si es individual (currentLoc), vemos sus miembros
-            
             let targetMembers = [];
             if(window.sharingTarget && window.sharingTarget.type === 'group') {
-                // Logica simple: Si el primer item lo tiene, asumimos compartido (se sincronizará al togglear)
                 targetMembers = window.sharingTarget.items[0].members || [];
             } else if (currentLoc) {
                 targetMembers = currentLoc.members || [];
@@ -494,23 +483,18 @@
                 
                 div.querySelector('input').onchange = async (e) => {
                     const add = e.target.checked;
-                    
                     if(window.sharingTarget.type === 'single') {
-                        // Compartir uno solo
                         let newMems = [...(currentLoc.members || [])];
                         if(add) { if(!newMems.includes(u.email)) newMems.push(u.email); } 
                         else { newMems = newMems.filter(m => m !== u.email); }
                         currentLoc.members = newMems;
                         await api(`/api/direcciones/${currentLoc.id}`, 'PUT', { members: newMems });
                     } else {
-                        // Compartir GRUPO ENTERO
                         for (const item of window.sharingTarget.items) {
                             let newMems = [...(item.members || [])];
                             if(add) { if(!newMems.includes(u.email)) newMems.push(u.email); } 
                             else { newMems = newMems.filter(m => m !== u.email); }
-                            // Update local
                             item.members = newMems;
-                            // Update server
                             await api(`/api/direcciones/${item.id}`, 'PUT', { members: newMems });
                         }
                     }
@@ -522,7 +506,6 @@
         // --- SORTABLE ---
         function initSortable() {
             document.querySelectorAll('.items-container').forEach(c => {
-                // Solo activar sortable en mis grupos (donde hay drag handles)
                 if(c.querySelector('.drag-handle')) {
                     new Sortable(c, { group: 'shared', handle: '.drag-handle', animation: 150, onEnd: async (evt) => {
                             const itemEl = evt.item; const newGroupSec = itemEl.closest('.group-section');
@@ -538,7 +521,7 @@
             });
         }
 
-        // --- RESTO DE FUNCIONES (Grupos, GPS, Forms) ---
+        // --- FUNCIONES GESTION ---
         document.getElementById('btn-new-group').onclick = () => {
             const baseName = "Nuevo Grupo"; let name = baseName; let i = 1;
             while(knownGroups.find(g => g.name === name)) { name = `${baseName} ${i++}`; }
@@ -585,8 +568,10 @@
 
         function openFormNew(latlng) {
             currentLoc = null;
-            document.getElementById('inp-name').value=''; document.getElementById('inp-notes').value='';
-            document.getElementById('sheet').dataset.lat = latlng.lat; document.getElementById('sheet').dataset.lng = latlng.lng;
+            document.getElementById('inp-name').value='';
+            document.getElementById('inp-notes').value='';
+            document.getElementById('sheet').dataset.lat = latlng.lat;
+            document.getElementById('sheet').dataset.lng = latlng.lng;
             if(tempMarker) map.removeLayer(tempMarker);
             const tIcon = L.divIcon({ className: 'fa-solid fa-location-dot temp-pin-icon', iconAnchor:[15, 30] });
             tempMarker = L.marker(latlng, { icon: tIcon }).addTo(map);
@@ -613,7 +598,8 @@
         }
 
         function closeSheet() {
-            document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open');
+            document.getElementById('sheet').classList.remove('open'); 
+            document.getElementById('overlay').classList.remove('open');
             if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; } 
         }
 
@@ -621,15 +607,23 @@
             const lat = currentLoc ? currentLoc.lat : parseFloat(document.getElementById('sheet').dataset.lat);
             const lng = currentLoc ? currentLoc.lng : parseFloat(document.getElementById('sheet').dataset.lng);
             const autoLink = `http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
-            const body = { name: document.getElementById('inp-name').value, notes: document.getElementById('inp-notes').value, gmaps_link: autoLink };
+
+            const body = { 
+                name: document.getElementById('inp-name').value, 
+                notes: document.getElementById('inp-notes').value, 
+                gmaps_link: autoLink 
+            };
             if(!body.name) return;
-            if(currentLoc) await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
-            else await api('/api/direcciones', 'POST', { ...body, lat, lng });
+
+            if(currentLoc) {
+                await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
+            } else {
+                await api('/api/direcciones', 'POST', { ...body, lat, lng });
+            }
             closeSheet(); loadData();
         };
 
         document.getElementById('btn-share-main').onclick = () => { 
-            // Limpiar target de grupo si entramos desde individual
             window.sharingTarget = null; 
             renderShareList(); 
             openSheet('share'); 
@@ -645,6 +639,7 @@
         document.getElementById('btn-menu').onclick = toggleSidebar;
         document.getElementById('overlay').onclick = closeSheet;
         document.getElementById('cancel-btn').onclick = closeSheet;
+        
         window.jumpTo = (lat, lng, id) => { currentLoc = locations.find(l => l.id === id); toggleSidebar(); map.setView([lat, lng], 16); openSheet('details'); };
         
         document.getElementById('btn-add-mode').onclick = () => {
