@@ -18,7 +18,7 @@
         #map { width: 100%; height: 100%; z-index: 1; }
         .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 
-        /* TAGS DEL MAPA */
+        /* TAGS */
         .lbl-tag { background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); color: #333; font-weight: 700; text-align: center; white-space: nowrap; margin: 0 !important; }
         .lbl-tag::after { content: ''; position: absolute; bottom: -4px; left: 50%; margin-left: -4px; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid #fff; }
         .zoom-low .lbl-tag { display: none; } 
@@ -49,11 +49,17 @@
         .icon-btn { cursor: pointer; font-size: 14px; color: #5f6368; }
         .icon-btn:hover { color: #1a73e8; }
         .icon-btn.active-eye { color: #1a73e8; } .icon-btn.hidden-eye { color: #ccc; }
-        
-        /* ITEMS CONTAINER (Zona de Drop mejorada) */
+
+        /* ITEMS CONTAINER (Mejorado para Drop) */
         .items-container { 
-            min-height: 40px; /* Más altura para facilitar el drop */
-            padding-bottom: 5px;
+            min-height: 50px; 
+            padding: 5px 0;
+            background: #fafafa; /* Fondo sutil para distinguir area de drop */
+        }
+        /* Clase que pone Sortable cuando arrastras sobre un grupo */
+        .sortable-drag-over {
+            background: #e8f0fe;
+            border: 2px dashed #1a73e8;
         }
         
         /* ITEMS */
@@ -63,13 +69,10 @@
         .place-title { font-size: 14px; font-weight: 500; color: #202124; }
         .place-notes { font-size: 12px; color: #70757a; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
         
-        /* DRAG HANDLE MEJORADO (Para que no cueste arrastrar) */
+        /* Drag Handle (Toque más fácil) */
         .drag-handle { 
-            color: #ccc; 
-            margin-left: 10px; 
-            cursor: grab; 
-            padding: 10px; /* Área táctil más grande */
-            touch-action: none; /* EVITA EL SCROLL AL ARRASTRAR */
+            color: #ccc; margin-left: 10px; cursor: grab; padding: 10px; 
+            touch-action: none; /* Clave para móviles */
         }
 
         /* SHEET */
@@ -290,6 +293,7 @@
         async function loadUsers() { try { allUsers = await api('/api/usuarios') || []; } catch(e){} }
         function saveGroupsToLocal() { localStorage.setItem('saved_groups_' + myId, JSON.stringify(knownGroups)); }
 
+        // --- MAPA RENDER ---
         function renderMap() {
             markers.forEach(m => map.removeLayer(m)); markers=[];
             locations.forEach(loc => {
@@ -362,8 +366,7 @@
         function createGroupSection(name, color, items, isEditable, ownerId) {
             const sec = document.createElement('div');
             sec.className = 'group-section';
-            if(isEditable) { sec.dataset.gname = name || ''; sec.dataset.gcolor = color || '#777'; }
-
+            
             const header = document.createElement('div'); header.className = 'group-header';
             const titleDiv = document.createElement('div');
             titleDiv.style.cssText = "display:flex; align-items:center; gap:10px; flex:1;";
@@ -407,6 +410,12 @@
 
             const list = document.createElement('div');
             list.className = 'items-container';
+            // DATASETS PARA SORTABLE (ESTA FUE LA CLAVE)
+            if(isEditable) {
+                list.dataset.gname = name || '';
+                list.dataset.gcolor = color || '#777';
+            }
+
             items.forEach(item => {
                 const isItemHidden = hiddenItems.has(item.id);
                 const row = document.createElement('div'); 
@@ -490,14 +499,38 @@
         function initSortable() {
             document.querySelectorAll('.items-container').forEach(c => {
                 if(c.querySelector('.drag-handle')) {
-                    new Sortable(c, { group: 'shared', handle: '.drag-handle', animation: 150, forceFallback: true, onEnd: async (evt) => {
-                            const itemEl = evt.item; const newGroupSec = itemEl.closest('.group-section');
-                            const newGName = newGroupSec.dataset.gname || null; const newGColor = newGroupSec.dataset.gcolor || '#d93025';
+                    new Sortable(c, { 
+                        group: 'shared', 
+                        handle: '.drag-handle', 
+                        animation: 150, 
+                        forceFallback: true, // CLAVE PARA MOVIL
+                        scroll: true, 
+                        bubbleScroll: true,
+                        // CLAVE DEL EXITO: CLASES PARA VER DONDE CAE
+                        ghostClass: "sortable-ghost",
+                        dragClass: "sortable-drag",
+                        onChoose: function (evt) { document.body.style.cursor = 'grabbing'; },
+                        onUnchoose: function (evt) { document.body.style.cursor = 'default'; },
+                        
+                        onEnd: async (evt) => {
+                            const itemEl = evt.item;
+                            // AQUI CAMBIA LA LOGICA: LEEMOS DIRECTO DEL CONTENEDOR DE DESTINO
+                            const targetList = evt.to;
+                            const newGName = targetList.dataset.gname || null;
+                            const newGColor = targetList.dataset.gcolor || '#d93025';
+                            
                             const itemId = itemEl.dataset.id;
                             const loc = locations.find(l => l.id === itemId);
-                            if(loc) { loc.group_name = newGName; loc.group_color = newGColor; }
-                            renderMap();
-                            try { await api(`/api/direcciones/${itemId}`, 'PUT', { group_name: newGName, group_color: newGColor }); } catch(e) {}
+                            
+                            if(loc) { 
+                                loc.group_name = newGName; 
+                                loc.group_color = newGColor; 
+                            }
+                            renderMap(); // Actualiza color pin instantaneo
+                            
+                            try { 
+                                await api(`/api/direcciones/${itemId}`, 'PUT', { group_name: newGName, group_color: newGColor }); 
+                            } catch(e) { console.error(e); }
                         }
                     });
                 }
@@ -570,8 +603,8 @@
             if(view==='details' && currentLoc) {
                 document.getElementById('txt-title').innerText = currentLoc.name;
                 document.getElementById('txt-desc').innerText = currentLoc.notes || '';
-                // LINK CORREGIDO EN BOTON VER DETALLE
-                document.getElementById('btn-gmaps').href = `https://www.google.com/maps?q=${currentLoc.lat},${currentLoc.lng}`;
+                // LINK OFICIAL UNIVERSAL
+                document.getElementById('btn-gmaps').href = `https://www.google.com/maps/search/?api=1&query=${currentLoc.lat},${currentLoc.lng}`;
                 
                 const isMine = currentLoc.created_by === myId;
                 document.getElementById('btn-share-main').style.display = isMine ? 'block' : 'none';
@@ -587,8 +620,7 @@
         document.getElementById('btn-save').onclick = async () => {
             const lat = currentLoc ? currentLoc.lat : parseFloat(document.getElementById('sheet').dataset.lat);
             const lng = currentLoc ? currentLoc.lng : parseFloat(document.getElementById('sheet').dataset.lng);
-            // LINK CORREGIDO GUARDAR
-            const autoLink = `https://www.google.com/maps?q=${lat},${lng}`;
+            const autoLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`; // LINK CORREGIDO
             const body = { name: document.getElementById('inp-name').value, notes: document.getElementById('inp-notes').value, gmaps_link: autoLink };
             if(!body.name) return;
 
@@ -620,7 +652,6 @@
             if(!confirm('¿Eliminar?')) return;
             const delId = currentLoc.id;
             
-            // ELIMINACION INSTANTANEA
             locations = locations.filter(l => l.id !== delId);
             renderMap(); renderSidebar(); closeSheet();
 
