@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Logística</title>
     
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/854/854878.png" type="image/png">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,80 +19,24 @@
         #map { width: 100%; height: 100%; z-index: 1; }
         .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
 
-        /* --- ETIQUETAS BURBUJA (AJUSTADO FINO) --- */
+        /* TAGS DEL MAPA */
         .lbl-tag {
-            background: #fff;
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2); /* Sombra más suave */
-            color: #333;
-            font-family: 'Inter', sans-serif;
-            font-weight: 600; /* Un poco menos negrita para que se lea mejor en chico */
-            text-align: center;
-            white-space: nowrap;
-            /* Eliminamos márgenes para control total desde JS offset */
-            margin: 0 !important; 
+            background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2); color: #333; font-weight: 700; text-align: center; white-space: nowrap; margin: 0 !important; 
         }
-
-        /* Triángulo inferior (Pico) */
         .lbl-tag::after {
-            content: '';
-            position: absolute;
-            bottom: -4px; /* Lo empujamos justo abajo */
-            left: 50%;
-            margin-left: -4px; /* Centrado perfecto (mitad de 8px) */
-            width: 0;
-            height: 0;
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
-            border-top: 4px solid #fff; /* Color del fondo */
-            /* Filtro para que la sombrita del pico coincida */
-            filter: drop-shadow(0 1px 0px rgba(0,0,0,0.1));
+            content: ''; position: absolute; bottom: -4px; left: 50%; margin-left: -4px; width: 0; height: 0;
+            border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid #fff;
         }
-        
-        /* DINAMISMO POR ZOOM */
         .zoom-low .lbl-tag { display: none; } 
-        
-        .zoom-mid .lbl-tag { 
-            font-size: 9px;
-            padding: 0 3px;
-            max-width: 60px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            opacity: 0.9;
-        }
+        .zoom-mid .lbl-tag { font-size: 9px; padding: 0 3px; max-width: 60px; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
+        .zoom-high .lbl-tag { font-size: 11px; padding: 2px 6px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; z-index: 1000; }
 
-        .zoom-high .lbl-tag { 
-            font-size: 11px; /* Tamaño ideal chico */
-            padding: 2px 6px;
-            max-width: 140px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            z-index: 1000;
-        }
-
-        /* PIN FANTASMA */
-        .temp-pin-icon {
-            font-size: 30px; color: #555; 
-            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
-            animation: dropBounce 0.5s ease-out;
-        }
-        @keyframes dropBounce {
-            0% { transform: translateY(-20px); opacity: 0; }
-            50% { transform: translateY(0); opacity: 1; }
-            75% { transform: translateY(-5px); }
-            100% { transform: translateY(0); }
-        }
-
-        /* UI ELEMENTS */
+        /* UI SUPERIOR */
         .top-ui { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; gap: 10px; pointer-events: none; }
-        .btn-back { background: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; color: #333; text-decoration: none; font-size: 18px; transition: 0.1s; }
-        .btn-back:active { transform: scale(0.95); background: #f0f0f0; }
-        .search-bar { flex: 1; background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: 0.1s; }
-        .search-bar:active { transform: scale(0.98); }
-        .search-icon { color: #5f6368; font-size: 18px; margin-right: 12px; }
-        .search-text { font-size: 15px; color: #3c4043; font-weight: 600; }
-
+        .btn-back { background: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; color: #333; text-decoration: none; font-size: 18px; }
+        .search-bar { flex: 1; background: white; border-radius: 12px; height: 48px; display: flex; align-items: center; padding: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; }
+        
         /* SIDEBAR */
         .sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; z-index: 2000; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
         .sidebar.open { transform: translateX(0); }
@@ -98,40 +44,38 @@
         .sidebar-title { font-size: 18px; font-weight: 700; }
         .sidebar-content { flex: 1; overflow-y: auto; padding: 15px; }
 
+        /* SECCIONES (MIS LUGARES / COMPARTIDOS) */
+        .section-divider { font-size: 12px; font-weight: 700; color: #70757a; margin: 20px 0 10px 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
         /* GRUPOS */
-        .group-section { background: white; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 2px solid transparent; transition: 0.2s; }
+        .group-section { background: white; border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 2px solid transparent; }
         .group-header { padding: 12px 15px; display: flex; align-items: center; gap: 10px; background: #fff; border-bottom: 1px solid #f0f0f0; }
         .group-color-dot { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); flex-shrink: 0; }
         .group-name-input { border: none; font-size: 14px; font-weight: 700; color: #333; flex: 1; background: transparent; }
-        .group-name-input:focus { background: #f0f0f0; border-radius: 4px; padding: 2px 5px; }
-        .group-actions { opacity: 0.3; transition: 0.2s; cursor: pointer; }
-        .group-header:hover .group-actions { opacity: 1; }
-        .items-container { min-height: 50px; padding: 0; }
+        
+        /* Acciones de Grupo (Ojo, Compartir, Borrar) */
+        .group-actions { display: flex; gap: 12px; opacity: 0.6; transition: 0.2s; }
+        .group-section:hover .group-actions { opacity: 1; }
+        .icon-btn { cursor: pointer; font-size: 14px; color: #5f6368; }
+        .icon-btn:hover { color: #1a73e8; }
+        .icon-btn.active-eye { color: #1a73e8; } 
+        .icon-btn.hidden-eye { color: #ccc; }
+
+        .items-container { min-height: 20px; }
         
         /* ITEMS */
-        .place-item { padding: 12px 15px; background: white; border-bottom: 1px solid #f5f5f5; cursor: grab; display: flex; align-items: center; justify-content: space-between; user-select: none; }
-        .place-item:active { cursor: grabbing; }
+        .place-item { padding: 12px 15px; background: white; border-bottom: 1px solid #f5f5f5; cursor: grab; display: flex; align-items: center; justify-content: space-between; }
+        .place-item.hidden-item { opacity: 0.5; background: #f9f9f9; }
+        .place-info { flex: 1; }
         .place-title { font-size: 14px; font-weight: 500; color: #202124; }
-        .place-notes { font-size: 12px; color: #70757a; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
-        .drag-handle { color: #ccc; margin-left: 10px; cursor: grab; }
-
-        /* COMPARTIR */
-        .user-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; }
-        .toggle-switch { position: relative; width: 44px; height: 24px; }
-        .toggle-input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        .toggle-input:checked + .toggle-slider { background-color: #1a73e8; }
-        .toggle-input:checked + .toggle-slider:before { transform: translateX(20px); }
-
-        /* POPUPS */
+        .place-notes { font-size: 12px; color: #70757a; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+        
+        /* POPUPS & FAB */
         .color-picker-pop { position: absolute; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; gap: 8px; flex-wrap: wrap; width: 140px; z-index: 3000; }
         .cp-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
-        .cp-dot:hover { transform: scale(1.1); }
-
-        /* FAB */
+        
         .fab-container { position: absolute; bottom: 32px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 12px; }
-        .fab { width: 56px; height: 56px; background: #1a1a1a; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.3); cursor: pointer; transition: 0.2s; }
+        .fab { width: 56px; height: 56px; background: #1a1a1a; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 6px 16px rgba(0,0,0,0.3); cursor: pointer; }
         .fab-mini { width: 48px; height: 48px; background: white; color: #555; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; }
 
         /* UI AGREGAR */
@@ -145,10 +89,10 @@
         .sheet-overlay.open { opacity: 1; pointer-events: auto; }
         .sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-radius: 24px 24px 0 0; z-index: 1002; transform: translateY(105%); transition: 0.3s; padding-bottom: 30px; max-height: 85vh; overflow-y: auto; }
         .sheet.open { transform: translateY(0); }
+        .sheet-body { padding: 0 24px 24px 24px; }
         .sheet-header { display: flex; justify-content: center; padding: 12px; }
         .sheet-drag { width: 40px; height: 5px; background: #e0e0e0; border-radius: 10px; }
-        .sheet-body { padding: 0 24px 24px 24px; }
-        
+
         .modern-input { width: 100%; padding: 12px; background: #f1f3f4; border: none; border-radius: 8px; margin-bottom: 10px; font-size: 16px; }
         .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: #1a73e8; color: white; }
@@ -156,14 +100,19 @@
         .btn-danger { background: #fce8e6; color: #c5221f; }
         .btn-sec { background: #f1f3f4; color: #333; }
 
-        /* MARCADOR USUARIO (FLECHA) */
+        .user-list-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; }
+        .toggle-input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .toggle-input:checked + .toggle-slider { background-color: #1a73e8; }
+        .toggle-input:checked + .toggle-slider:before { transform: translateX(20px); }
+
         .user-marker-icon { display: flex; align-items: center; justify-content: center; }
         .user-arrow-circle { width: 24px; height: 24px; background: #4285F4; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.2s linear; }
         .user-arrow-circle i { color: white; font-size: 12px; }
 
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; justify-content: center; align-items: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -182,13 +131,13 @@
     <div class="confirm-btn-float" id="btn-confirm-pos">Confirmar</div>
 
     <div class="fab-container">
-        <div class="fab-mini" id="btn-gps" title="Mi Ubicación"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <div class="fab-mini" id="btn-gps"><i class="fa-solid fa-location-crosshairs"></i></div>
         <div class="fab" id="btn-add-mode"><i class="fa-solid fa-plus"></i></div>
     </div>
 
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <span class="sidebar-title">Mis Lugares</span>
+            <span class="sidebar-title">Lugares</span>
             <div style="display:flex; gap:15px; align-items:center;">
                 <div id="btn-new-group" style="font-size:13px; font-weight:600; color:#1a73e8; cursor:pointer; background:#e8f0fe; padding:6px 12px; border-radius:20px;">+ Grupo</div>
                 <i class="fa-solid fa-xmark" onclick="toggleSidebar()" style="font-size:20px; cursor:pointer; color:#5f6368;"></i>
@@ -227,8 +176,9 @@
 
             <div id="view-share" style="display:none;">
                 <h2>Gestionar Acceso</h2>
+                <p id="share-subtitle" style="font-size:12px; color:#666;">Se compartirá este elemento.</p>
                 <div id="users-list-container"></div>
-                <button class="btn btn-sec" style="width:100%; margin-top:15px;" onclick="openSheet('details')">Volver</button>
+                <button class="btn btn-sec" style="width:100%; margin-top:15px;" onclick="closeSheet()">Cerrar</button>
             </div>
 
         </div>
@@ -242,10 +192,11 @@
         const COLORS = ['#d93025', '#1a73e8', '#1e8e3e', '#f9ab00', '#9334e6', '#e37400', '#00897b', '#e91e63'];
         
         let map, markers=[], locations=[], allUsers=[], isAdding=false, token, myId, myEmail;
-        let currentLoc = null, holdTimer;
-        let knownGroups = []; 
-        let userMarker = null;
-        let tempMarker = null; // PIN FANTASMA
+        let currentLoc = null, holdTimer, knownGroups = [], userMarker = null, tempMarker = null;
+        
+        // Estado de Visibilidad
+        let hiddenItems = new Set(); // IDs de items ocultos
+        let hiddenGroups = new Set(); // IDs de grupos ocultos "ownerId_groupName"
 
         function getSession() {
             for(let i=0; i<localStorage.length; i++) {
@@ -260,7 +211,6 @@
             if(data) opts.body = JSON.stringify(data);
             const res = await fetch(`${API_URL}${path}`, opts);
             if(res.status === 401) { localStorage.clear(); window.location.href='login.html'; }
-            if(!res.ok) throw new Error(`Error API: ${res.status}`);
             return res.json();
         }
 
@@ -268,7 +218,6 @@
             const s = getSession();
             if(!s) return window.location.href='login.html';
             token = s.access_token; myId = s.user.id; myEmail = s.user.email;
-            
             document.getElementById('loader').style.display='none';
             initMap();
             trackUserLocation();
@@ -278,23 +227,15 @@
         function initMap() {
             map = L.map('map', {zoomControl:false}).setView([-31.5375, -68.5364], 14);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-            map.on('zoomend', updateZoomClasses);
-            updateZoomClasses();
+            map.on('zoomend', updateZoomClasses); updateZoomClasses();
 
             const mapContainer = document.getElementById('map');
             let startX, startY;
 
-            // Touch events
             mapContainer.addEventListener('touchstart', (e) => {
                 if(isAdding || document.getElementById('sheet').classList.contains('open') || e.touches.length > 1) return;
-                const touch = e.touches[0];
-                startX = touch.clientX; startY = touch.clientY;
-                holdTimer = setTimeout(() => {
-                    navigator.vibrate?.(50);
-                    const latlng = map.containerPointToLatLng([touch.clientX, touch.clientY]);
-                    openFormNew(latlng);
-                }, 500); 
+                const touch = e.touches[0]; startX = touch.clientX; startY = touch.clientY;
+                holdTimer = setTimeout(() => { navigator.vibrate?.(50); const latlng = map.containerPointToLatLng([touch.clientX, touch.clientY]); openFormNew(latlng); }, 500); 
             }, { passive: true });
 
             mapContainer.addEventListener('touchmove', (e) => {
@@ -304,7 +245,6 @@
 
             mapContainer.addEventListener('touchend', () => clearTimeout(holdTimer));
             
-            // Mouse events
             map.on('mousedown', (e) => {
                 if(isAdding) return;
                 holdTimer = setTimeout(() => openFormNew(e.latlng), 500);
@@ -313,12 +253,9 @@
         }
 
         function updateZoomClasses() {
-            const z = map.getZoom();
-            const el = map.getContainer();
+            const z = map.getZoom(); const el = map.getContainer();
             el.classList.remove('zoom-low', 'zoom-mid', 'zoom-high');
-            if(z < 14) el.classList.add('zoom-low');
-            else if(z < 16) el.classList.add('zoom-mid');
-            else el.classList.add('zoom-high');
+            if(z < 14) el.classList.add('zoom-low'); else if(z < 16) el.classList.add('zoom-mid'); else el.classList.add('zoom-high');
         }
 
         function trackUserLocation() {
@@ -337,12 +274,12 @@
         async function loadData() {
             try { 
                 locations = await api('/api/direcciones') || [];
-                const groupsFromDB = [...new Set(locations.filter(l => l.group_name).map(l => l.group_name))];
+                const myGroupsDB = [...new Set(locations.filter(l => l.group_name && l.created_by === myId).map(l => l.group_name))];
                 const localGroups = JSON.parse(localStorage.getItem('saved_groups_' + myId)) || [];
 
-                groupsFromDB.forEach(gName => {
+                myGroupsDB.forEach(gName => {
                     if(!knownGroups.find(g => g.name === gName)) {
-                        const item = locations.find(l => l.group_name === gName);
+                        const item = locations.find(l => l.group_name === gName && l.created_by === myId);
                         knownGroups.push({ name: gName, color: item ? item.group_color : '#1a73e8' });
                     }
                 });
@@ -354,97 +291,254 @@
             } catch(e) { console.error(e); }
         }
 
-        async function loadUsers() {
-            try { allUsers = await api('/api/usuarios') || []; } catch(e){}
-        }
-
+        async function loadUsers() { try { allUsers = await api('/api/usuarios') || []; } catch(e){} }
         function saveGroupsToLocal() { localStorage.setItem('saved_groups_' + myId, JSON.stringify(knownGroups)); }
 
+        // --- MAPA RENDER ---
         function renderMap() {
             markers.forEach(m => map.removeLayer(m)); markers=[];
             locations.forEach(loc => {
+                // Chequear visibilidad
+                const groupKey = `${loc.created_by}_${loc.group_name || 'null'}`;
+                if (hiddenItems.has(loc.id) || hiddenGroups.has(groupKey)) return;
+
                 const color = loc.group_color || '#d93025';
                 const icon = L.divIcon({ className:'c-pin', html:`<div style="background:${color};width:16px;height:16px;border:3px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>`, iconSize:[24,24], iconAnchor:[12,12] });
                 const m = L.marker([loc.lat, loc.lng], {icon}).addTo(map);
-                
-                // OFFSET AJUSTADO PARA BURBUJA PEGADA [0, -16]
-                // 12px (mitad iconSize) + 4px (pico) = 16px
                 m.bindTooltip(loc.name, { permanent: true, direction: 'top', className: 'lbl-tag', offset: [0, -16] });
-
                 m.on('click', () => { currentLoc=loc; openSheet('details'); map.flyTo([loc.lat, loc.lng], 16); });
                 markers.push(m);
             });
         }
 
+        // --- SIDEBAR RENDER (SEPARADO) ---
         function renderSidebar() {
             const container = document.getElementById('sidebar-content'); container.innerHTML = '';
-            knownGroups.forEach(grp => {
-                const items = locations.filter(l => l.group_name === grp.name);
-                container.appendChild(createGroupSection(grp.name, grp.color, items));
+
+            // 1. MIS LUGARES
+            const myLocs = locations.filter(l => l.created_by === myId);
+            const sharedLocs = locations.filter(l => l.created_by !== myId);
+
+            renderOwnerSection(container, 'Mis Lugares', myLocs, true);
+
+            // 2. COMPARTIDOS (Agrupados por dueño)
+            const owners = [...new Set(sharedLocs.map(l => l.owner_email))];
+            owners.forEach(owner => {
+                 const ownerLocs = sharedLocs.filter(l => l.owner_email === owner);
+                 renderOwnerSection(container, `Compartido por ${owner}`, ownerLocs, false);
             });
-            const noGroupItems = locations.filter(l => !l.group_name && l.created_by === myId);
-            container.appendChild(createGroupSection(null, '#777', noGroupItems));
+
             initSortable();
         }
 
-        function createGroupSection(name, color, items) {
-            const sec = document.createElement('div'); sec.className = 'group-section'; sec.dataset.gname = name || ''; sec.dataset.gcolor = color || '#777';
+        function renderOwnerSection(container, title, locs, isMine) {
+            const div = document.createElement('div');
+            div.innerHTML = `<div class="section-divider">${title}</div>`;
+            container.appendChild(div);
+
+            // Grupos
+            const groupsToRender = isMine ? knownGroups : [...new Set(locs.filter(l=>l.group_name).map(l=>({name:l.group_name, color:l.group_color})))];
+            // Para compartidos, extraemos grupos unicos
+            const uniqueGroups = isMine ? knownGroups : [];
+            if(!isMine) {
+                const gNames = new Set();
+                locs.forEach(l => {
+                    if(l.group_name && !gNames.has(l.group_name)) {
+                        gNames.add(l.group_name);
+                        uniqueGroups.push({name: l.group_name, color: l.group_color});
+                    }
+                });
+            }
+
+            uniqueGroups.forEach(grp => {
+                const items = locs.filter(l => l.group_name === grp.name);
+                // Si es mío muestro aunque esté vacío, si es compartido solo si tiene items
+                if(isMine || items.length > 0) {
+                    const ownerId = isMine ? myId : (items[0]?.created_by || 'unknown');
+                    container.appendChild(createGroupSection(grp.name, grp.color, items, isMine, ownerId));
+                }
+            });
+
+            // Sin Grupo
+            const noGroupItems = locs.filter(l => !l.group_name);
+            if(noGroupItems.length > 0 || isMine) {
+                const ownerId = isMine ? myId : (noGroupItems[0]?.created_by || 'unknown');
+                container.appendChild(createGroupSection(null, '#777', noGroupItems, isMine, ownerId));
+            }
+        }
+
+        function createGroupSection(name, color, items, isEditable, ownerId) {
+            const sec = document.createElement('div');
+            sec.className = 'group-section';
+            if(isEditable) { sec.dataset.gname = name || ''; sec.dataset.gcolor = color || '#777'; }
+
             const header = document.createElement('div'); header.className = 'group-header';
+            
+            // TITULO GRUPO
+            const titleDiv = document.createElement('div');
+            titleDiv.style.cssText = "display:flex; align-items:center; gap:10px; flex:1;";
+            
             if(name) {
                 const dot = document.createElement('div'); dot.className = 'group-color-dot'; dot.style.background = color;
-                dot.onclick = (e) => showColorPicker(e, name);
-                const input = document.createElement('input'); input.className = 'group-name-input'; input.value = name;
-                input.onblur = (e) => renameGroup(name, e.target.value);
-                const trash = document.createElement('i'); trash.className = 'fa-solid fa-trash group-actions'; trash.onclick = () => deleteGroup(name);
-                header.append(dot, input, trash);
-            } else { header.innerHTML = `<span style="font-size:12px; font-weight:700; color:#999;">SIN AGRUPAR</span>`; }
+                if(isEditable) dot.onclick = (e) => showColorPicker(e, name);
+                
+                let titleEl;
+                if(isEditable) {
+                    titleEl = document.createElement('input'); titleEl.className = 'group-name-input'; titleEl.value = name;
+                    titleEl.onblur = (e) => renameGroup(name, e.target.value);
+                } else {
+                    titleEl = document.createElement('span'); titleEl.style.fontWeight="700"; titleEl.style.fontSize="14px"; titleEl.innerText = name;
+                }
+                titleDiv.append(dot, titleEl);
+            } else {
+                titleDiv.innerHTML = `<span style="font-size:12px; font-weight:700; color:#999;">SIN AGRUPAR</span>`;
+            }
+            header.appendChild(titleDiv);
+
+            // ACCIONES GRUPO
+            const actionsDiv = document.createElement('div'); actionsDiv.className='group-actions';
             
-            const list = document.createElement('div'); list.className = 'items-container';
+            // 1. OJO (Visibilidad Grupo)
+            const groupKey = `${ownerId}_${name || 'null'}`;
+            const isHidden = hiddenGroups.has(groupKey);
+            const eye = document.createElement('i');
+            eye.className = `fa-solid fa-eye${isHidden?'-slash':''} icon-btn ${isHidden?'hidden-eye':'active-eye'}`;
+            eye.onclick = () => toggleGroupVis(groupKey);
+            actionsDiv.appendChild(eye);
+
+            if(isEditable && name) {
+                // 2. SHARE (Solo mis grupos)
+                const share = document.createElement('i');
+                share.className = 'fa-solid fa-user-plus icon-btn';
+                share.onclick = () => openShareGroup(name);
+                actionsDiv.appendChild(share);
+
+                // 3. DELETE (Solo mis grupos)
+                const trash = document.createElement('i');
+                trash.className = 'fa-solid fa-trash icon-btn';
+                trash.onclick = () => deleteGroup(name);
+                actionsDiv.appendChild(trash);
+            }
+            header.appendChild(actionsDiv);
+
+            const list = document.createElement('div');
+            list.className = 'items-container';
             items.forEach(item => {
-                const row = document.createElement('div'); row.className = 'place-item'; row.dataset.id = item.id;
-                row.innerHTML = `<div class="place-info" onclick="jumpTo(${item.lat},${item.lng}, '${item.id}')"><div class="place-title">${item.name}</div><div class="place-notes">${item.notes || ''}</div></div><i class="fa-solid fa-grip-lines drag-handle"></i>`;
+                const isItemHidden = hiddenItems.has(item.id);
+                const row = document.createElement('div'); 
+                row.className = `place-item ${isItemHidden ? 'hidden-item' : ''}`;
+                row.dataset.id = item.id;
+                
+                row.innerHTML = `
+                    <div class="place-info" onclick="jumpTo(${item.lat},${item.lng}, '${item.id}')">
+                        <div class="place-title">${item.name}</div>
+                        <div class="place-notes">${item.notes || ''}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-eye${isItemHidden?'-slash':''} icon-btn ${isItemHidden?'hidden-eye':'active-eye'}" 
+                           onclick="toggleItemVis('${item.id}')"></i>
+                        ${isEditable ? '<i class="fa-solid fa-grip-lines drag-handle"></i>' : ''}
+                    </div>
+                `;
                 list.appendChild(row);
             });
             sec.append(header, list);
             return sec;
         }
 
-        document.getElementById('btn-share-main').onclick = () => { renderShareList(); openSheet('share'); };
+        // --- VISIBILIDAD LOGIC ---
+        function toggleGroupVis(key) {
+            if(hiddenGroups.has(key)) hiddenGroups.delete(key); else hiddenGroups.add(key);
+            renderSidebar(); renderMap();
+        }
+        function toggleItemVis(id) {
+            if(hiddenItems.has(id)) hiddenItems.delete(id); else hiddenItems.add(id);
+            renderSidebar(); renderMap();
+        }
+
+        // --- COMPARTIR GRUPO ---
+        function openShareGroup(groupName) {
+            const items = locations.filter(l => l.group_name === groupName && l.created_by === myId);
+            if(items.length === 0) return alert('El grupo está vacío.');
+            
+            // Usamos una variable global temporal para saber qué estamos compartiendo
+            window.sharingTarget = { type: 'group', items: items, name: groupName };
+            document.getElementById('share-subtitle').innerText = `Compartiendo grupo: "${groupName}" (${items.length} lugares)`;
+            renderShareList();
+            openSheet('share');
+        }
 
         function renderShareList() {
             const list = document.getElementById('users-list-container'); list.innerHTML = '';
-            const members = currentLoc.members || [];
+            
+            // Determinamos qué miembros ya tienen acceso
+            // Si es un grupo, vemos si TODOS los items tienen al usuario
+            // Si es individual (currentLoc), vemos sus miembros
+            
+            let targetMembers = [];
+            if(window.sharingTarget && window.sharingTarget.type === 'group') {
+                // Logica simple: Si el primer item lo tiene, asumimos compartido (se sincronizará al togglear)
+                targetMembers = window.sharingTarget.items[0].members || [];
+            } else if (currentLoc) {
+                targetMembers = currentLoc.members || [];
+                document.getElementById('share-subtitle').innerText = `Compartiendo: "${currentLoc.name}"`;
+                window.sharingTarget = { type: 'single', item: currentLoc };
+            }
+
             allUsers.forEach(u => {
                 if(u.email === myEmail) return; 
-                const isShared = members.includes(u.email);
+                const isShared = targetMembers.includes(u.email);
                 const div = document.createElement('div'); div.className = 'user-list-item';
                 div.innerHTML = `<div><div style="font-weight:500">${u.nombre || u.email}</div><div style="font-size:12px;color:#777">${u.email}</div></div>
                     <label class="toggle-switch"><input type="checkbox" class="toggle-input" ${isShared ? 'checked' : ''}><span class="toggle-slider"></span></label>`;
+                
                 div.querySelector('input').onchange = async (e) => {
-                    let newMems = [...(currentLoc.members || [])];
-                    if(e.target.checked) { if(!newMems.includes(u.email)) newMems.push(u.email); } else { newMems = newMems.filter(m => m !== u.email); }
-                    currentLoc.members = newMems;
-                    await api(`/api/direcciones/${currentLoc.id}`, 'PUT', { members: newMems });
+                    const add = e.target.checked;
+                    
+                    if(window.sharingTarget.type === 'single') {
+                        // Compartir uno solo
+                        let newMems = [...(currentLoc.members || [])];
+                        if(add) { if(!newMems.includes(u.email)) newMems.push(u.email); } 
+                        else { newMems = newMems.filter(m => m !== u.email); }
+                        currentLoc.members = newMems;
+                        await api(`/api/direcciones/${currentLoc.id}`, 'PUT', { members: newMems });
+                    } else {
+                        // Compartir GRUPO ENTERO
+                        for (const item of window.sharingTarget.items) {
+                            let newMems = [...(item.members || [])];
+                            if(add) { if(!newMems.includes(u.email)) newMems.push(u.email); } 
+                            else { newMems = newMems.filter(m => m !== u.email); }
+                            // Update local
+                            item.members = newMems;
+                            // Update server
+                            await api(`/api/direcciones/${item.id}`, 'PUT', { members: newMems });
+                        }
+                    }
                 };
                 list.appendChild(div);
             });
         }
 
+        // --- SORTABLE ---
         function initSortable() {
             document.querySelectorAll('.items-container').forEach(c => {
-                new Sortable(c, { group: 'shared', handle: '.drag-handle', animation: 150, onEnd: async (evt) => {
-                        const itemEl = evt.item; const newGroupSec = itemEl.closest('.group-section');
-                        const newGName = newGroupSec.dataset.gname || null; const newGColor = newGroupSec.dataset.gcolor || '#d93025';
-                        const itemId = itemEl.dataset.id;
-                        const loc = locations.find(l => l.id === itemId);
-                        if(loc) { loc.group_name = newGName; loc.group_color = newGColor; }
-                        renderMap();
-                        try { await api(`/api/direcciones/${itemId}`, 'PUT', { group_name: newGName, group_color: newGColor }); } catch(e) { alert('Error al guardar movimiento.'); }
-                    }
-                });
+                // Solo activar sortable en mis grupos (donde hay drag handles)
+                if(c.querySelector('.drag-handle')) {
+                    new Sortable(c, { group: 'shared', handle: '.drag-handle', animation: 150, onEnd: async (evt) => {
+                            const itemEl = evt.item; const newGroupSec = itemEl.closest('.group-section');
+                            const newGName = newGroupSec.dataset.gname || null; const newGColor = newGroupSec.dataset.gcolor || '#d93025';
+                            const itemId = itemEl.dataset.id;
+                            const loc = locations.find(l => l.id === itemId);
+                            if(loc) { loc.group_name = newGName; loc.group_color = newGColor; }
+                            renderMap();
+                            try { await api(`/api/direcciones/${itemId}`, 'PUT', { group_name: newGName, group_color: newGColor }); } catch(e) {}
+                        }
+                    });
+                }
             });
         }
 
+        // --- RESTO DE FUNCIONES (Grupos, GPS, Forms) ---
         document.getElementById('btn-new-group').onclick = () => {
             const baseName = "Nuevo Grupo"; let name = baseName; let i = 1;
             while(knownGroups.find(g => g.name === name)) { name = `${baseName} ${i++}`; }
@@ -491,15 +585,11 @@
 
         function openFormNew(latlng) {
             currentLoc = null;
-            document.getElementById('inp-name').value='';
-            document.getElementById('inp-notes').value='';
-            document.getElementById('sheet').dataset.lat = latlng.lat;
-            document.getElementById('sheet').dataset.lng = latlng.lng;
-            
+            document.getElementById('inp-name').value=''; document.getElementById('inp-notes').value='';
+            document.getElementById('sheet').dataset.lat = latlng.lat; document.getElementById('sheet').dataset.lng = latlng.lng;
             if(tempMarker) map.removeLayer(tempMarker);
             const tIcon = L.divIcon({ className: 'fa-solid fa-location-dot temp-pin-icon', iconAnchor:[15, 30] });
             tempMarker = L.marker(latlng, { icon: tIcon }).addTo(map);
-
             openSheet('form');
         }
 
@@ -523,8 +613,7 @@
         }
 
         function closeSheet() {
-            document.getElementById('sheet').classList.remove('open'); 
-            document.getElementById('overlay').classList.remove('open');
+            document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open');
             if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; } 
         }
 
@@ -532,20 +621,18 @@
             const lat = currentLoc ? currentLoc.lat : parseFloat(document.getElementById('sheet').dataset.lat);
             const lng = currentLoc ? currentLoc.lng : parseFloat(document.getElementById('sheet').dataset.lng);
             const autoLink = `http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
-
-            const body = { 
-                name: document.getElementById('inp-name').value, 
-                notes: document.getElementById('inp-notes').value, 
-                gmaps_link: autoLink 
-            };
+            const body = { name: document.getElementById('inp-name').value, notes: document.getElementById('inp-notes').value, gmaps_link: autoLink };
             if(!body.name) return;
-
-            if(currentLoc) {
-                await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
-            } else {
-                await api('/api/direcciones', 'POST', { ...body, lat, lng });
-            }
+            if(currentLoc) await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
+            else await api('/api/direcciones', 'POST', { ...body, lat, lng });
             closeSheet(); loadData();
+        };
+
+        document.getElementById('btn-share-main').onclick = () => { 
+            // Limpiar target de grupo si entramos desde individual
+            window.sharingTarget = null; 
+            renderShareList(); 
+            openSheet('share'); 
         };
 
         document.getElementById('btn-delete').onclick = async () => { if(confirm('Borrar?')) { await api(`/api/direcciones/${currentLoc.id}`, 'DELETE'); closeSheet(); loadData(); } };
@@ -558,7 +645,6 @@
         document.getElementById('btn-menu').onclick = toggleSidebar;
         document.getElementById('overlay').onclick = closeSheet;
         document.getElementById('cancel-btn').onclick = closeSheet;
-        
         window.jumpTo = (lat, lng, id) => { currentLoc = locations.find(l => l.id === id); toggleSidebar(); map.setView([lat, lng], 16); openSheet('details'); };
         
         document.getElementById('btn-add-mode').onclick = () => {
