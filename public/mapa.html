@@ -45,7 +45,6 @@
         .sidebar-title { font-size: 18px; font-weight: 700; }
         .sidebar-content { flex: 1; overflow-y: auto; padding: 15px; }
 
-        /* SECCIONES (MIS LUGARES / COMPARTIDOS) */
         .section-divider { font-size: 12px; font-weight: 700; color: #70757a; margin: 20px 0 10px 5px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         /* GRUPOS */
@@ -133,7 +132,7 @@
     <div class="confirm-btn-float" id="btn-confirm-pos">Confirmar</div>
 
     <div class="fab-container">
-        <div class="fab-mini" id="btn-gps" title="Mi Ubicación"><i class="fa-solid fa-location-crosshairs"></i></div>
+        <div class="fab-mini" id="btn-gps"><i class="fa-solid fa-location-crosshairs"></i></div>
         <div class="fab" id="btn-add-mode"><i class="fa-solid fa-plus"></i></div>
     </div>
 
@@ -206,7 +205,7 @@
         }
 
         async function api(path, method='GET', data=null) {
-            const opts = { method, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } };
+            const opts = { method, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } };
             if(data) opts.body = JSON.stringify(data);
             const res = await fetch(`${API_URL}${path}`, opts);
             if(res.status === 401) { localStorage.clear(); window.location.href='login.html'; }
@@ -220,9 +219,8 @@
             document.getElementById('loader').style.display='none';
             initMap();
             trackUserLocation();
-            // Aseguramos que se carguen usuarios y datos antes de renderizar
             await Promise.all([loadData(), loadUsers()]);
-            renderSidebar(); // Render final con nombres cargados
+            renderSidebar();
         }
 
         function initMap() {
@@ -310,23 +308,19 @@
             });
         }
 
-        // --- HELPER NOMBRE USUARIO ---
         function getUserName(email) {
             const u = allUsers.find(user => user.email === email);
             return u ? (u.nombre || email.split('@')[0]) : email.split('@')[0];
         }
 
-        // --- SIDEBAR RENDER ---
         function renderSidebar() {
             const container = document.getElementById('sidebar-content'); container.innerHTML = '';
 
-            // 1. MIS LUGARES
             const myLocs = locations.filter(l => l.created_by === myId);
             const sharedLocs = locations.filter(l => l.created_by !== myId);
 
             renderOwnerSection(container, 'Mis Lugares', myLocs, true);
 
-            // 2. COMPARTIDOS
             const owners = [...new Set(sharedLocs.map(l => l.owner_email))];
             owners.forEach(owner => {
                  const ownerLocs = sharedLocs.filter(l => l.owner_email === owner);
@@ -362,8 +356,7 @@
             });
 
             const noGroupItems = locs.filter(l => !l.group_name);
-            // Mostrar "Sin Agrupar" solo si tiene items (correccion solicitada)
-            if(noGroupItems.length > 0) {
+            if(noGroupItems.length > 0) { 
                 const ownerId = isMine ? myId : (noGroupItems[0]?.created_by || 'unknown');
                 container.appendChild(createGroupSection(null, '#777', noGroupItems, isMine, ownerId));
             }
@@ -375,7 +368,6 @@
             if(isEditable) { sec.dataset.gname = name || ''; sec.dataset.gcolor = color || '#777'; }
 
             const header = document.createElement('div'); header.className = 'group-header';
-            
             const titleDiv = document.createElement('div');
             titleDiv.style.cssText = "display:flex; align-items:center; gap:10px; flex:1;";
             
@@ -407,7 +399,7 @@
 
             if(isEditable && name) {
                 const share = document.createElement('i'); share.className = 'fa-solid fa-user-plus icon-btn';
-                share.onclick = () => openShareGroup(name);
+                share.onclick = (e) => { e.stopPropagation(); openShareGroup(name); };
                 actionsDiv.appendChild(share);
 
                 const trash = document.createElement('i'); trash.className = 'fa-solid fa-trash icon-btn';
@@ -423,7 +415,6 @@
                 const row = document.createElement('div'); 
                 row.className = `place-item ${isItemHidden ? 'hidden-item' : ''}`;
                 row.dataset.id = item.id;
-                
                 row.innerHTML = `
                     <div class="place-info" onclick="jumpTo(${item.lat},${item.lng}, '${item.id}')">
                         <div class="place-title">${item.name}</div>
@@ -441,7 +432,6 @@
             return sec;
         }
 
-        // --- VISIBILIDAD LOGIC ---
         function toggleGroupVis(key) {
             if(hiddenGroups.has(key)) hiddenGroups.delete(key); else hiddenGroups.add(key);
             renderSidebar(); renderMap();
@@ -451,11 +441,9 @@
             renderSidebar(); renderMap();
         }
 
-        // --- COMPARTIR GRUPO ---
         function openShareGroup(groupName) {
             const items = locations.filter(l => l.group_name === groupName && l.created_by === myId);
             if(items.length === 0) return alert('El grupo está vacío.');
-            
             window.sharingTarget = { type: 'group', items: items, name: groupName };
             document.getElementById('share-subtitle').innerText = `Compartiendo grupo: "${groupName}" (${items.length} lugares)`;
             renderShareList();
@@ -464,7 +452,6 @@
 
         function renderShareList() {
             const list = document.getElementById('users-list-container'); list.innerHTML = '';
-            
             let targetMembers = [];
             if(window.sharingTarget && window.sharingTarget.type === 'group') {
                 targetMembers = window.sharingTarget.items[0].members || [];
@@ -478,7 +465,7 @@
                 if(u.email === myEmail) return; 
                 const isShared = targetMembers.includes(u.email);
                 const div = document.createElement('div'); div.className = 'user-list-item';
-                div.innerHTML = `<div><div style="font-weight:500">${u.nombre || u.email}</div><div style="font-size:12px;color:#777">${u.email}</div></div>
+                div.innerHTML = `<div><div style="font-weight:500">${u.nombre || u.email}</div></div>
                     <label class="toggle-switch"><input type="checkbox" class="toggle-input" ${isShared ? 'checked' : ''}><span class="toggle-slider"></span></label>`;
                 
                 div.querySelector('input').onchange = async (e) => {
@@ -503,7 +490,6 @@
             });
         }
 
-        // --- SORTABLE ---
         function initSortable() {
             document.querySelectorAll('.items-container').forEach(c => {
                 if(c.querySelector('.drag-handle')) {
@@ -521,7 +507,6 @@
             });
         }
 
-        // --- FUNCIONES GESTION ---
         document.getElementById('btn-new-group').onclick = () => {
             const baseName = "Nuevo Grupo"; let name = baseName; let i = 1;
             while(knownGroups.find(g => g.name === name)) { name = `${baseName} ${i++}`; }
@@ -598,29 +583,34 @@
         }
 
         function closeSheet() {
-            document.getElementById('sheet').classList.remove('open'); 
-            document.getElementById('overlay').classList.remove('open');
+            document.getElementById('sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('open');
             if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; } 
         }
 
         document.getElementById('btn-save').onclick = async () => {
             const lat = currentLoc ? currentLoc.lat : parseFloat(document.getElementById('sheet').dataset.lat);
             const lng = currentLoc ? currentLoc.lng : parseFloat(document.getElementById('sheet').dataset.lng);
-            const autoLink = `http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
-
-            const body = { 
-                name: document.getElementById('inp-name').value, 
-                notes: document.getElementById('inp-notes').value, 
-                gmaps_link: autoLink 
-            };
+            const autoLink = `https://www.google.com/maps?q=${lat},${lng}`; // FIXED LINK
+            const body = { name: document.getElementById('inp-name').value, notes: document.getElementById('inp-notes').value, gmaps_link: autoLink };
             if(!body.name) return;
 
-            if(currentLoc) {
+            // OPTIMISTIC UI
+            if(!currentLoc) {
+                const newLoc = { id: 'temp-'+Date.now(), name: body.name, notes: body.notes, lat, lng, created_by: myId, group_name: null, group_color: null };
+                locations.push(newLoc);
+            } else {
+                currentLoc.name = body.name; currentLoc.notes = body.notes;
+            }
+            renderMap(); renderSidebar();
+            closeSheet();
+
+            if(currentLoc && !currentLoc.id.startsWith('temp-')) {
                 await api(`/api/direcciones/${currentLoc.id}`, 'PUT', body);
             } else {
                 await api('/api/direcciones', 'POST', { ...body, lat, lng });
             }
-            closeSheet(); loadData();
+            await loadData(); // Reload for real ID
+            renderSidebar();
         };
 
         document.getElementById('btn-share-main').onclick = () => { 
@@ -629,7 +619,16 @@
             openSheet('share'); 
         };
 
-        document.getElementById('btn-delete').onclick = async () => { if(confirm('Borrar?')) { await api(`/api/direcciones/${currentLoc.id}`, 'DELETE'); closeSheet(); loadData(); } };
+        // DELETE INSTANTANEO
+        document.getElementById('btn-delete').onclick = async () => { 
+            if(!confirm('¿Borrar?')) return;
+            const delId = currentLoc.id;
+            locations = locations.filter(l => l.id !== delId); // Borrar de memoria
+            renderMap(); renderSidebar(); closeSheet();
+            try { await api(`/api/direcciones/${delId}`, 'DELETE'); } 
+            catch(e) { alert('Error borrando'); loadData(); } // Revertir si falla
+        };
+
         document.getElementById('btn-edit').onclick = () => {
             document.getElementById('inp-name').value = currentLoc.name;
             document.getElementById('inp-notes').value = currentLoc.notes;
@@ -639,7 +638,6 @@
         document.getElementById('btn-menu').onclick = toggleSidebar;
         document.getElementById('overlay').onclick = closeSheet;
         document.getElementById('cancel-btn').onclick = closeSheet;
-        
         window.jumpTo = (lat, lng, id) => { currentLoc = locations.find(l => l.id === id); toggleSidebar(); map.setView([lat, lng], 16); openSheet('details'); };
         
         document.getElementById('btn-add-mode').onclick = () => {
