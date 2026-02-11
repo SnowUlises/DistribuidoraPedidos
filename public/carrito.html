@@ -256,8 +256,6 @@
     function cerrarModal() {
         document.getElementById('modal').classList.add('hidden');
     }
-    // --- ENVIAR PEDIDO MODIFICADO (SOLUCIÓN 404) ---
-    // --- ENVIAR PEDIDO MODIFICADO (OPTIMIZADO Y CORREGIDO) ---
     async function enviarPedido() {
         const btn = document.getElementById('btn-enviar');
         const negocio = document.getElementById('input-negocio').value.trim();
@@ -266,6 +264,7 @@
         const apellIn = document.getElementById('input-apellido').value.trim();
         const telIn = document.getElementById('input-telefono').value.trim();
 
+        // VALIDACIONES BÁSICAS
         if (!negocio) return alert('Por favor, ingresa el nombre del negocio');
         if (!usuario) {
             if (!nombreIn || !apellIn) return alert('Completa tu nombre y apellido');
@@ -273,115 +272,139 @@
         }
 
         btn.disabled = true;
-        btn.textContent = 'Verificando Stock...';
+        btn.textContent = 'Procesando...';
         
         const ajustesDiv = document.getElementById('ajustes-stock');
         ajustesDiv.innerHTML = '';
         ajustesDiv.classList.add('hidden');
 
         try {
-            // PASO 1: TRAER SOLO LOS PRODUCTOS DEL CARRITO (OPTIMIZADO)
-            // Definimos idsCarrito aquí para evitar el error "undefined"
-            const idsCarrito = carrito.map(item => item.id);
+            // ---------------------------------------------------------
+            // FASE 1: PREPARACIÓN PREVIA DE DATOS (Para generar la firma)
+            // ---------------------------------------------------------
+            let nombreFinal = '', telefonoFinal = '';
+            const limpiarTelefono = (tel) => tel ? String(tel).replace(/\D/g, '') : '';
 
-            // Usamos el endpoint específico que ya tienes en el server
+            if (usuario) {
+                const meta = usuario.user_metadata || {};
+                nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario';
+                telefonoFinal = limpiarTelefono(meta.phone || '');
+            } else {
+                nombreFinal = `${nombreIn} ${apellIn}`;
+                telefonoFinal = limpiarTelefono(telIn);
+            }
+
+            // Calculamos totales preliminares para la firma
+            // (Nota: Usamos los precios actuales de la lista 'productos' local)
+            const itemsPreliminares = carrito.map(item => {
+                const p = productos.find(x => String(x.id) === String(item.id));
+                // Si no carga el producto aún, usamos un placeholder para la firma
+                const precio = p ? (Number(p.precio) * 1.10 * 1.02) : 0; 
+                return { id: item.id, cant: item.cantidad, precio: precio };
+            });
+
+            // CREAMOS LA FIRMA ÚNICA DEL PEDIDO (Fingerprint)
+            // Solo contiene: Quién, Qué, Cuánto y A Dónde. NO contiene la hora.
+            const firmaData = {
+                quien: nombreFinal,
+                tel: telefonoFinal,
+                donde: negocio,
+                que: itemsPreliminares
+            };
+            const firmaActual = JSON.stringify(firmaData);
+
+            // ---------------------------------------------------------
+            // FASE 2: VERIFICACIÓN DE MEMORIA (ANTI-DUPLICADOS)
+            // ---------------------------------------------------------
+            const memoriaRaw = localStorage.getItem('ultimo_pedido_seguro');
+            
+            if (memoriaRaw) {
+                const memoria = JSON.parse(memoriaRaw);
+                const ahora = Date.now();
+                const TIEMPO_BLOQUEO = 3 * 60 * 1000; // 3 Minutos de bloqueo
+
+                // Si la firma es IDÉNTICA y han pasado menos de 3 minutos
+                if (memoria.firma === firmaActual && (ahora - memoria.timestamp) < TIEMPO_BLOQUEO) {
+                    alert('⚠️ PROTECCIÓN DE SEGURIDAD\n\nEste pedido es idéntico al anterior y ya fue enviado recientemente.\n\nEspera unos minutos si necesitas enviarlo de nuevo o cambia algún producto.');
+                    btn.textContent = 'Pedido ya enviado';
+                    btn.disabled = true; 
+                    return; // <--- DETENEMOS LA EJECUCIÓN AQUÍ
+                }
+            }
+
+            // ---------------------------------------------------------
+            // FASE 3: VERIFICACIÓN DE STOCK EN SERVIDOR
+            // ---------------------------------------------------------
+            btn.textContent = 'Verificando Stock...';
+            
+            const idsCarrito = carrito.map(item => item.id);
             const resFresh = await fetch(`${API_BASE}/verificar-stock`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: idsCarrito })
             });
 
-            if (!resFresh.ok) throw new Error("No se pudo verificar el stock. Intenta de nuevo.");
+            if (!resFresh.ok) throw new Error("Error verificando stock.");
             
-            // Actualizamos la caché local SOLO con los productos relevantes
             const productosFrescos = await resFresh.json();
             
-            // Actualizamos nuestra lista global 'productos' con la info fresca
-            // (Mantenemos los viejos, actualizamos los que vamos a comprar)
+            // Actualizamos caché local
             productosFrescos.forEach(pFresh => {
                 const idx = productos.findIndex(p => String(p.id) === String(pFresh.id));
-                if (idx !== -1) {
-                    productos[idx] = pFresh;
-                } else {
-                    productos.push(pFresh);
-                }
+                if (idx !== -1) productos[idx] = pFresh;
+                else productos.push(pFresh);
             });
 
-            // PASO 2: AJUSTES AUTOMÁTICOS POR STOCK (Lógica idéntica a la anterior)
+            // AJUSTES DE CARRITO
             let ajustes = [];
             for (let i = carrito.length - 1; i >= 0; i--) {
                 const item = carrito[i];
                 const prodFresco = productosFrescos.find(p => String(p.id) === String(item.id));
                 
-                // Si el producto no viene en la respuesta, es que se borró de la DB
                 if (!prodFresco) {
-                    ajustes.push(`Producto ID ${item.id} ya no existe.`);
                     carrito.splice(i, 1);
+                    ajustes.push(`Producto ID ${item.id} no existe.`);
                     continue;
                 }
-
                 const stockReal = calcularStockTotal(prodFresco);
-                
                 if (stockReal <= 0) {
-                    ajustes.push(`"${prodFresco.nombre}" se agotó mientras comprabas.`);
                     carrito.splice(i, 1);
+                    ajustes.push(`${prodFresco.nombre} se agotó.`);
                 } else if (item.cantidad > stockReal) {
-                    const oldCant = item.cantidad;
                     item.cantidad = stockReal;
-                    ajustes.push(`De "${prodFresco.nombre}" solo quedan ${stockReal}, ajustamos tu cantidad.`);
+                    ajustes.push(`${prodFresco.nombre}: ajustado a ${stockReal} unid.`);
                 }
             }
             
-            guardarCarrito(); // Actualiza la vista visualmente
+            guardarCarrito();
 
-            // Mostrar ajustes en el modal si hubo cambios
-            if (ajustes.length > 0) {
-                ajustesDiv.innerHTML = '<div class="font-bold mb-2">Ajustes realizados por stock:</div>' +
-                    '<ul class="list-disc pl-4 space-y-1">' + ajustes.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
-                ajustesDiv.classList.remove('hidden');
-            }
-
-            // Si carrito vacío después de ajustes
-            if (carrito.length === 0) {
-                ajustesDiv.innerHTML += `<p class="mt-3 font-bold text-red-700">El carrito quedó vacío. No se puede enviar.</p>`;
-                btn.textContent = 'Carrito Vacío';
-                btn.disabled = true;
+            // SI HUBO CAMBIOS POR STOCK, PARAMOS (El usuario debe confirmar de nuevo)
+            // Al parar aquí, no se guarda la firma, así que puede volver a dar click. Correcto.
+            if (carrito.length === 0 || ajustes.length > 0) {
+                if(ajustes.length > 0) {
+                    ajustesDiv.innerHTML = '<div class="font-bold text-xs mb-1">Stock actualizado:</div><ul class="list-disc pl-4 text-xs">' + ajustes.map(m=>`<li>${m}</li>`).join('') + '</ul>';
+                    ajustesDiv.classList.remove('hidden');
+                }
+                if (carrito.length === 0) {
+                    btn.textContent = 'Carrito Vacío';
+                    btn.disabled = true;
+                } else {
+                    btn.textContent = 'Confirmar cambios';
+                    btn.disabled = false;
+                }
                 return;
-            } else if (ajustes.length > 0) {
-                btn.textContent = 'Confirmar con cambios';
-                btn.disabled = false;
-                return; // Requiere click nuevamente para confirmar los cambios
             }
 
-            // PASO 3: PREPARAR DATOS PARA EL ENVÍO
-            // PASO 3: PREPARAR DATOS PARA EL ENVÍO
-            btn.textContent = 'Enviando...';
-            
-            let nombreFinal = '', telefonoFinal = '';
-            
-            // Función interna para limpiar caracteres raros: (264) 5-24 -> 264524
-            const limpiarTelefono = (tel) => tel ? String(tel).replace(/\D/g, '') : '';
-
-            if (usuario) {
-                const meta = usuario.user_metadata || {};
-                nombreFinal = meta.full_name || meta.name || usuario.email || 'Usuario';
-                // Limpiamos el teléfono que viene de la cuenta del usuario
-                telefonoFinal = limpiarTelefono(meta.phone || '');
-            } else {
-                nombreFinal = `${nombreIn} ${apellIn}`;
-                // Limpiamos el teléfono del input manual
-                telefonoFinal = limpiarTelefono(telIn);
-            }
-
+            // ---------------------------------------------------------
+            // FASE 4: PREPARAR PAYLOAD FINAL
+            // ---------------------------------------------------------
             const itemsFinales = [];
             let totalCalculado = 0;
             
             for (const item of carrito) {
                 const producto = productos.find(p => String(p.id) === String(item.id));
                 if (!producto) continue;
-                
                 const precioConRecargo = Number(producto.precio) * 1.10 * 1.02;
-                
                 itemsFinales.push({
                     id: item.id,
                     cantidad: item.cantidad,
@@ -394,14 +417,26 @@
 
             const payload = {
                 nombre: nombreFinal,
-                telefono: telefonoFinal, // Enviamos el número limpio
+                telefono: telefonoFinal,
                 items: itemsFinales,
                 total: totalCalculado,
                 user_id: usuario ? usuario.id : null,
                 nombre_negocio: negocio
             };
 
-            // PASO 4: ENVIAR AL SERVIDOR
+            // ---------------------------------------------------------
+            // FASE 5: GUARDAR BLOQUEO Y ENVIAR
+            // ---------------------------------------------------------
+            
+            // Guardamos AHORA que estamos seguros de enviar.
+            // Guardamos: La firma (el contenido) + El timestamp (para saber cuándo caduca)
+            localStorage.setItem('ultimo_pedido_seguro', JSON.stringify({
+                firma: firmaActual,
+                timestamp: Date.now()
+            }));
+
+            btn.textContent = 'Enviando...';
+
             const resEnvio = await fetch(`${API_BASE}/Enviar-Peticion`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -410,13 +445,16 @@
 
             if (!resEnvio.ok) {
                 const errData = await resEnvio.json().catch(()=>({}));
-                throw new Error(errData.error || "Error al procesar el pedido.");
+                throw new Error(errData.error || "Error en el servidor.");
             }
 
-            // ÉXITO
+            // ÉXITO TOTAL
             carrito = [];
             guardarCarrito();
             cerrarModal();
+            // Opcional: localStorage.removeItem('ultimo_pedido_seguro'); 
+            // NO lo borramos aquí para mantener la protección anti-doble envío post-éxito.
+            
             alert('¡Pedido enviado con éxito!');
             
             if (usuario) window.location.href = 'mi-cuenta.html';
@@ -424,7 +462,11 @@
 
         } catch (e) {
             console.error(e);
-            alert('Atención: ' + e.message);
+            
+            // IMPORTANTE: Si falló, BORRAMOS la memoria para permitir reintentar
+            localStorage.removeItem('ultimo_pedido_seguro');
+            
+            alert('Hubo un problema: ' + e.message);
             btn.disabled = false;
             btn.textContent = 'Intentar de nuevo';
         }
@@ -436,6 +478,7 @@
     </script>
 </body>
 </html>
+
 
 
 
