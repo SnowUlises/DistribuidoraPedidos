@@ -230,7 +230,7 @@
                     return stock;
                 });
                 const precioFinal = computed(() => {
-                    return producto.value ? Number(producto.value.precio) * 1.1781 : 0;
+                    return producto.value ? Number(producto.value.precio) * 1.122 : 0;
                 });
                 const imagenUrl = computed(() => {
                     if (!producto.value || !producto.value.imagen) return `${SUPABASE_URL}/storage/v1/object/public/imagenes/placeholder.png`;
@@ -352,4 +352,5 @@
     </script>
 </body>
 </html>
+
 
