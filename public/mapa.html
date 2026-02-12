@@ -185,6 +185,15 @@
         const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com';
         const COLORS = ['#d93025', '#1a73e8', '#1e8e3e', '#f9ab00', '#9334e6', '#e37400', '#00897b', '#e91e63'];
         
+        // --- LISTA HARDCODEADA DE EMAILS PERMITIDOS ---
+        const ALLOWED_EMAILS = [
+            'snowulises1221@gmail.com',
+            'castronahuelesteban@gmail.com',
+            'duran2017diego@gmail.com',
+            'maximilianoduran809@gmail.com'
+            
+        ];
+        
         let map, markers=[], locations=[], allUsers=[], isAdding=false, token, myId, myEmail;
         let currentLoc = null, holdTimer, knownGroups = [], userMarker = null, tempMarker = null;
         let hiddenItems = new Set(), hiddenGroups = new Set();
@@ -460,6 +469,9 @@
             }
 
             allUsers.forEach(u => {
+                // --- FILTRO: SI EL EMAIL NO ESTÁ EN LA LISTA PERMITIDA, SE SALTA ---
+                if (!ALLOWED_EMAILS.includes(u.email)) return;
+
                 if(u.email === myEmail) return; 
                 const isShared = targetMembers.includes(u.email);
                 const div = document.createElement('div'); div.className = 'user-list-item';
