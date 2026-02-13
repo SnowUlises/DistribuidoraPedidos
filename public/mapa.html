@@ -318,22 +318,83 @@
         }
 
         function renderSidebar() {
-            const container = document.getElementById('sidebar-content'); container.innerHTML = '';
+            const container = document.getElementById('sidebar-content'); 
+            container.innerHTML = '';
 
-            // Si es admin, procesa TODO como si fuera de su propiedad
-            const myLocs = locations.filter(l => l.created_by === myId || isAdmin());
-            const sharedLocs = isAdmin() ? [] : locations.filter(l => l.created_by !== myId);
+            if (isAdmin()) {
+                // --- VISTA ADMINISTRADOR ---
+                
+                // 1. Mis Lugares (Tus propias direcciones como Admin)
+                const adminLocs = locations.filter(l => l.created_by === myId);
+                renderOwnerSectionAdmin(container, 'Mis Lugares', adminLocs, myId, true);
 
-            renderOwnerSection(container, 'Mis Lugares', myLocs, true);
+                // 2. Direcciones de los demás (Agrupadas por el Dueño)
+                const otherLocs = locations.filter(l => l.created_by !== myId);
+                const owners = [...new Set(otherLocs.map(l => l.owner_email))];
+                
+                owners.forEach(owner => {
+                    if(!owner) return; // Por si hay algún email vacío
+                    const ownerLocs = otherLocs.filter(l => l.owner_email === owner);
+                    const ownerName = getUserName(owner);
+                    const ownerId = ownerLocs[0] ? ownerLocs[0].created_by : 'unknown';
+                    
+                    renderOwnerSectionAdmin(container, `Direcciones de ${ownerName}`, ownerLocs, ownerId, true);
+                });
 
-            const owners = [...new Set(sharedLocs.map(l => l.owner_email))];
-            owners.forEach(owner => {
-                 const ownerLocs = sharedLocs.filter(l => l.owner_email === owner);
-                 const ownerName = getUserName(owner);
-                 renderOwnerSection(container, `Compartido por ${ownerName}`, ownerLocs, false);
-            });
+            } else {
+                // --- VISTA USUARIO NORMAL (Se mantiene 100% INTACTA como la tenías) ---
+                const myLocs = locations.filter(l => l.created_by === myId);
+                const sharedLocs = locations.filter(l => l.created_by !== myId);
+
+                renderOwnerSection(container, 'Mis Lugares', myLocs, true);
+
+                const owners = [...new Set(sharedLocs.map(l => l.owner_email))];
+                owners.forEach(owner => {
+                     const ownerLocs = sharedLocs.filter(l => l.owner_email === owner);
+                     const ownerName = getUserName(owner);
+                     renderOwnerSection(container, `Compartido por ${ownerName}`, ownerLocs, false);
+                });
+            }
 
             initSortable();
+        }
+
+        function renderOwnerSectionAdmin(container, title, locs, ownerId, isEditable) {
+            const div = document.createElement('div');
+            div.innerHTML = `<div class="section-divider">${title}</div>`;
+            container.appendChild(div);
+
+            const gNames = new Set();
+            const uniqueGroups = [];
+            
+            // Sacar solo los grupos que realmente tienen direcciones guardadas por este usuario
+            locs.forEach(l => {
+                if(l.group_name && !gNames.has(l.group_name)) {
+                    gNames.add(l.group_name);
+                    uniqueGroups.push({name: l.group_name, color: l.group_color});
+                }
+            });
+
+            // Si estás viendo tu propia sección de admin, sí agregamos tus grupos aunque estén vacíos
+            if (ownerId === myId) {
+                knownGroups.forEach(kg => {
+                    if (!gNames.has(kg.name)) {
+                        uniqueGroups.push({name: kg.name, color: kg.color});
+                    }
+                });
+            }
+
+            // Renderizamos cada grupo de este dueño
+            uniqueGroups.forEach(grp => {
+                const items = locs.filter(l => l.group_name === grp.name);
+                container.appendChild(createGroupSection(grp.name, grp.color, items, isEditable, ownerId));
+            });
+
+            // Renderizamos los que están "Sin agrupar"
+            const noGroupItems = locs.filter(l => !l.group_name);
+            if(noGroupItems.length > 0) { 
+                container.appendChild(createGroupSection(null, '#777', noGroupItems, isEditable, ownerId));
+            }
         }
 
         function renderOwnerSection(container, title, locs, isMine) {
