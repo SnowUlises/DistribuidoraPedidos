@@ -191,12 +191,14 @@
             'castronahuelesteban@gmail.com',
             'duran2017diego@gmail.com',
             'maximilianoduran809@gmail.com'
-            
         ];
         
         let map, markers=[], locations=[], allUsers=[], isAdding=false, token, myId, myEmail;
         let currentLoc = null, holdTimer, knownGroups = [], userMarker = null, tempMarker = null;
         let hiddenItems = new Set(), hiddenGroups = new Set();
+
+        // VALIDADOR ADMIN
+        const isAdmin = () => myEmail === 'snowulises1221@gmail.com';
 
         function getSession() {
             for(let i=0; i<localStorage.length; i++) {
@@ -275,12 +277,13 @@
         async function loadData() {
             try { 
                 locations = await api('/api/direcciones') || [];
-                const myGroupsDB = [...new Set(locations.filter(l => l.group_name && l.created_by === myId).map(l => l.group_name))];
+                // Admin también recopila los grupos como suyos
+                const myGroupsDB = [...new Set(locations.filter(l => l.group_name && (l.created_by === myId || isAdmin())).map(l => l.group_name))];
                 const localGroups = JSON.parse(localStorage.getItem('saved_groups_' + myId)) || [];
 
                 myGroupsDB.forEach(gName => {
                     if(!knownGroups.find(g => g.name === gName)) {
-                        const item = locations.find(l => l.group_name === gName && l.created_by === myId);
+                        const item = locations.find(l => l.group_name === gName && (l.created_by === myId || isAdmin()));
                         knownGroups.push({ name: gName, color: item ? item.group_color : '#1a73e8' });
                     }
                 });
@@ -317,8 +320,9 @@
         function renderSidebar() {
             const container = document.getElementById('sidebar-content'); container.innerHTML = '';
 
-            const myLocs = locations.filter(l => l.created_by === myId);
-            const sharedLocs = locations.filter(l => l.created_by !== myId);
+            // Si es admin, procesa TODO como si fuera de su propiedad
+            const myLocs = locations.filter(l => l.created_by === myId || isAdmin());
+            const sharedLocs = isAdmin() ? [] : locations.filter(l => l.created_by !== myId);
 
             renderOwnerSection(container, 'Mis Lugares', myLocs, true);
 
@@ -449,7 +453,7 @@
         }
 
         function openShareGroup(groupName) {
-            const items = locations.filter(l => l.group_name === groupName && l.created_by === myId);
+            const items = locations.filter(l => l.group_name === groupName && (l.created_by === myId || isAdmin()));
             if(items.length === 0) return alert('El grupo está vacío.');
             window.sharingTarget = { type: 'group', items: items, name: groupName };
             document.getElementById('share-subtitle').innerText = `Compartiendo grupo: "${groupName}" (${items.length} lugares)`;
@@ -602,7 +606,7 @@
                 // LINK DEFINITIVO
                 document.getElementById('btn-gmaps').href = `https://www.google.com/maps/search/?api=1&query=${currentLoc.lat},${currentLoc.lng}`;
                 
-                const isMine = currentLoc.created_by === myId;
+                const isMine = currentLoc.created_by === myId || isAdmin();
                 document.getElementById('btn-share-main').style.display = isMine ? 'block' : 'none';
                 document.getElementById('btn-edit').style.display = isMine ? 'block' : 'none';
             }
@@ -652,7 +656,7 @@
             locations = locations.filter(l => l.id !== delId);
             renderMap(); renderSidebar(); closeSheet();
 
-            if(currentLoc.created_by === myId) {
+            if(currentLoc.created_by === myId || isAdmin()) {
                 try { await api(`/api/direcciones/${delId}`, 'DELETE'); } catch(e) { loadData(); }
             } else {
                 const newMems = (currentLoc.members || []).filter(m => m !== myEmail);
