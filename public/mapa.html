@@ -42,6 +42,9 @@
         /* GRUPOS */
         .group-section { background: white; border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 2px solid transparent; }
         .group-header { padding: 12px 15px; display: flex; align-items: center; gap: 10px; background: #fff; border-bottom: 1px solid #f0f0f0; }
+        .group-header-title { cursor: pointer; flex: 1; display: flex; align-items: center; gap: 10px; } /* MEJORA 1: Clase para clics y layout */
+        .chevron-icon { font-size: 12px; color: #5f6368; transition: transform 0.2s; } /* MEJORA 1: Ícono de colapso */
+        .chevron-icon.collapsed { transform: rotate(-90deg); } /* MEJORA 1: Animación ícono */
         .group-color-dot { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); flex-shrink: 0; }
         .group-name-input { border: none; font-size: 14px; font-weight: 700; color: #333; flex: 1; background: transparent; }
         .group-actions { display: flex; gap: 12px; opacity: 0.6; transition: 0.2s; }
@@ -50,13 +53,13 @@
         .icon-btn:hover { color: #1a73e8; }
         .icon-btn.active-eye { color: #1a73e8; } .icon-btn.hidden-eye { color: #ccc; }
 
-        /* ITEMS CONTAINER (Mejorado Drag) */
+        /* ITEMS CONTAINER */
         .items-container { 
-            min-height: 50px; /* Altura mínima para poder soltar items en grupos vacíos */
+            min-height: 50px; 
             padding-bottom: 5px;
             background: #fafafa;
         }
-        /* Clase visual cuando arrastras algo encima */
+        .items-container.collapsed { display: none; } /* MEJORA 1: Ocultar ítems */
         .sortable-drag-over { background: #e8f0fe; }
 
         /* ITEMS */
@@ -156,6 +159,7 @@
             </div>
 
             <div id="view-details" style="display:none;">
+                <div id="txt-owner" style="font-size:12px; color:#1a73e8; font-weight:700; margin-bottom:2px; display:none;"></div>
                 <h2 id="txt-title" style="margin-bottom:5px;"></h2>
                 <p id="txt-desc" style="color:#666; margin-bottom:20px;"></p>
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -185,7 +189,6 @@
         const API_URL = 'https://distribuidorafunaz-a2o6.onrender.com';
         const COLORS = ['#d93025', '#1a73e8', '#1e8e3e', '#f9ab00', '#9334e6', '#e37400', '#00897b', '#e91e63'];
         
-        // --- LISTA HARDCODEADA DE EMAILS PERMITIDOS ---
         const ALLOWED_EMAILS = [
             'snowulises1221@gmail.com',
             'castronahuelesteban@gmail.com',
@@ -195,9 +198,11 @@
         
         let map, markers=[], locations=[], allUsers=[], isAdding=false, token, myId, myEmail;
         let currentLoc = null, holdTimer, knownGroups = [], userMarker = null, tempMarker = null;
-        let hiddenItems = new Set(), hiddenGroups = new Set();
+        
+        // MEJORA 3: Guardar y cargar ocultos desde LocalStorage
+        let hiddenItems = new Set(JSON.parse(localStorage.getItem('hidden_items') || '[]'));
+        let hiddenGroups = new Set(JSON.parse(localStorage.getItem('hidden_groups') || '[]'));
 
-        // VALIDADOR ADMIN
         const isAdmin = () => myEmail === 'snowulises1221@gmail.com';
 
         function getSession() {
@@ -277,7 +282,6 @@
         async function loadData() {
             try { 
                 locations = await api('/api/direcciones') || [];
-                // Admin también recopila los grupos como suyos
                 const myGroupsDB = [...new Set(locations.filter(l => l.group_name && (l.created_by === myId || isAdmin())).map(l => l.group_name))];
                 const localGroups = JSON.parse(localStorage.getItem('saved_groups_' + myId)) || [];
 
@@ -322,18 +326,14 @@
             container.innerHTML = '';
 
             if (isAdmin()) {
-                // --- VISTA ADMINISTRADOR ---
-                
-                // 1. Mis Lugares (Tus propias direcciones como Admin)
                 const adminLocs = locations.filter(l => l.created_by === myId);
                 renderOwnerSectionAdmin(container, 'Mis Lugares', adminLocs, myId, true);
 
-                // 2. Direcciones de los demás (Agrupadas por el Dueño)
                 const otherLocs = locations.filter(l => l.created_by !== myId);
                 const owners = [...new Set(otherLocs.map(l => l.owner_email))];
                 
                 owners.forEach(owner => {
-                    if(!owner) return; // Por si hay algún email vacío
+                    if(!owner) return; 
                     const ownerLocs = otherLocs.filter(l => l.owner_email === owner);
                     const ownerName = getUserName(owner);
                     const ownerId = ownerLocs[0] ? ownerLocs[0].created_by : 'unknown';
@@ -342,7 +342,6 @@
                 });
 
             } else {
-                // --- VISTA USUARIO NORMAL (Se mantiene 100% INTACTA como la tenías) ---
                 const myLocs = locations.filter(l => l.created_by === myId);
                 const sharedLocs = locations.filter(l => l.created_by !== myId);
 
@@ -367,7 +366,6 @@
             const gNames = new Set();
             const uniqueGroups = [];
             
-            // Sacar solo los grupos que realmente tienen direcciones guardadas por este usuario
             locs.forEach(l => {
                 if(l.group_name && !gNames.has(l.group_name)) {
                     gNames.add(l.group_name);
@@ -375,7 +373,6 @@
                 }
             });
 
-            // Si estás viendo tu propia sección de admin, sí agregamos tus grupos aunque estén vacíos
             if (ownerId === myId) {
                 knownGroups.forEach(kg => {
                     if (!gNames.has(kg.name)) {
@@ -384,13 +381,11 @@
                 });
             }
 
-            // Renderizamos cada grupo de este dueño
             uniqueGroups.forEach(grp => {
                 const items = locs.filter(l => l.group_name === grp.name);
                 container.appendChild(createGroupSection(grp.name, grp.color, items, isEditable, ownerId));
             });
 
-            // Renderizamos los que están "Sin agrupar"
             const noGroupItems = locs.filter(l => !l.group_name);
             if(noGroupItems.length > 0) { 
                 container.appendChild(createGroupSection(null, '#777', noGroupItems, isEditable, ownerId));
@@ -433,23 +428,33 @@
             sec.className = 'group-section';
             
             const header = document.createElement('div'); header.className = 'group-header';
+            
+            // MEJORA 1: Wrapper clickeable para colapsar
             const titleDiv = document.createElement('div');
-            titleDiv.style.cssText = "display:flex; align-items:center; gap:10px; flex:1;";
+            titleDiv.className = 'group-header-title'; 
+
+            const chevron = document.createElement('i');
+            chevron.className = 'fa-solid fa-chevron-down chevron-icon';
+            titleDiv.appendChild(chevron);
             
             if(name) {
                 const dot = document.createElement('div'); dot.className = 'group-color-dot'; dot.style.background = color;
-                if(isEditable) dot.onclick = (e) => showColorPicker(e, name);
+                if(isEditable) dot.onclick = (e) => { e.stopPropagation(); showColorPicker(e, name); };
                 
                 let titleEl;
                 if(isEditable) {
                     titleEl = document.createElement('input'); titleEl.className = 'group-name-input'; titleEl.value = name;
+                    titleEl.onclick = (e) => e.stopPropagation(); // Evitar que colapse si tocan el input
                     titleEl.onblur = (e) => renameGroup(name, e.target.value);
                 } else {
                     titleEl = document.createElement('span'); titleEl.style.fontWeight="700"; titleEl.style.fontSize="14px"; titleEl.innerText = name;
                 }
                 titleDiv.append(dot, titleEl);
             } else {
-                titleDiv.innerHTML = `<span style="font-size:12px; font-weight:700; color:#999;">SIN AGRUPAR</span>`;
+                const span = document.createElement('span');
+                span.style.cssText = "font-size:12px; font-weight:700; color:#999;";
+                span.innerText = "SIN AGRUPAR";
+                titleDiv.appendChild(span);
             }
             header.appendChild(titleDiv);
 
@@ -475,12 +480,17 @@
 
             const list = document.createElement('div');
             list.className = 'items-container';
-            // CLAVE: Activamos droppable para "Mis Lugares" (isEditable)
             if(isEditable) {
                 list.classList.add('droppable-area');
                 list.dataset.gname = name || '';
                 list.dataset.gcolor = color || '#777';
             }
+
+            // MEJORA 1: Evento para colapsar y expandir (Solo al hacer click en el título)
+            titleDiv.onclick = () => {
+                list.classList.toggle('collapsed');
+                chevron.classList.toggle('collapsed');
+            };
 
             items.forEach(item => {
                 const isItemHidden = hiddenItems.has(item.id);
@@ -506,10 +516,15 @@
 
         function toggleGroupVis(key) {
             if(hiddenGroups.has(key)) hiddenGroups.delete(key); else hiddenGroups.add(key);
+            // MEJORA 3: Guardar en localStorage
+            localStorage.setItem('hidden_groups', JSON.stringify([...hiddenGroups]));
             renderSidebar(); renderMap();
         }
+        
         function toggleItemVis(id) {
             if(hiddenItems.has(id)) hiddenItems.delete(id); else hiddenItems.add(id);
+            // MEJORA 3: Guardar en localStorage
+            localStorage.setItem('hidden_items', JSON.stringify([...hiddenItems]));
             renderSidebar(); renderMap();
         }
 
@@ -534,7 +549,6 @@
             }
 
             allUsers.forEach(u => {
-                // --- FILTRO: SI EL EMAIL NO ESTÁ EN LA LISTA PERMITIDA, SE SALTA ---
                 if (!ALLOWED_EMAILS.includes(u.email)) return;
 
                 if(u.email === myEmail) return; 
@@ -565,7 +579,6 @@
             });
         }
 
-        // --- SORTABLE CORREGIDO (Activo en todos los droppable-area) ---
         function initSortable() {
             document.querySelectorAll('.droppable-area').forEach(c => {
                 new Sortable(c, { 
@@ -576,7 +589,6 @@
                     ghostClass: "sortable-drag-over",
                     onEnd: async (evt) => {
                         const itemEl = evt.item;
-                        // LEER DATOS DEL CONTENEDOR DESTINO (Así funciona vacio o lleno)
                         const targetList = evt.to;
                         const newGName = targetList.dataset.gname || null;
                         const newGColor = targetList.dataset.gcolor || '#d93025';
@@ -662,9 +674,17 @@
             document.getElementById('view-share').style.display = view==='share'?'block':'none';
             
             if(view==='details' && currentLoc) {
+                // MEJORA 2: Mostrar de quién es el pedido si estás en modo admin
+                const txtOwner = document.getElementById('txt-owner');
+                if (isAdmin() && currentLoc.owner_email) {
+                    txtOwner.innerText = 'De: ' + getUserName(currentLoc.owner_email);
+                    txtOwner.style.display = 'block';
+                } else {
+                    txtOwner.style.display = 'none';
+                }
+
                 document.getElementById('txt-title').innerText = currentLoc.name;
                 document.getElementById('txt-desc').innerText = currentLoc.notes || '';
-                // LINK DEFINITIVO
                 document.getElementById('btn-gmaps').href = `https://www.google.com/maps/search/?api=1&query=${currentLoc.lat},${currentLoc.lng}`;
                 
                 const isMine = currentLoc.created_by === myId || isAdmin();
@@ -681,7 +701,6 @@
         document.getElementById('btn-save').onclick = async () => {
             const lat = currentLoc ? currentLoc.lat : parseFloat(document.getElementById('sheet').dataset.lat);
             const lng = currentLoc ? currentLoc.lng : parseFloat(document.getElementById('sheet').dataset.lng);
-            // LINK DEFINITIVO GUARDAR
             const autoLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
             const body = { name: document.getElementById('inp-name').value, notes: document.getElementById('inp-notes').value, gmaps_link: autoLink };
             if(!body.name) return;
